@@ -19,6 +19,7 @@ jobs:
       - run: cargo clippy --locked --all-targets -- -D warnings
       - run: cargo test --locked
       - run: cargo test --locked --release --test statistical -- --ignored
+      - run: cargo test --locked --release --test selection_bias -- --ignored
   independent-r:
     runs-on: ubuntu-latest
     steps:
