@@ -52,4 +52,22 @@ A failed criterion is reported as a failure with its numbers. Do not relax a bou
 
 ## Results
 
-Not yet run.
+### First run, 2026-10-25 (algorithm revision `guide-rs-0.1-experimental-reference10`)
+
+The harness gained one change before this run: a configuration whose fits raise an error is reported as not evaluable and counted as a failure, instead of aborting the study. No design, seed or criterion changed.
+
+| k | Configuration | guide-rs frequencies (binary, cat4, cat50, cont, cont_missing) | GOF p | Exhaustive baseline | Verdict |
+|---|---|---|---|---|---|
+| 1 | Constant least squares | 0.194, 0.207, 0.186, 0.207, 0.206 | 0.767 | cat50 in 100% of fits, p < 1e-300 | Pass |
+| 2 | Binary classification | 0.201, 0.192, 0.205, 0.180, 0.222 | 0.301 | cat50 in 100% of fits, p < 1e-300 | Pass |
+| 3 | Three-class classification | not evaluable | | | **Fail** |
+| 4 | Multiple-linear least squares | 0.219, 0.206, 0.176, 0.204, 0.195 | 0.280 | | Pass |
+| 5 | Constant least squares, no interactions | 0.181, 0.186, 0.225, 0.223, 0.185 | 0.046 | | Pass |
+| 6 | Least squares, weak binary signal | binary 0.679 | | binary 0.003 | Pass |
+| 7 | Classification, weak binary signal | binary 0.927 | | binary 0.012 | Pass |
+
+No fit was counted as "none". Every evaluable null configuration meets the primary and secondary criteria, and the design check passes decisively: exhaustive search selects the 50-level noise categorical in essentially every null and weak-signal fit, while guide-rs selects each predictor about one fifth of the time and finds the weak binary signal in 68% (regression) and 93% (classification) of fits.
+
+Configuration 3 fails as not evaluable. guide-rs rejects multiclass classification with a categorical predictor of more than 11 levels ("GUIDE's LDA/grouped-category search is not implemented"), a capability already listed as missing in [the coverage checklist](coverage.md). The study therefore says nothing yet about multiclass selection bias with high-cardinality predictors. It should be rerun unchanged once that search exists.
+
+This run predates the zero-gain and same-class merging change (`reference11`, PR #9). That change can remove a root split, in which case the counting rule falls back to the smallest p-value, so the study is rerun unchanged after it merges.

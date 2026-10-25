@@ -61,7 +61,7 @@ These are the next priorities before expanding into the missing specialized fami
 - [ ] Explain the additional categorical CV-table discrepancy while preserving independently verified CV. Its output, direct native refits and independent values are already frozen and tested.
 - [ ] Validate ensemble-specific defaults, fitting policies and random missing routes. CV pruning on bootstrap samples is now rejected; out-of-bag pruning remains unimplemented.
 - [ ] Audit 45.x–46.3 defaults and option combinations, including multiple-linear depth, expanded classification settings, priors/costs and weight conventions.
-- [ ] Expand fixed-seed smoke checks into prespecified acceptance studies for selection bias, interaction power and importance familywise calibration.
+- [ ] Expand fixed-seed smoke checks into prespecified acceptance studies. Root selection bias and weak-signal power now have a [prespecified study](selection-bias-study.md); its multiclass configuration awaits high-cardinality multiclass search. Interaction power and importance familywise calibration remain.
 
 ## Remaining checklist: open audit findings
 
