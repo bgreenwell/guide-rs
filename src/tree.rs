@@ -347,6 +347,7 @@ impl FittedModel {
                 };
                 *predicted_class
             } else {
+                // Validated classification models have at least one class.
                 (0..p.len())
                     .min_by(|&a, &b| {
                         let cost = |j| {
@@ -784,6 +785,7 @@ pub(crate) fn grow(
         let rm = ctx.fit_leaf(&right);
         let mut score = ctx.impurity(&lm, &left) + ctx.impurity(&rm, &right);
         if pair {
+            // Pair selections hold two distinct features (a < b in selection).
             let other = selection
                 .features
                 .iter()

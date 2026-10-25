@@ -149,6 +149,7 @@ impl FittedModel {
                         }
                     }
                 }
+                // A fitted classifier has at least one class, so the range is nonempty.
                 let best = (0..p.len())
                     .min_by(|&a, &b| {
                         let cost = |j| {

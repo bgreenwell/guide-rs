@@ -43,6 +43,7 @@ fn discretize(
             .map(|&i| {
                 let key = match &ctx.data.rows[i][j] {
                     Value::Missing => (0, String::new()),
+                    // label() is None only for Missing, handled above.
                     v => (1, v.label().unwrap()),
                 };
                 let next = levels.len();

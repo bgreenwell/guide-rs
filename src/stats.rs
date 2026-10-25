@@ -359,6 +359,7 @@ pub(crate) fn least_squares_ranked(
         return None;
     }
     for k in 0..p.min(n) {
+        // k < p, so the candidate pivot range is nonempty.
         let pivot = (k..p)
             .max_by(|&i, &j| norm(&a[i]).total_cmp(&norm(&a[j])))
             .unwrap();
