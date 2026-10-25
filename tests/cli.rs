@@ -111,6 +111,29 @@ fn cli_fit_predict_export_and_refuse_overwrite() {
 }
 
 #[test]
+fn cli_errors_name_the_offending_file() {
+    let t = Temp::new();
+    fs::write(t.0.join("config.json"), r#"{"data":{"target":"y"}}"#).unwrap();
+    let out = run(
+        &t,
+        &[
+            "fit",
+            "--data",
+            "missing.csv",
+            "--config",
+            "config.json",
+            "--model",
+            "model.json",
+        ],
+    );
+    assert!(!out.status.success());
+    assert!(String::from_utf8_lossy(&out.stderr).contains("cannot read missing.csv"));
+    fs::write(t.0.join("bad.json"), "{").unwrap();
+    let out = run(&t, &["inspect", "--model", "bad.json"]);
+    assert!(String::from_utf8_lossy(&out.stderr).contains("invalid model bad.json"));
+}
+
+#[test]
 fn cli_roundtrip_preserves_prediction_truncation() {
     let t = Temp::new();
     let mut csv = "x,y\n".to_owned();
