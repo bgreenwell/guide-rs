@@ -195,17 +195,6 @@ impl Node {
             _ => self,
         }
     }
-    pub(crate) fn collapse(&mut self) {
-        self.left = None;
-        self.right = None;
-        self.split = None;
-    }
-    pub(crate) fn leaf_risk(&self) -> f64 {
-        match (&self.left, &self.right) {
-            (Some(l), Some(r)) => l.leaf_risk() + r.leaf_risk(),
-            _ => self.risk,
-        }
-    }
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Tree {
