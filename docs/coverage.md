@@ -1,6 +1,6 @@
 # GUIDE 46.3 coverage and remaining work
 
-Updated **2026-10-24**, through algorithm revision **`guide-rs-0.1-experimental-reference10`**. Repository cleanup is complete; validation work resumes with the core checklist below.
+Updated **2026-10-24**, through algorithm revision **`guide-rs-0.1-experimental-reference11`**. Repository cleanup is complete; validation work resumes with the core checklist below.
 
 **guide-rs is a working subset of GUIDE, not a full replacement.** Its strongest native validation is for constant classification/regression, multiple-linear squared-error trees, and pruning. Other implemented losses and ensembles have narrower independent checks. No complete subsystem is certified equivalent to every GUIDE option.
 
@@ -49,7 +49,8 @@ A checked box below means the stated capability exists with tests. It does **not
 
 These are the next priorities before expanding into the missing specialized families.
 
-- [ ] Establish multi-predictor **zero-score / zero-gain** selection and tie/fallback rules. The singleton zero-score rule is resolved.
+- [ ] Establish native tie-breaking among exactly tied multi-predictor scores. Zero-gain splitting (`min_gain = 0`) and same-class leaf merging are resolved; the singleton zero-score rule is resolved. Native tie order is not column order and is recorded as a known difference.
+- [ ] Explain the classification-with-priors difference: on a depth-2 design with priors 0.3/0.7, native keeps three leaves where Rust keeps two.
 - [ ] Validate high-cardinality categorical linear and multiclass searches, near-tied partitions, broader missing patterns and projected/periodic split defaults.
 - [ ] Finish importance calibration/normalization, zero-null fallback conventions, 50% thresholds and missing-flag aggregation.
 - [ ] Implement associated M-flag semantics and distinct missing codes, including documented M-to-B conversion.

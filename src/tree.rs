@@ -809,9 +809,13 @@ pub(crate) fn grow(
             best = Some((split, left, right, score));
         }
     }
+    // GUIDE splits on the selected variable even when the best admissible
+    // split leaves the loss unchanged, so `min_gain = 0` accepts zero gain
+    // (up to roundoff). A positive `min_gain` remains a strict threshold.
     if let Some((mut split, left, right, score)) = best
         && (impurity - score > ctx.options.min_gain * ctx.root_weight
-            || (mode == SelectionMode::Importance && stats::less_or_close(score, impurity)))
+            || ((ctx.options.min_gain == 0.0 || mode == SelectionMode::Importance)
+                && stats::less_or_close(score, impurity)))
     {
         // Numeric cuts default to the right when missingness was not observed,
         // as confirmed by GUIDE 46.2/46.3 reference fixtures. Categorical cuts
@@ -829,11 +833,32 @@ pub(crate) fn grow(
                 Split::Numeric { .. } | Split::Categorical { .. } | Split::Missing { .. } => {}
             }
         }
-        node.split = Some(split);
-        node.left = Some(Box::new(grow(ctx, &left, depth + 1, next_id, rng, mode)));
-        node.right = Some(Box::new(grow(ctx, &right, depth + 1, next_id, rng, mode)));
+        let l = grow(ctx, &left, depth + 1, next_id, rng, mode);
+        let r = grow(ctx, &right, depth + 1, next_id, rng, mode);
+        // GUIDE 46.2/46.3 merge sibling leaves that predict the same class,
+        // bottom-up, so a split survives only if its subtree changes a
+        // prediction. Predicted classes already reflect priors and costs.
+        // Importance growth keeps every split: its scores sum node statistics.
+        if mode != SelectionMode::Fit || !same_class_leaves(&l, &r) {
+            node.split = Some(split);
+            node.left = Some(Box::new(l));
+            node.right = Some(Box::new(r));
+        }
     }
     node
+}
+fn same_class_leaves(left: &Node, right: &Node) -> bool {
+    match (&left.model, &right.model) {
+        (
+            LeafModel::Classification {
+                predicted_class: a, ..
+            },
+            LeafModel::Classification {
+                predicted_class: b, ..
+            },
+        ) => left.split.is_none() && right.split.is_none() && a == b,
+        _ => false,
+    }
 }
 fn best_child_score(ctx: &Context<'_>, ids: &[usize], model: &LeafModel, j: usize) -> f64 {
     let mut best = ctx.impurity(model, ids);

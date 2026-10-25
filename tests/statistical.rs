@@ -69,8 +69,18 @@ fn null_root_selection_is_not_grossly_biased() {
             for _ in 0..500 {
                 let d = null_data(&mut rng, 200, missing);
                 let m = FittedModel::fit(&d, &opts).unwrap();
-                if let Some(s) = &m.trees[0].root.split {
-                    count[s.feature()] += 1;
+                let root = &m.trees[0].root;
+                // Count the selected variable even when its split was merged
+                // away because both children predict the same class.
+                let selected = root.split.as_ref().map(Split::feature).or_else(|| {
+                    root.diagnostics
+                        .iter()
+                        .filter_map(|g| g.log_p_value.map(|p| (p, g.feature)))
+                        .min_by(|a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)))
+                        .map(|(_, j)| j)
+                });
+                if let Some(j) = selected {
+                    count[j] += 1;
                 }
             }
             let n = count.iter().sum::<usize>() as f64;

@@ -13,6 +13,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Classification trees merge sibling leaves that predict the same class, matching GUIDE
+- `min_gain = 0` accepts zero-gain splits on the selected variable, matching GUIDE
 - CSV parse errors report the line number and column name
 - File I/O errors name the file that could not be read or written
 

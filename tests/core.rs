@@ -165,6 +165,77 @@ fn zero_posterior_correction_keeps_cost_based_class_decision() {
     assert_eq!(labels, ["0", "0", "1", "1"]);
 }
 #[test]
+fn zero_gain_splits_follow_min_gain() {
+    // Every cut leaves both child means at 5, but the residual signs still
+    // associate with x. GUIDE splits anyway; a positive min_gain does not.
+    let mut x = vec![];
+    let mut y = vec![];
+    for (v, pair) in [
+        (0.0, [0.0, 10.0]),
+        (1.0, [5.0, 5.0]),
+        (2.0, [5.0, 5.0]),
+        (3.0, [0.0, 10.0]),
+    ] {
+        for _ in 0..3 {
+            for t in pair {
+                x.push(vec![v]);
+                y.push(t);
+            }
+        }
+    }
+    let d = data(x, y);
+    let mut o = FitOptions {
+        max_depth: 1,
+        min_gain: 0.0,
+        ..options()
+    };
+    let m = FittedModel::fit(&d, &o).unwrap();
+    assert_eq!(m.trees[0].root.leaves(), 2);
+    assert!(matches!(
+        m.trees[0].root.split,
+        Some(Split::Numeric { threshold, .. }) if threshold == 0.5
+    ));
+    o.min_gain = 1e-12;
+    assert_eq!(FittedModel::fit(&d, &o).unwrap().trees[0].root.leaves(), 1);
+}
+#[test]
+fn sibling_leaves_with_the_same_class_are_merged_bottom_up() {
+    // Cells (A, B) with P(class a): the root split on A and the child split
+    // on B both leave class a predicted everywhere, so the whole tree merges.
+    let mut rows = vec![];
+    let mut targets = vec![];
+    for ((a, b), share) in [((0, 0), 40), ((0, 1), 40), ((1, 0), 38), ((1, 1), 24)] {
+        for i in 0..40 {
+            rows.push(vec![Value::Number(a as f64), Value::Number(b as f64)]);
+            targets.push(Value::Text(if i < share { "a" } else { "b" }.into()));
+        }
+    }
+    let schema = ["A", "B"]
+        .map(|name| FeatureSchema {
+            name: name.into(),
+            feature_type: FeatureType::Numeric,
+            role: Role::Split,
+        })
+        .to_vec();
+    let d = Dataset {
+        schema,
+        rows,
+        targets,
+        weights: vec![],
+        offsets: vec![],
+    };
+    let mut o = FitOptions {
+        task: Task::Classification,
+        max_depth: 2,
+        min_gain: 0.0,
+        ..options()
+    };
+    assert_eq!(FittedModel::fit(&d, &o).unwrap().trees[0].root.leaves(), 1);
+    // Costs make the (A=1, B=1) cell predict b, so both splits survive.
+    o.class_costs = Some(vec![vec![0.0, 1.0], vec![3.0, 0.0]]);
+    assert_eq!(FittedModel::fit(&d, &o).unwrap().trees[0].root.leaves(), 3);
+}
+#[test]
 fn missingness_can_be_the_predictor() {
     let mut d = data(
         vec![vec![1.0]; 20],
