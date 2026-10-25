@@ -204,3 +204,24 @@ fn quantile_optimizer_handles_degeneracy_weights_and_scaling() {
     assert!(quantile_regression(&x, &y, &[], 0.5).is_none());
     assert!(quantile_regression(&x, &y, &[0.0; 21], 0.5).is_none());
 }
+
+#[test]
+fn symmetric_eigen_recovers_known_spectrum() {
+    // Eigenvalues 6, 3 and 1 with orthonormal eigenvectors.
+    let m: Vec<Vec<f64>> = [[22.0, 4.0, 10.0], [4.0, 22.0, 10.0], [10.0, 10.0, 16.0]]
+        .iter()
+        .map(|row| row.iter().map(|x| x / 6.0).collect())
+        .collect();
+    let (values, vectors) = guide_rs::stats::symmetric_eigen(&m);
+    for (v, e) in values.iter().zip([6.0, 3.0, 1.0]) {
+        assert!((v - e).abs() < 1e-12, "{values:?}");
+    }
+    for (value, vector) in values.iter().zip(&vectors) {
+        for (i, row) in m.iter().enumerate() {
+            let mv: f64 = row.iter().zip(vector).map(|(a, b)| a * b).sum();
+            assert!((mv - value * vector[i]).abs() < 1e-12);
+        }
+        let norm: f64 = vector.iter().map(|x| x * x).sum();
+        assert!((norm - 1.0).abs() < 1e-12);
+    }
+}

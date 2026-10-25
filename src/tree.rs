@@ -543,28 +543,6 @@ pub(crate) fn validate_supported(data: &Dataset, options: &FitOptions) -> Result
             "nonconstant node models require at least one feature with role fit or both",
         ));
     }
-    let classes: std::collections::BTreeSet<_> = data
-        .active_rows()
-        .iter()
-        .filter_map(|&i| data.targets[i].label())
-        .collect();
-    if matches!(options.task, Task::Classification) && classes.len() > 2 {
-        for (j, f) in data.schema.iter().enumerate() {
-            if f.role.splits() && matches!(f.feature_type, FeatureType::Categorical) {
-                let categories: std::collections::BTreeSet<_> = data
-                    .active_rows()
-                    .iter()
-                    .filter_map(|&i| data.rows[i][j].label())
-                    .collect();
-                if categories.len() > 11 {
-                    return Err(invalid(format!(
-                        "multiclass categorical feature {} has more than 11 levels; GUIDE's LDA/grouped-category search is not implemented",
-                        f.name
-                    )));
-                }
-            }
-        }
-    }
     Ok(())
 }
 pub(crate) fn validate_node(
@@ -1026,6 +1004,100 @@ fn missing_routes(ctx: &Context<'_>, ids: &[usize], j: usize) -> Vec<(bool, Opti
     routes.push((true, None));
     routes
 }
+/// Multiclass categorical splits search every subset up to this many levels.
+const MAX_EXHAUSTIVE_LEVELS: usize = 11;
+/// Candidate left sets for a multiclass categorical split with many levels
+/// (Loh 2009, Procedure A.1, step 3). Each level's 0-1 dummy vector is
+/// projected on the leading discriminant coordinates, which for one
+/// categorical variable are the correspondence-analysis scores of the
+/// class-by-level table. GUIDE 46.2/46.3 search cuts on the first two
+/// coordinates; tied scores stay on the same side. Without a flag, missing
+/// values are scored as one more level, so each set also fixes their route.
+fn discriminant_sets(
+    ctx: &Context<'_>,
+    ids: &[usize],
+    j: usize,
+    known: &[String],
+) -> Vec<(Vec<String>, Option<bool>)> {
+    let missing = ctx.flags[j].is_none() && ids.iter().any(|&i| ctx.data.rows[i][j].is_missing());
+    let levels = known.len() + usize::from(missing);
+    let mut present: Vec<usize> = ids.iter().map(|&i| ctx.y[i] as usize).collect();
+    present.sort_unstable();
+    present.dedup();
+    let mut counts = vec![vec![0.0; levels]; present.len()];
+    for &i in ids {
+        let level = match ctx.data.rows[i][j].label() {
+            Some(level) => known.binary_search(&level).ok(),
+            None => missing.then_some(known.len()),
+        };
+        if let Some(a) = level
+            && let Ok(c) = present.binary_search(&(ctx.y[i] as usize))
+        {
+            counts[c][a] += 1.0;
+        }
+    }
+    let rows: Vec<f64> = counts.iter().map(|r| r.iter().sum()).collect();
+    let columns: Vec<f64> = (0..levels)
+        .map(|a| counts.iter().map(|r| r[a]).sum())
+        .collect();
+    let total: f64 = rows.iter().sum();
+    if present.len() < 2 || rows.contains(&0.0) || columns.contains(&0.0) {
+        return vec![];
+    }
+    let m: Vec<Vec<f64>> = (0..present.len())
+        .map(|p| {
+            (0..present.len())
+                .map(|q| {
+                    (0..levels)
+                        .map(|a| counts[p][a] * counts[q][a] / columns[a])
+                        .sum::<f64>()
+                        / (rows[p] * rows[q]).sqrt()
+                })
+                .collect()
+        })
+        .collect();
+    let (_, vectors) = stats::symmetric_eigen(&m);
+    // Drop the trivial direction (eigenvalue 1, proportional to the square
+    // roots of the class counts) by alignment rather than by position.
+    let alignment = |v: &[f64]| -> f64 {
+        v.iter()
+            .zip(&rows)
+            .map(|(x, r)| x * (r / total).sqrt())
+            .sum::<f64>()
+            .abs()
+    };
+    let trivial = (0..vectors.len())
+        .max_by(|&a, &b| alignment(&vectors[a]).total_cmp(&alignment(&vectors[b])))
+        .unwrap_or(0);
+    let mut sets: Vec<(Vec<String>, Option<bool>)> = vec![];
+    for v in (0..vectors.len())
+        .filter(|&k| k != trivial)
+        .take(2)
+        .map(|k| &vectors[k])
+    {
+        let x: Vec<f64> = v.iter().zip(&rows).map(|(e, r)| e / r.sqrt()).collect();
+        let score: Vec<f64> = (0..levels)
+            .map(|a| (0..x.len()).map(|p| counts[p][a] * x[p]).sum::<f64>() / columns[a])
+            .collect();
+        let mut order: Vec<usize> = (0..levels).collect();
+        order.sort_by(|&a, &b| score[a].total_cmp(&score[b]).then(a.cmp(&b)));
+        for cut in 1..order.len() {
+            if stats::less_or_close(score[order[cut]], score[order[cut - 1]]) {
+                continue;
+            }
+            let mut left: Vec<String> = order[..cut]
+                .iter()
+                .filter_map(|&a| known.get(a).cloned())
+                .collect();
+            left.sort();
+            let set = (left, missing.then(|| order[..cut].contains(&known.len())));
+            if !sets.contains(&set) {
+                sets.push(set);
+            }
+        }
+    }
+    sets
+}
 /// GUIDE 46.2/46.3 put the side with fewer categories on the left, counting
 /// missing values as one category, or each flag code and uncoded missing
 /// values separately; ties keep the given orientation. Unseen levels and
@@ -1244,38 +1316,44 @@ fn candidates(ctx: &Context<'_>, ids: &[usize], j: usize) -> Vec<Split> {
             if k < 2 {
                 return result;
             }
-            let sets: Vec<Vec<String>> = if ctx.classes.len() > 2 {
-                (1..(1usize << (k - 1)))
-                    .map(|mask| {
-                        known
-                            .iter()
-                            .take(k - 1)
-                            .enumerate()
-                            .filter(|(i, _)| mask & (1 << i) != 0)
-                            .map(|(_, s)| s.clone())
-                            .collect()
-                    })
-                    .collect()
-            } else {
-                let mut order = known.clone();
-                order.sort_by(|a, b| {
-                    let x = groups[a];
-                    let y = groups[b];
-                    let order = (x.0 / x.1).total_cmp(&(y.0 / y.1));
-                    // Binary classification puts the higher class proportion
-                    // on the left; regression orders by increasing response.
-                    (if ctx.classifying() {
-                        order.reverse()
-                    } else {
-                        order
-                    })
-                    .then(a.cmp(b))
-                });
-                reduce(
-                    (1..k).map(|n| order[..n].to_vec()).collect(),
-                    ctx.options.max_split_candidates,
-                )
-            };
+            // Each set may fix the missing route (discriminant search scores
+            // missing values as a level); otherwise every route is tried.
+            let sets: Vec<(Vec<String>, Option<bool>)> =
+                if ctx.classes.len() > 2 && k > MAX_EXHAUSTIVE_LEVELS {
+                    discriminant_sets(ctx, ids, j, &known)
+                } else if ctx.classes.len() > 2 {
+                    (1..(1usize << (k - 1)))
+                        .map(|mask| {
+                            let set = known
+                                .iter()
+                                .take(k - 1)
+                                .enumerate()
+                                .filter(|(i, _)| mask & (1 << i) != 0)
+                                .map(|(_, s)| s.clone())
+                                .collect();
+                            (set, None)
+                        })
+                        .collect()
+                } else {
+                    let mut order = known.clone();
+                    order.sort_by(|a, b| {
+                        let x = groups[a];
+                        let y = groups[b];
+                        let order = (x.0 / x.1).total_cmp(&(y.0 / y.1));
+                        // Binary classification puts the higher class proportion
+                        // on the left; regression orders by increasing response.
+                        (if ctx.classifying() {
+                            order.reverse()
+                        } else {
+                            order
+                        })
+                        .then(a.cmp(b))
+                    });
+                    reduce(
+                        (1..k).map(|n| (order[..n].to_vec(), None)).collect(),
+                        ctx.options.max_split_candidates,
+                    )
+                };
             // Prefixes of the real-level order crossed with every missing
             // route contain the optimum over levels and codes jointly.
             let node_missing: Vec<&[Value]> = ids
@@ -1291,14 +1369,21 @@ fn candidates(ctx: &Context<'_>, ids: &[usize], j: usize) -> Vec<Split> {
                     .iter()
                     .any(|row| missing_code(row, Some(flag)).is_none())
             {
-                let complements: Vec<Vec<String>> = sets
+                let complements: Vec<(Vec<String>, Option<bool>)> = sets
                     .iter()
-                    .map(|set| known.iter().filter(|c| !set.contains(c)).cloned().collect())
+                    .map(|(set, fixed)| {
+                        let complement =
+                            known.iter().filter(|c| !set.contains(c)).cloned().collect();
+                        (complement, *fixed)
+                    })
                     .collect();
                 sets.extend(complements);
             }
-            for left_categories in sets {
-                for (missing_left, missing_codes) in &routes {
+            for (left_categories, fixed) in sets {
+                for (missing_left, missing_codes) in routes
+                    .iter()
+                    .filter(|(left, codes)| fixed.is_none_or(|f| codes.is_none() && *left == f))
+                {
                     result.push(orient_fewer_left(
                         Split::Categorical {
                             feature: j,
