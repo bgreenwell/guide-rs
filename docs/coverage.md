@@ -24,7 +24,7 @@ A checked box below means the stated capability exists with tests. It does **not
 - [x] Basic bagging/forest ensembles, per-node feature sampling, OOB loss and deterministic seeds.
 - [x] Constant classification/SSE importance scoring, permutation adjustment and scoped important-variable checks.
 - [x] Prediction, JSON conversion, text/DOT/LaTeX tree output, and macOS/Linux/Windows CI configuration.
-- [x] Python bindings (`python/`): scikit-learn `GuideRegressor`, `GuideClassifier`, `GuideForestRegressor` and `GuideForestClassifier` with feature roles, plus `importance`. They pass `sklearn.utils.estimator_checks`, reproduce the core model exactly on the 233 reference cases they can express, and reproduce the native important sets on the importance captures.
+- [x] Python bindings (`python/`): scikit-learn `GuideRegressor`, `GuideClassifier`, `GuideForestRegressor` and `GuideForestClassifier` with feature roles, periodic features, missing-value flags, every loss and leaf model of the core, prediction truncation and validation pruning, plus `importance`. They pass `sklearn.utils.estimator_checks`, reproduce the core model exactly on all 275 reference cases, and reproduce the native important sets on the importance captures.
 - [x] Standalone source-tree verification: all ordinary Rust tests pass in CI from a clean checkout without local manuals, native executables or reference caches.
 
 ## Comparison by GUIDE family
@@ -104,7 +104,7 @@ Carried over from the 2026-10-23 repository review; fixed items (log-scale selec
 
 - **Deferred:** further exact stepwise selection/fallback parity, all-subsets and stepwise ANCOVA work. Stepwise remains experimental and opt-in by user decision; its existing regression evidence remains supported.
 - **Excluded:** R prediction-function export (removed from the CLI and API), legacy interactive menus/DSC/batch compatibility and byte-for-byte native output. Frozen upstream R output can remain evidence; independent R numerical validation remains in scope.
-- **Outside the current phase:** R bindings and extra enhancement-roadmap features. Python bindings do not yet expose missing-value flags, periodic features, prediction truncation, stepwise leaves, dual quantiles, logistic loss or validation-sample pruning. Because `fit` rejects missing responses, prediction-only rows cannot contribute to the dummy coding of categorical fit variables as they do in GUIDE and the CLI.
+- **Outside the current phase:** R bindings and extra enhancement-roadmap features. Python forests do not support validation pruning, as in the core. Because `fit` rejects missing responses, prediction-only rows cannot contribute to the dummy coding of categorical fit variables as they do in GUIDE and the CLI.
 - **Intentional numerical differences:** keep correct weakest-link CV and QR optimality in independently established native counterexamples. These are documented differences, not unchecked tasks to reproduce native defects.
 
 ## Evidence and implementation choices

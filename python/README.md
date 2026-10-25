@@ -9,8 +9,9 @@ The bindings are experimental; see the core's [coverage and remaining work](http
 - `GuideRegressor`, `GuideClassifier`, `GuideForestRegressor` and `GuideForestClassifier`, compatible with scikit-learn's estimator API, pipelines, cloning and model selection
 - Unbiased split-variable selection with interaction tests, as in GUIDE
 - Native categorical features and missing values (NaN or None); no one-hot encoding or imputation
-- Constant, linear and polynomial leaves; squared-error, quantile and Poisson losses; class priors and costs
-- Per-feature roles (`feature_roles`): split only, fit only, both or excluded
+- Constant, linear, polynomial and (experimental) stepwise leaves; squared-error, quantile, dual-quantile, Poisson and logistic losses; class priors and costs
+- Per-feature roles (`feature_roles`): split only, fit only, both or excluded; periodic features (`periodic_features`) and missing-value flags (`missing_flags`)
+- Pruning by cross-validation, cost complexity, leaf count or a validation sample (`fit(..., validation_data=...)`)
 - Bagged ensembles and forests with out-of-bag loss, and bias-adjusted GUIDE importance scores (`guide_rs.importance`)
 - Tree drawings with matplotlib (`guide_rs.plot_tree`), plus text, Graphviz DOT and JSON output, the JSON matching models saved by the guide-rs CLI
 

@@ -142,6 +142,14 @@ fn importance(
     serde_json::to_string(&result).map_err(value_error)
 }
 
+/// Validation columns, target, weights and exposure.
+type ValidationInput<'py> = (
+    Vec<Bound<'py, PyAny>>,
+    Bound<'py, PyAny>,
+    Option<Vec<f64>>,
+    Option<Vec<f64>>,
+);
+
 /// A fitted tree or ensemble.
 #[pyclass(module = "guide_rs._core", frozen)]
 struct Model {
@@ -153,7 +161,9 @@ impl Model {
     /// Fits a model. `schema`, `options` and `ensemble` are JSON in the core
     /// crate's configuration format.
     #[staticmethod]
-    #[pyo3(signature = (schema, columns, target, options, weights=None, exposure=None, ensemble=None, threads=None))]
+    /// `validation` is `(columns, target, weights, exposure)` for validation
+    /// pruning, with the same schema as the training data.
+    #[pyo3(signature = (schema, columns, target, options, weights=None, exposure=None, ensemble=None, threads=None, validation=None))]
     #[allow(clippy::too_many_arguments)]
     fn fit(
         py: Python<'_>,
@@ -165,6 +175,7 @@ impl Model {
         exposure: Option<Vec<f64>>,
         ensemble: Option<&str>,
         threads: Option<usize>,
+        validation: Option<ValidationInput<'_>>,
     ) -> PyResult<Self> {
         let options: FitOptions = serde_json::from_str(options).map_err(value_error)?;
         let ensemble: Option<EnsembleOptions> = ensemble
@@ -172,9 +183,19 @@ impl Model {
             .transpose()
             .map_err(value_error)?;
         let data = dataset(schema, &columns, &target, &options, weights, exposure)?;
+        let validation = validation
+            .map(|(columns, target, weights, exposure)| {
+                dataset(schema, &columns, &target, &options, weights, exposure)
+            })
+            .transpose()?;
+        if validation.is_some() && ensemble.is_some() {
+            return Err(value_error(
+                "ensemble validation pruning is not implemented",
+            ));
+        }
         let inner = parallel(py, threads, || match &ensemble {
             Some(e) => FittedModel::fit_ensemble(&data, &options, e),
-            None => FittedModel::fit(&data, &options),
+            None => FittedModel::fit_with_validation(&data, &options, validation.as_ref()),
         })?
         .map_err(value_error)?;
         Ok(Self { inner })
@@ -242,6 +263,25 @@ impl Model {
             .map(|p| match p {
                 Prediction::Regression { value } => Ok(value),
                 _ => Err(value_error("model does not predict a single value")),
+            })
+            .collect()
+    }
+
+    /// Lower and upper quantile predictions of a dual-quantile model.
+    fn predict_intervals(
+        &self,
+        py: Python<'_>,
+        columns: Vec<Bound<'_, PyAny>>,
+    ) -> PyResult<Vec<(f64, f64)>> {
+        let rows = rows(&self.inner.schema, &columns)?;
+        let predictions = py
+            .detach(|| self.inner.predict(&rows))
+            .map_err(value_error)?;
+        predictions
+            .into_iter()
+            .map(|p| match p {
+                Prediction::Quantiles { lower, upper } => Ok((lower, upper)),
+                _ => Err(value_error("model does not predict quantile intervals")),
             })
             .collect()
     }
