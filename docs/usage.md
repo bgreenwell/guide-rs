@@ -34,6 +34,17 @@ An explicit feature looks like:
 
 Names, category labels, missing-value tokens, model parameters and prediction routing are saved with the model. Prediction CSV columns are matched by name, so their order may differ from training. Newly fitted categorical splits send unknown levels right; missing values use a separately stored route. Numerical threshold cuts use observed split-value ranks before missing routing: at least the configured minimum on the left and strictly more on the right, matching the native endpoint convention.
 
+## Missing-value flags
+
+A flag column records why values of another feature are missing, like GUIDE's M variables. Declare it as a categorical feature with role `flag` and name its parent in `flags`:
+
+```json
+{"name": "income", "feature_type": {"kind": "numeric"}, "role": "split"},
+{"name": "income_reason", "feature_type": {"kind": "categorical"}, "role": "flag", "flags": "income"}
+```
+
+Codes only matter where the parent is missing. Each code is a separate missing group for variable selection, and splits can send any subset of codes left, for example `income <= 50000; missing -> yes if income_reason in ["refused"]`. At prediction time, missing values with no code or an unseen code go right. Flags require constant node models and numeric or categorical parents, with at most 10 codes. See [the flag validation record](missing-flag-validation.md).
+
 ## Linear node models
 
 Multiple-linear squared-error fits with numeric fitting columns use the verified sample-size fallback policy. Set `fit.prediction_truncation` to `none`, `node_range`, `node_range_expanded` (10% padding) or `global_range`; see [the example configuration](../examples/linear-limits.json). guide-rs defaults to `none` for compatibility; GUIDE's native default is `global_range`. Global bounds use the full active training sample across CV folds; node bounds are fold-local. [The linear validation record](linear-validation.md) documents thresholds, exclusions, saved-model compatibility and a native least-squares correctness difference.

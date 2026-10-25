@@ -1,10 +1,10 @@
 # GUIDE 46.3 coverage and remaining work
 
-Updated **2026-10-24**, through algorithm revision **`guide-rs-0.1-experimental-reference11`**. Repository cleanup is complete; validation work resumes with the core checklist below.
+Updated **2026-10-24**, through algorithm revision **`guide-rs-0.1-experimental-reference12`**. Repository cleanup is complete; validation work resumes with the core checklist below.
 
 **guide-rs is a working subset of GUIDE, not a full replacement.** Its strongest native validation is for constant classification/regression, multiple-linear squared-error trees, and pruning. Other implemented losses and ensembles have narrower independent checks. No complete subsystem is certified equivalent to every GUIDE option.
 
-The primary oracle is the pinned GUIDE **46.3** build of July 11, 2026; **46.2** is a secondary regression reference. Documentation comes from the **46.1** manual and history through 46.2. The fixed acceptance corpus contains **488 native captures across 244 distinct cases**, plus separately recorded diagnostics. See [reference provenance](reference-upstream.md) and [validation results](validation.md).
+The primary oracle is the pinned GUIDE **46.3** build of July 11, 2026; **46.2** is a secondary regression reference. Documentation comes from the **46.1** manual and history through 46.2. The fixed acceptance corpus contains **544 native captures across 272 distinct cases**, plus separately recorded diagnostics. See [reference provenance](reference-upstream.md) and [validation results](validation.md).
 
 A checked box below means the stated capability exists with tests. It does **not** certify full native parity. Unchecked boxes identify remaining work, including validation of existing implementations.
 
@@ -19,6 +19,7 @@ A checked box below means the stated capability exists with tests. It does **not
 - [x] Single-quantile constant/linear/polynomial fits; simultaneous lower/upper **constant** quantiles.
 - [x] Basic Poisson and Bernoulli logistic constant/linear/polynomial fits, including positive Poisson exposures.
 - [x] Periodic interval splits and optional bivariate discriminant splits.
+- [x] Missing-value flag (M) variables for constant node models, with per-code selection groups and code-subset split routing.
 - [x] Cost-complexity, fixed-size, validation-sample and cross-validation pruning; independently verified correct behavior in documented native counterexamples.
 - [x] Basic bagging/forest ensembles, per-node feature sampling, OOB loss and deterministic seeds.
 - [x] Constant classification/SSE importance scoring, permutation adjustment and scoped important-variable checks.
@@ -29,7 +30,7 @@ A checked box below means the stated capability exists with tests. It does **not
 
 | GUIDE family / manual chapters | guide-rs status | Principal remaining gap |
 |---|---|---|
-| Data, operation, missing flags (3, 5) | Modern CSV/JSON interfaces and basic missing handling | Associated M flags and distinct missing-code semantics |
+| Data, operation, missing flags (3, 5) | Modern CSV/JSON interfaces, missing handling and constant-node missing-value flags | Flags with linear node models (M-to-B conversion) and periodic parents |
 | Classification (4) | Constant-node trees, priors/costs, interactions and optional projected splits | Kernel, nearest-neighbor, LDA/QDA **node models**, full discriminant-coordinate options, high-cardinality multiclass search |
 | Least squares (6) | Constant/multiple-linear core has the strongest differential evidence; polynomial and stepwise subsets exist | Broader selection/default combinations, native polynomial rules, ANCOVA/all-subsets and population mean estimation |
 | Quantiles (7) | Constant/linear/polynomial single quantiles; dual constant quantiles | Nonconstant simultaneous quantiles and native growth/model-selection conventions |
@@ -53,7 +54,7 @@ These are the next priorities before expanding into the missing specialized fami
 - [ ] Explain the classification-with-priors difference: on a depth-2 design with priors 0.3/0.7, native keeps three leaves where Rust keeps two.
 - [ ] Validate high-cardinality categorical linear and multiclass searches, near-tied partitions, broader missing patterns and projected/periodic split defaults.
 - [ ] Finish importance calibration/normalization, zero-null fallback conventions, 50% thresholds and missing-flag aggregation.
-- [ ] Implement associated M-flag semantics and distinct missing codes, including documented M-to-B conversion.
+- [ ] Missing-value flags (M variables) with linear/polynomial/stepwise node models via the documented M-to-B conversion, and on periodic parents. Constant-node flags for numeric and categorical parents are implemented and validated ([flag validation](missing-flag-validation.md)).
 - [ ] Validate GUIDE's polynomial degree selection, missing handling and model-specific fallback rules.
 - [ ] Validate native quantile/Poisson/logistic split selection, residual grouping, model selection and fitting-policy combinations.
 - [ ] Validate periodic association rotation invariance and missing/unknown routing.
