@@ -65,6 +65,8 @@ Stepwise leaves are an experimental, opt-in compatibility option with known nati
 
 All stochastic operations use the recorded seed with ChaCha8; they do not reproduce Fortran random streams.
 
+Ensemble trees and cross-validation folds are fitted in parallel on all cores. Results do not depend on the number of threads; set `RAYON_NUM_THREADS` to limit it.
+
 ## Exports
 
 `guide-rs export --format text|dot|latex` writes a text summary, a Graphviz DOT graph, or a LaTeX document using the `forest` package. Rendering DOT or LaTeX requires the corresponding external tools.

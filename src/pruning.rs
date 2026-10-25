@@ -1,6 +1,7 @@
 use crate::{node::Context, selection::SelectionMode, tree::grow, *};
 use rand::{SeedableRng, seq::SliceRandom};
 use rand_chacha::ChaCha8Rng;
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -179,37 +180,54 @@ pub(crate) fn prune(
                     fold_of[i] = fold;
                 }
             }
-            for (f, held) in parts.iter().enumerate() {
-                let train: Vec<usize> = ids.iter().copied().filter(|&i| fold_of[i] != f).collect();
-                let fold_ctx = Context::new(ctx.data, &fold_options, &train, Some(&ctx.classes))?;
-                let mut fold_rng =
-                    ChaCha8Rng::seed_from_u64(ctx.options.seed.wrapping_add(f as u64 + 1));
-                let mut next = 0;
-                let full = Tree {
-                    root: grow(
-                        &fold_ctx,
-                        &train,
-                        0,
-                        &mut next,
-                        &mut fold_rng,
-                        SelectionMode::Fit,
-                    ),
-                };
-                crate::tree::validate_node(
-                    &full.root,
-                    &ctx.data.schema,
-                    ctx.classes.len(),
-                    ctx.options,
-                    0,
-                )?;
-                let fp = weakest_link_path(&full);
-                for (j, &alpha) in alphas.iter().enumerate() {
-                    let subtree = if j == 0 && path.len() > 1 {
-                        &fp[0].1
-                    } else {
-                        at_alpha(&fp, alpha)
+            // Folds are fitted in parallel and their losses combined in fold
+            // order, so results and the reported error do not depend on threads.
+            let fold_losses: Vec<Result<Vec<_>>> = parts
+                .par_iter()
+                .enumerate()
+                .map(|(f, held)| {
+                    let train: Vec<usize> =
+                        ids.iter().copied().filter(|&i| fold_of[i] != f).collect();
+                    let fold_ctx =
+                        Context::new(ctx.data, &fold_options, &train, Some(&ctx.classes))?;
+                    let mut fold_rng =
+                        ChaCha8Rng::seed_from_u64(ctx.options.seed.wrapping_add(f as u64 + 1));
+                    let mut next = 0;
+                    let full = Tree {
+                        root: grow(
+                            &fold_ctx,
+                            &train,
+                            0,
+                            &mut next,
+                            &mut fold_rng,
+                            SelectionMode::Fit,
+                        ),
                     };
-                    results[j].extend(external_losses(ctx, subtree, ctx.data, held)?);
+                    crate::tree::validate_node(
+                        &full.root,
+                        &ctx.data.schema,
+                        ctx.classes.len(),
+                        ctx.options,
+                        0,
+                    )?;
+                    let fp = weakest_link_path(&full);
+                    alphas
+                        .iter()
+                        .enumerate()
+                        .map(|(j, &alpha)| {
+                            let subtree = if j == 0 && path.len() > 1 {
+                                &fp[0].1
+                            } else {
+                                at_alpha(&fp, alpha)
+                            };
+                            external_losses(ctx, subtree, ctx.data, held)
+                        })
+                        .collect()
+                })
+                .collect();
+            for losses in fold_losses {
+                for (j, l) in losses?.into_iter().enumerate() {
+                    results[j].extend(l);
                 }
             }
             for (j, (alpha, t)) in path.iter().enumerate() {
