@@ -6,6 +6,7 @@
 - Core modules separate data/configuration, node fitting, variable selection, split search, pruning, ensembles, importance, and numerical routines.
 - `tests/` contains integration, numerical, CLI, and reference comparisons. `tests/fixtures/` preserves native outputs, diagnostics, and example datasets.
 - `tools/` contains Python capture/integrity utilities and independent R oracles.
+- `python/` is a separate Cargo workspace: PyO3 bindings (`src/lib.rs`, module `guide_rs._core`) and the scikit-learn estimators in `guide_rs/`. Options and schemas cross the boundary as core JSON, so validation stays in Rust.
 - `examples/` holds JSON configurations; `docs/coverage.md` tracks implemented capabilities and remaining work.
 - Ignored `assets/` and `.reference/upstream/` hold optional local papers and pinned executables. Ordinary tests must remain independent of them.
 
@@ -19,6 +20,7 @@
 - `python3 -m unittest discover -s tools -p 'test_reference_*.py'`: verify capture tooling and fixture integrity.
 - `cargo test --locked --test interoperability -- --ignored`: run independent R checks; requires Rscript, quantreg, and rpart.
 - `cargo test --locked --release --test statistical -- --ignored`: run statistical smoke checks.
+- In `python/`: `uv sync` builds the extension in editable mode (rebuilt automatically when Rust sources change); `cargo clippy --locked --all-targets -- -D warnings` lints the binding crate. `tests/test_estimators.py` requires the estimators to reproduce the core model on every reference case they can express; extend `estimator_for` when exposing new options.
 
 ## Coding Style & Naming Conventions
 

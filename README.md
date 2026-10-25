@@ -12,6 +12,7 @@ A pure Rust implementation of GUIDE-style classification and regression trees, t
 - Cost-complexity, fixed-size, validation-sample and cross-validation pruning
 - Bagged ensembles, forests and GUIDE-style importance scores
 - Seeded, deterministic fits saved as JSON; text, Graphviz DOT and LaTeX tree output
+- scikit-learn compatible Python estimators (experimental; see [python/](python/README.md))
 - No GUIDE, Fortran, BLAS or LAPACK dependency
 
 ## Installation
@@ -20,7 +21,7 @@ A pure Rust implementation of GUIDE-style classification and regression trees, t
 cargo install --git https://github.com/bgreenwell/guide-rs
 ```
 
-Or build from a clone with `cargo build --release`.
+Or build from a clone with `cargo build --release`. For the Python package, run `uv sync` in `python/` (see [its README](python/README.md)).
 
 ## Quick start
 
@@ -71,6 +72,7 @@ Additional checks:
 
 ```sh
 python3 -m unittest discover -s tools -p 'test_reference_*.py'   # fixture integrity
+(cd python && uv run ruff check . && uv run pytest)               # Python bindings
 cargo test --test interoperability -- --ignored                  # needs Rscript, quantreg, rpart
 cargo test --release --test statistical -- --ignored             # statistical smoke checks
 ```
