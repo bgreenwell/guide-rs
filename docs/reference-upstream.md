@@ -225,3 +225,9 @@ The cases join the core catalog in `tools/reference_cases.py` and are captured w
 ## Missing-value flags and categorical orientation, 2026-10-25
 
 Twenty missing-flag cases (`tests/fixtures/missing-flag`, captured by `tools/capture_reference_missing_flag.py`) and eight categorical orientation cases in the core catalog add **56 captures** across both executables, bringing the fixed acceptance corpus to **544 captures across 272 distinct cases**. Both versions agree on every parsed result; earlier captures are unchanged. New fits record **`guide-rs-0.1-experimental-reference12`**. See [flag validation](missing-flag-validation.md) for semantics, the documented native difference and the held-out cases.
+
+## High-cardinality multiclass categorical splits, 2026-10-25
+
+Six multiclass cases in the core catalog (`class-multiclass-many-*`) add **12 captures**, bringing the fixed acceptance corpus to **556 captures across 278 distinct cases**. Both versions agree on every parsed result; earlier captures are unchanged. The cases cover 13, 19, 21 and 25 levels, 3, 4 and 12 classes, a design where the second discriminant coordinate gives the best split, missing values scored as a level, and a depth-2 tree. Each uses an odd number of categories, so the fewer-levels-left orientation never ties. Before this change Rust rejected all six.
+
+Black-box probes established the rule. Across 96 random designs with 12 to 35 levels and 3 to 12 classes, the best cut on the first two discriminant coordinates reproduced native's partition every time, including designs where a third coordinate or the class-label mapping in Loh (2009) would be better. Across 30 designs with missing values, scoring missing as one more level matched all 30. When both sides have the same number of levels, native orientation follows its eigenvector signs; no simple sign convention reproduced it (the best matched 4 of 6 ties), so those splits may send unseen levels to the other child.

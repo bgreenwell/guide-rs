@@ -75,3 +75,8 @@ This run predates the zero-gain and same-class merging change (`reference11`, PR
 ### Rerun, 2026-10-25 (algorithm revision `guide-rs-0.1-experimental-reference11`)
 
 Rerun unchanged after PR #9 merged. Only configuration 2 differs: one fit whose root split merged is now counted through the smallest-p-value fallback, giving frequencies 0.202, 0.192, 0.205, 0.180, 0.221 and GOF p = 0.323. All other numbers and every verdict are identical to the first run.
+
+### Rerun, 2026-10-25 (multiclass categorical search)
+
+Rerun unchanged after multiclass search above 11 levels was implemented. Configuration 3 is now evaluable: frequencies 0.187, 0.190, 0.206, 0.211, 0.206, GOF p = 0.679, no fit counted as "none". It passes the primary and secondary criteria, so **all seven configurations now pass**. Every other number is identical to the previous run. The study now runs in CI.
+

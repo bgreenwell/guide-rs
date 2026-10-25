@@ -8,6 +8,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Multiclass trees split categorical predictors with more than 11 levels instead of rejecting them
 - Missing-value flag variables (GUIDE M variables) for constant node models
 - `exposures_from_csv` reads prediction exposures with line-numbered errors
 - Per-subcommand `--help` output

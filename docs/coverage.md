@@ -4,7 +4,7 @@ Updated **2026-10-24**, through algorithm revision **`guide-rs-0.1-experimental-
 
 **guide-rs is a working subset of GUIDE, not a full replacement.** Its strongest native validation is for constant classification/regression, multiple-linear squared-error trees, and pruning. Other implemented losses and ensembles have narrower independent checks. No complete subsystem is certified equivalent to every GUIDE option.
 
-The primary oracle is the pinned GUIDE **46.3** build of July 11, 2026; **46.2** is a secondary regression reference. Documentation comes from the **46.1** manual and history through 46.2. The fixed acceptance corpus contains **544 native captures across 272 distinct cases**, plus separately recorded diagnostics. See [reference provenance](reference-upstream.md) and [validation results](validation.md).
+The primary oracle is the pinned GUIDE **46.3** build of July 11, 2026; **46.2** is a secondary regression reference. Documentation comes from the **46.1** manual and history through 46.2. The fixed acceptance corpus contains **556 native captures across 278 distinct cases**, plus separately recorded diagnostics. See [reference provenance](reference-upstream.md) and [validation results](validation.md).
 
 A checked box below means the stated capability exists with tests. It does **not** certify full native parity. Unchecked boxes identify remaining work, including validation of existing implementations.
 
@@ -31,7 +31,7 @@ A checked box below means the stated capability exists with tests. It does **not
 | GUIDE family / manual chapters | guide-rs status | Principal remaining gap |
 |---|---|---|
 | Data, operation, missing flags (3, 5) | Modern CSV/JSON interfaces, missing handling and constant-node missing-value flags | Flags with linear node models (M-to-B conversion) and periodic parents |
-| Classification (4) | Constant-node trees, priors/costs, interactions and optional projected splits | Kernel, nearest-neighbor, LDA/QDA **node models**, full discriminant-coordinate options, high-cardinality multiclass search |
+| Classification (4) | Constant-node trees, priors/costs, interactions, optional projected splits and high-cardinality multiclass search | Kernel, nearest-neighbor, LDA/QDA **node models** and full discriminant-coordinate options |
 | Least squares (6) | Constant/multiple-linear core has the strongest differential evidence; polynomial and stepwise subsets exist | Broader selection/default combinations, native polynomial rules, ANCOVA/all-subsets and population mean estimation |
 | Quantiles (7) | Constant/linear/polynomial single quantiles; dual constant quantiles | Nonconstant simultaneous quantiles and native growth/model-selection conventions |
 | Periodic predictors (8) | Circular split search and modulo prediction | Association rotation invariance and native routing/default validation |
@@ -52,7 +52,7 @@ These are the next priorities before expanding into the missing specialized fami
 
 - [ ] Establish native tie-breaking among exactly tied multi-predictor scores. Zero-gain splitting (`min_gain = 0`) and same-class leaf merging are resolved; the singleton zero-score rule is resolved. Native tie order is not column order and is recorded as a known difference.
 - [ ] Explain the classification-with-priors difference: on a depth-2 design with priors 0.3/0.7, native keeps three leaves where Rust keeps two.
-- [ ] Validate high-cardinality categorical linear and multiclass searches, near-tied partitions, broader missing patterns and projected/periodic split defaults.
+- [ ] Validate high-cardinality categorical linear searches, near-tied partitions, broader missing patterns and projected/periodic split defaults. Multiclass categorical search above 11 levels is implemented and validated; when both sides have the same number of levels its orientation follows native eigenvector signs, which are not reproduced.
 - [ ] Finish importance calibration/normalization, zero-null fallback conventions, 50% thresholds and missing-flag aggregation.
 - [ ] Missing-value flags (M variables) with linear/polynomial/stepwise node models via the documented M-to-B conversion, and on periodic parents. Constant-node flags for numeric and categorical parents are implemented and validated ([flag validation](missing-flag-validation.md)).
 - [ ] Validate GUIDE's polynomial degree selection, missing handling and model-specific fallback rules.
@@ -62,7 +62,7 @@ These are the next priorities before expanding into the missing specialized fami
 - [ ] Explain the additional categorical CV-table discrepancy while preserving independently verified CV. Its output, direct native refits and independent values are already frozen and tested.
 - [ ] Validate ensemble-specific defaults, fitting policies and random missing routes. CV pruning on bootstrap samples is now rejected; out-of-bag pruning remains unimplemented.
 - [ ] Audit 45.x–46.3 defaults and option combinations, including multiple-linear depth, expanded classification settings, priors/costs and weight conventions.
-- [ ] Expand fixed-seed smoke checks into prespecified acceptance studies. Root selection bias and weak-signal power now have a [prespecified study](selection-bias-study.md); its multiclass configuration awaits high-cardinality multiclass search. Interaction power and importance familywise calibration remain.
+- [ ] Expand fixed-seed smoke checks into prespecified acceptance studies. Root selection bias and weak-signal power now have a [prespecified study](selection-bias-study.md), which passes every criterion and runs in CI. Interaction power and importance familywise calibration remain.
 
 ## Remaining checklist: open audit findings
 
