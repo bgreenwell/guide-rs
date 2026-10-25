@@ -37,7 +37,7 @@ A checked box below means the stated capability exists with tests. It does **not
 | Quantiles (7) | Constant/linear/polynomial single quantiles; dual constant quantiles | Nonconstant simultaneous quantiles and native growth/model-selection conventions |
 | Periodic predictors (8) | Circular split search and modulo prediction | Association rotation invariance and native routing/default validation |
 | Poisson, logistic (9, 15) | Basic GLM fitting and prediction | Native residual grouping, growth, inference and specialized options |
-| Censored responses (10) | Missing; deferred until a Python wrapper exists | Survival data, proportional hazards and restricted mean event time |
+| Censored responses (10) | Missing; parked pending native Poisson split points | Survival data, proportional hazards and restricted mean event time |
 | Treatments (11–12) | Missing | Randomized/observational subgroup methods, adjustment and inference |
 | Multiresponse, longitudinal (13–14) | Missing | Joint responses, repeated measures, time-varying models and smoothing |
 | Importance (16) | Scoped constant classification/SSE scoring | Exact calibration/normalization, 50% thresholds, flag aggregation and specialized responses |
@@ -57,7 +57,7 @@ These are the next priorities before expanding into the missing specialized fami
 - [ ] Finish importance calibration/normalization, zero-null fallback conventions, 50% thresholds and missing-flag aggregation.
 - [ ] Missing-value flags (M variables) with linear/polynomial/stepwise node models via the documented M-to-B conversion, and on periodic parents. Constant-node flags for numeric and categorical parents are implemented and validated ([flag validation](missing-flag-validation.md)).
 - [ ] Validate GUIDE's polynomial degree selection, missing handling and model-specific fallback rules.
-- [ ] Validate native quantile/Poisson/logistic split selection, residual grouping, model selection and fitting-policy combinations.
+- [ ] Validate native quantile/Poisson/logistic split selection, residual grouping, model selection and fitting-policy combinations. Native Poisson split points are not always deviance-optimal (see [survival notes](survival-notes.md)).
 - [ ] Validate periodic association rotation invariance and missing/unknown routing.
 - [ ] Validate random multifold CV, native test-sample pruning, broader model-based pruning and prediction-limit combinations.
 - [ ] Explain the additional categorical CV-table discrepancy while preserving independently verified CV. Its output, direct native refits and independent values are already frozen and tested.
@@ -81,7 +81,7 @@ Carried over from the 2026-10-23 repository review; fixed items (log-scale selec
 - [ ] Classification LDA/QDA node models and full discriminant-coordinate split options. The existing bivariate split is not an LDA/QDA node model.
 - [ ] Nonconstant simultaneous lower/upper quantile models.
 - [ ] Poisson/logistic statistical inference and specialized estimated-probability/treatment behavior.
-- [ ] Survival: event/time validation, proportional hazards, restricted mean event time and survival predictions. Deferred by user decision (2026-10-25) until a Python wrapper is in place; native probe findings so far are in [survival notes](survival-notes.md).
+- [ ] Survival: event/time validation, proportional hazards, restricted mean event time and survival predictions. Parked again by user decision (2026-10-25): PH splits follow native Poisson split points, which are not always deviance-optimal and whose rule is not yet known; probe findings are in [survival notes](survival-notes.md).
 - [ ] Randomized treatment subgroup methods and inference.
 - [ ] Observational treatment subgroup methods, prognostic adjustment and inference.
 - [ ] Joint multiresponse data, fitting and residual grouping.
