@@ -80,6 +80,8 @@ pub(crate) fn prune(
             Ok(t)
         }
         Pruning::FixedLeaves { max_leaves } => {
+            // The path ends at the root-only tree and max_leaves is validated
+            // positive, so some subtree always qualifies.
             let (alpha, t) = path
                 .iter()
                 .find(|(_, t)| t.root.leaves() <= max_leaves)
@@ -219,6 +221,7 @@ pub(crate) fn prune(
                     standard_error: se,
                 });
             }
+            // The pruning path always contains at least the full tree.
             let best = (0..path.len())
                 .min_by(|&a, &b| {
                     report.pruning_scores[a]
@@ -228,6 +231,8 @@ pub(crate) fn prune(
                 .unwrap();
             let cutoff = report.pruning_scores[best].mean_loss
                 + standard_errors * report.pruning_scores[best].standard_error;
+            // `best` itself satisfies the cutoff because standard errors are
+            // nonnegative, so the search always succeeds.
             let chosen = (0..path.len())
                 .rev()
                 .find(|&j| stats::less_or_close(report.pruning_scores[j].mean_loss, cutoff))
@@ -245,6 +250,8 @@ fn external_losses(
 ) -> Result<Vec<(f64, f64)>> {
     // Priors affect the fitted classifier, not the held-out population. Native
     // GUIDE averages the observed misclassification costs over validation rows.
+    // Callers pass only active rows, whose responses are observed and typed
+    // by the validated task, so the response accessors below cannot fail.
     ids.iter()
         .map(|&i| {
             let leaf = &tree.root.leaf(&data.rows[i]).model;

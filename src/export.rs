@@ -2,6 +2,7 @@ use crate::*;
 use std::fmt::Write;
 
 fn quote(s: &str) -> String {
+    // Serializing a plain &str to JSON cannot fail.
     serde_json::to_string(s).expect("string serialization")
 }
 impl FittedModel {

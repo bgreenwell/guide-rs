@@ -419,6 +419,7 @@ impl<'a> Context<'a> {
             for value in &mut p {
                 *value /= total;
             }
+            // Classification contexts always hold at least one class.
             let predicted_class = (0..p.len())
                 .min_by(|&a, &b| {
                     let cost = |j| {
@@ -579,6 +580,7 @@ impl<'a> Context<'a> {
             )
         };
         let mut selected = vec![];
+        // With no selected terms `fit` returns the constant model, never None.
         let mut current = fit(&selected).unwrap();
         let mut visited = std::collections::BTreeSet::new();
         for _ in 0..(4 * groups.len() + 1) {
