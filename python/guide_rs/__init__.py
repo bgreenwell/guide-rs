@@ -8,6 +8,7 @@ from ._estimators import (
     GuideRegressor,
     importance,
 )
+from ._plot import plot_tree
 
 __all__ = [
     "ALGORITHM_VERSION",
@@ -16,4 +17,5 @@ __all__ = [
     "GuideForestRegressor",
     "GuideRegressor",
     "importance",
+    "plot_tree",
 ]
