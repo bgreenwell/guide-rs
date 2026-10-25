@@ -6,6 +6,7 @@ use crate::{
 };
 use rand::{SeedableRng, seq::SliceRandom};
 use rand_chacha::ChaCha8Rng;
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -132,24 +133,45 @@ pub fn importance(
     let raw = raw_scores(data, &opt, &ids, importance.seed)?;
     let mut null_means = vec![0.0; data.schema.len()];
     let mut null_maxima = vec![];
-    let mut shuffled = data.clone();
+    // Permutations are drawn in order, a batch at a time, and each batch is
+    // scored in parallel; null means accumulate in permutation order, so the
+    // result does not depend on the number of threads.
     let mut rng = ChaCha8Rng::seed_from_u64(importance.seed);
-    for b in 0..importance.permutations {
-        let mut order = ids.clone();
-        order.shuffle(&mut rng);
-        for (&i, &j) in ids.iter().zip(&order) {
-            shuffled.targets[i] = data.targets[j].clone();
+    let batch = 4 * rayon::current_num_threads();
+    let mut b = 0;
+    while b < importance.permutations {
+        let orders: Vec<(usize, Vec<usize>)> = (b..importance.permutations.min(b + batch))
+            .map(|k| {
+                let mut order = ids.clone();
+                order.shuffle(&mut rng);
+                (k, order)
+            })
+            .collect();
+        let batch_scores: Vec<Result<Vec<f64>>> = orders
+            .par_iter()
+            .map_init(
+                || data.clone(),
+                |shuffled, (k, order)| {
+                    for (&i, &j) in ids.iter().zip(order) {
+                        shuffled.targets[i] = data.targets[j].clone();
+                    }
+                    raw_scores(
+                        shuffled,
+                        &opt,
+                        &ids,
+                        importance.seed.wrapping_add(*k as u64 + 1),
+                    )
+                },
+            )
+            .collect();
+        for scores in batch_scores {
+            let scores = scores?;
+            for (m, s) in null_means.iter_mut().zip(&scores) {
+                *m += s / importance.permutations as f64;
+            }
+            null_maxima.push(scores.iter().copied().fold(0.0, f64::max));
         }
-        let scores = raw_scores(
-            &shuffled,
-            &opt,
-            &ids,
-            importance.seed.wrapping_add(b as u64 + 1),
-        )?;
-        for (m, s) in null_means.iter_mut().zip(&scores) {
-            *m += s / importance.permutations as f64;
-        }
-        null_maxima.push(scores.iter().copied().fold(0.0, f64::max));
+        b += orders.len();
     }
     let mut scores: Vec<ImportanceScore> = data
         .schema
