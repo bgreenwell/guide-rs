@@ -366,7 +366,7 @@ fn selection_sign_tables_and_fixed_partition_fits_agree_with_r() {
         let scores = numbers("oracle-scores.txt");
         let diagnostics = &model.trees[0].root.diagnostics;
         assert_eq!(scores.len(), 3 * diagnostics.len());
-        for (diagnostic, score) in diagnostics.iter().zip(scores.chunks_exact(3)) {
+        for (diagnostic, score) in diagnostics.iter().zip(scores.as_chunks::<3>().0) {
             near(
                 &[
                     diagnostic.chi_square,
