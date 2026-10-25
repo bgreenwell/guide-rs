@@ -54,14 +54,22 @@ impl Term {
             };
         }
         if let Some(cat) = &self.category {
-            return if row[self.feature].label().as_ref() == Some(cat) {
+            return if row[self.feature]
+                .label_str()
+                .is_some_and(|label| label == cat.as_str())
+            {
                 1.0
             } else {
                 0.0
             };
         }
-        ((row[self.feature].number().unwrap_or(self.impute) - self.center) / self.scale)
-            .powi(self.power as i32)
+        let z = (row[self.feature].number().unwrap_or(self.impute) - self.center) / self.scale;
+        // powi(1) returns its argument exactly; skip the library call.
+        if self.power == 1 {
+            z
+        } else {
+            z.powi(self.power as i32)
+        }
     }
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -330,6 +330,37 @@ pub fn f_survival(f: f64, numerator_df: usize, denominator_df: usize) -> f64 {
 
 /// Weighted least squares using reorthogonalized, column-pivoted QR.
 /// Rank-deficient columns receive zero coefficients instead of solving normal equations.
+/// `out[c] = sum over i of weight(i, x) * x` with `x = columns[c][i]`, for
+/// columns of equal length. Each sum accumulates in index order from -0.0,
+/// exactly as `Iterator::sum`; four columns at a time only overlaps their
+/// floating-point latency.
+fn grouped_dots(columns: &[Vec<f64>], out: &mut [f64], weight: impl Fn(usize, f64) -> f64) {
+    fn group<const L: usize>(
+        columns: [&[f64]; L],
+        out: &mut [f64],
+        weight: &impl Fn(usize, f64) -> f64,
+    ) {
+        let n = columns[0].len();
+        let columns = columns.map(|c| &c[..n]);
+        let mut sums = [-0.0; L];
+        for i in 0..n {
+            for (sum, column) in sums.iter_mut().zip(&columns) {
+                let x = column[i];
+                *sum += weight(i, x) * x;
+            }
+        }
+        out.copy_from_slice(&sums);
+    }
+    for (columns, out) in columns.chunks(4).zip(out.chunks_mut(4)) {
+        match columns {
+            [a] => group([a.as_slice()], out, &weight),
+            [a, b] => group([a.as_slice(), b], out, &weight),
+            [a, b, c] => group([a.as_slice(), b, c], out, &weight),
+            [a, b, c, d] => group([a.as_slice(), b, c, d], out, &weight),
+            _ => unreachable!("chunks of at most four"),
+        }
+    }
+}
 pub fn least_squares(x: &[Vec<f64>], y: &[f64], weights: &[f64]) -> Option<Vec<f64>> {
     least_squares_ranked(x, y, weights).map(|(beta, _)| beta)
 }
@@ -365,17 +396,23 @@ pub(crate) fn least_squares_ranked(
     if !scale.is_finite() || scale == 0.0 {
         return None;
     }
+    let mut norms = vec![0.0; p];
+    let mut dots = vec![0.0; p];
     for k in 0..p.min(n) {
+        grouped_dots(&a[k..], &mut norms[k..], |_, x| x);
+        for v in &mut norms[k..] {
+            *v = v.sqrt();
+        }
         // k < p, so the candidate pivot range is nonempty.
         let pivot = (k..p)
-            .max_by(|&i, &j| norm(&a[i]).total_cmp(&norm(&a[j])))
+            .max_by(|&i, &j| norms[i].total_cmp(&norms[j]))
             .unwrap();
+        let nk = norms[pivot];
         a.swap(k, pivot);
         order.swap(k, pivot);
         for row in r.iter_mut().take(k) {
             row.swap(k, pivot);
         }
-        let nk = norm(&a[k]);
         if nk < scale * 1e-10 {
             break;
         }
@@ -384,12 +421,17 @@ pub(crate) fn least_squares_ranked(
             *v /= nk;
         }
         qty[k] = a[k].iter().zip(&b).map(|(u, v)| u * v).sum();
-        for j in k + 1..p {
-            for _ in 0..2 {
-                let dot: f64 = a[k].iter().zip(&a[j]).map(|(u, v)| u * v).sum();
-                r[k][j] += dot;
-                let (before, after) = a.split_at_mut(j);
-                for (target, basis) in after[0].iter_mut().zip(&before[k]) {
+        let (before, after) = a.split_at_mut(k + 1);
+        let basis = &before[k];
+        let dots = &mut dots[..after.len()];
+        // Two Gram-Schmidt passes against the new basis column. Each column's
+        // steps are independent of the others', so all columns take each
+        // pass together.
+        for _ in 0..2 {
+            grouped_dots(after, dots, |i, _| basis[i]);
+            for ((column, &dot), r) in after.iter_mut().zip(&*dots).zip(&mut r[k][k + 1..]) {
+                *r += dot;
+                for (target, basis) in column.iter_mut().zip(basis) {
                     *target -= dot * basis;
                 }
             }
@@ -465,4 +507,93 @@ pub fn symmetric_eigen(matrix: &[Vec<f64>]) -> (Vec<f64>, Vec<Vec<f64>>) {
             .map(|&k| (0..n).map(|i| v[i][k]).collect())
             .collect(),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The column-at-a-time pivoted Gram-Schmidt that `least_squares_ranked`
+    /// must reproduce bit for bit.
+    fn reference(x: &[Vec<f64>], y: &[f64], weights: &[f64]) -> (Vec<f64>, usize) {
+        let (n, p) = (x.len(), x[0].len());
+        let mut a: Vec<Vec<f64>> = (0..p)
+            .map(|j| (0..n).map(|i| x[i][j] * weights[i].sqrt()).collect())
+            .collect();
+        let b: Vec<f64> = (0..n).map(|i| y[i] * weights[i].sqrt()).collect();
+        let mut order: Vec<usize> = (0..p).collect();
+        let mut r = vec![vec![0.0; p]; p];
+        let mut qty = vec![0.0; p];
+        let mut rank = 0;
+        let norm = |v: &Vec<f64>| v.iter().map(|z| z * z).sum::<f64>().sqrt();
+        let scale = a.iter().map(&norm).fold(0.0, f64::max);
+        for k in 0..p.min(n) {
+            let pivot = (k..p)
+                .max_by(|&i, &j| norm(&a[i]).total_cmp(&norm(&a[j])))
+                .unwrap();
+            a.swap(k, pivot);
+            order.swap(k, pivot);
+            for row in r.iter_mut().take(k) {
+                row.swap(k, pivot);
+            }
+            let nk = norm(&a[k]);
+            if nk < scale * 1e-10 {
+                break;
+            }
+            r[k][k] = nk;
+            for v in &mut a[k] {
+                *v /= nk;
+            }
+            qty[k] = a[k].iter().zip(&b).map(|(u, v)| u * v).sum();
+            for j in k + 1..p {
+                for _ in 0..2 {
+                    let dot: f64 = a[k].iter().zip(&a[j]).map(|(u, v)| u * v).sum();
+                    r[k][j] += dot;
+                    let (before, after) = a.split_at_mut(j);
+                    for (target, basis) in after[0].iter_mut().zip(&before[k]) {
+                        *target -= dot * basis;
+                    }
+                }
+            }
+            rank += 1;
+        }
+        let mut beta = vec![0.0; p];
+        for k in (0..rank).rev() {
+            beta[k] = (qty[k] - (k + 1..rank).map(|j| r[k][j] * beta[j]).sum::<f64>()) / r[k][k];
+        }
+        let mut answer = vec![0.0; p];
+        for k in 0..p {
+            answer[order[k]] = beta[k];
+        }
+        (answer, rank)
+    }
+
+    #[test]
+    fn grouped_least_squares_matches_column_at_a_time() {
+        let value = |i: usize, j: usize| ((i * 7919 + j * 104_729) % 1009) as f64 / 97.0 - 5.0;
+        for p in 1..=9 {
+            let x: Vec<Vec<f64>> = (0..60)
+                .map(|i| {
+                    (0..p)
+                        // Column 3 repeats column 1, so pivoting and rank deficiency run.
+                        .map(|j| {
+                            if j == 3 {
+                                value(i, 1) * 2.0
+                            } else {
+                                value(i, j)
+                            }
+                        })
+                        .collect()
+                })
+                .collect();
+            let y: Vec<f64> = (0..60).map(|i| value(i, 11) + x[i][0]).collect();
+            let w: Vec<f64> = (0..60).map(|i| 0.5 + (i % 4) as f64).collect();
+            let (beta, rank) = least_squares_ranked(&x, &y, &w).unwrap();
+            let (expected, expected_rank) = reference(&x, &y, &w);
+            assert_eq!(rank, expected_rank);
+            assert_eq!(rank, if p > 3 { p - 1 } else { p });
+            let bits = |v: &[f64]| v.iter().map(|b| b.to_bits()).collect::<Vec<_>>();
+            assert_eq!(bits(&beta), bits(&expected), "p = {p}");
+        }
+    }
 }
