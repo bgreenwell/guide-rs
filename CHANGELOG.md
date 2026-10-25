@@ -9,6 +9,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 - Python package with scikit-learn tree and forest estimators, feature roles and importance scores
+- `guide_rs.plot_tree` draws fitted trees with matplotlib
+- Example notebooks comparing GUIDE with scikit-learn decision trees on its bundled datasets
 - Multiclass trees split categorical predictors with more than 11 levels instead of rejecting them
 - Missing-value flag variables (GUIDE M variables) for constant node models
 - `exposures_from_csv` reads prediction exposures with line-numbered errors

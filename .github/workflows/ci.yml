@@ -40,6 +40,8 @@ jobs:
       - run: uv sync --locked
       - run: uv run --locked ruff check .
       - run: uv run --locked pytest
+      - if: runner.os == 'Linux'
+        run: uv run --locked --group examples python examples/execute.py
   independent-r:
     runs-on: ubuntu-latest
     steps:
