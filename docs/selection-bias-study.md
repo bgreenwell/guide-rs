@@ -71,3 +71,7 @@ No fit was counted as "none". Every evaluable null configuration meets the prima
 Configuration 3 fails as not evaluable. guide-rs rejects multiclass classification with a categorical predictor of more than 11 levels ("GUIDE's LDA/grouped-category search is not implemented"), a capability already listed as missing in [the coverage checklist](coverage.md). The study therefore says nothing yet about multiclass selection bias with high-cardinality predictors. It should be rerun unchanged once that search exists.
 
 This run predates the zero-gain and same-class merging change (`reference11`, PR #9). That change can remove a root split, in which case the counting rule falls back to the smallest p-value, so the study is rerun unchanged after it merges.
+
+### Rerun, 2026-10-25 (algorithm revision `guide-rs-0.1-experimental-reference11`)
+
+Rerun unchanged after PR #9 merged. Only configuration 2 differs: one fit whose root split merged is now counted through the smallest-p-value fallback, giving frequencies 0.202, 0.192, 0.205, 0.180, 0.221 and GOF p = 0.323. All other numbers and every verdict are identical to the first run.
