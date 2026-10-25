@@ -80,7 +80,7 @@ Carried over from the 2026-10-23 repository review; fixed items (log-scale selec
 - [ ] Classification LDA/QDA node models and full discriminant-coordinate split options. The existing bivariate split is not an LDA/QDA node model.
 - [ ] Nonconstant simultaneous lower/upper quantile models.
 - [ ] Poisson/logistic statistical inference and specialized estimated-probability/treatment behavior.
-- [ ] Survival: event/time validation, proportional hazards, restricted mean event time and survival predictions.
+- [ ] Survival: event/time validation, proportional hazards, restricted mean event time and survival predictions. Native probe findings so far are in [survival notes](survival-notes.md).
 - [ ] Randomized treatment subgroup methods and inference.
 - [ ] Observational treatment subgroup methods, prognostic adjustment and inference.
 - [ ] Joint multiresponse data, fitting and residual grouping.
