@@ -1,0 +1,6 @@
+         1 c x x        2   "C" "s"
+         1 c x_ x        1   "s"
+         2 t NONE NONE   t
+         1 c x x        2   "r" "s"
+         1 c x_ x        1   "C"
+         3 t x x   t
