@@ -403,41 +403,11 @@ impl<'a> Context<'a> {
     }
     pub fn fit_leaf(&self, ids: &[usize]) -> LeafModel {
         if self.classifying() {
-            let mut p = vec![0.0; self.classes.len()];
+            let mut counts = vec![0.0; self.classes.len()];
             for &i in ids {
-                p[self.y[i] as usize] += 1.0;
+                counts[self.y[i] as usize] += 1.0;
             }
-            for ((p, prior), frequency) in p
-                .iter_mut()
-                .zip(&self.class_priors)
-                .zip(&self.class_frequencies)
-            {
-                *p = if *frequency > 0.0 {
-                    *prior * (*p / frequency)
-                } else {
-                    0.0
-                };
-            }
-            let total: f64 = p.iter().sum();
-            for value in &mut p {
-                *value /= total;
-            }
-            // Classification contexts always hold at least one class.
-            let predicted_class = (0..p.len())
-                .min_by(|&a, &b| {
-                    let cost = |j| {
-                        p.iter()
-                            .enumerate()
-                            .map(|(i, v)| v * self.costs[i][j])
-                            .sum::<f64>()
-                    };
-                    cost(a).total_cmp(&cost(b)).then(a.cmp(&b))
-                })
-                .unwrap();
-            return LeafModel::Classification {
-                probabilities: p,
-                predicted_class,
-            };
+            return self.classification_leaf(counts);
         }
         if let Loss::DualQuantile { lower, upper } = self.loss {
             let values: Vec<(f64, f64)> =
@@ -510,6 +480,44 @@ impl<'a> Context<'a> {
                 }
                 best
             }
+        }
+    }
+    /// The classification leaf for the given (unweighted) class counts.
+    pub fn classification_leaf(&self, mut p: Vec<f64>) -> LeafModel {
+        self.class_probabilities(&mut p);
+        // Classification contexts always hold at least one class.
+        let predicted_class = (0..p.len())
+            .min_by(|&a, &b| {
+                let cost = |j| {
+                    p.iter()
+                        .enumerate()
+                        .map(|(i, v)| v * self.costs[i][j])
+                        .sum::<f64>()
+                };
+                cost(a).total_cmp(&cost(b)).then(a.cmp(&b))
+            })
+            .unwrap();
+        LeafModel::Classification {
+            probabilities: p,
+            predicted_class,
+        }
+    }
+    /// Turns unweighted class counts into prior-adjusted probabilities.
+    pub fn class_probabilities(&self, p: &mut [f64]) {
+        for ((p, prior), frequency) in p
+            .iter_mut()
+            .zip(&self.class_priors)
+            .zip(&self.class_frequencies)
+        {
+            *p = if *frequency > 0.0 {
+                *prior * (*p / frequency)
+            } else {
+                0.0
+            };
+        }
+        let total: f64 = p.iter().sum();
+        for value in p {
+            *value /= total;
         }
     }
     fn stepwise(
@@ -916,23 +924,28 @@ impl<'a> Context<'a> {
     }
     pub fn impurity(&self, model: &LeafModel, ids: &[usize]) -> f64 {
         if let LeafModel::Classification { probabilities, .. } = model {
-            // GUIDE weights child Gini values by observation counts, not
-            // prior-adjusted probability mass (Loh 2009, equation 2.2).
-            // Unequal costs alter the splitting priors by class cost sums;
-            // reported posteriors and predicted classes retain the original priors.
-            let p: Vec<f64> = probabilities
-                .iter()
-                .zip(&self.split_cost_weights)
-                .map(|(p, cost)| p * cost)
-                .collect();
-            let total = p.iter().sum::<f64>();
-            if total <= 0.0 {
-                return 0.0;
-            }
-            ids.len() as f64 * (1.0 - p.iter().map(|v| (v / total).powi(2)).sum::<f64>()).max(0.0)
+            self.gini(probabilities, ids.len())
         } else {
             self.risk(model, ids)
         }
+    }
+    /// The impurity of a classification leaf with `n` rows.
+    pub fn gini(&self, probabilities: &[f64], n: usize) -> f64 {
+        // GUIDE weights child Gini values by observation counts, not
+        // prior-adjusted probability mass (Loh 2009, equation 2.2).
+        // Unequal costs alter the splitting priors by class cost sums;
+        // reported posteriors and predicted classes retain the original priors.
+        let p = || {
+            probabilities
+                .iter()
+                .zip(&self.split_cost_weights)
+                .map(|(p, cost)| p * cost)
+        };
+        let total = p().sum::<f64>();
+        if total <= 0.0 {
+            return 0.0;
+        }
+        n as f64 * (1.0 - p().map(|v| (v / total).powi(2)).sum::<f64>()).max(0.0)
     }
 
     /// Apply GUIDE's zero-posterior correction after growth and pruning.

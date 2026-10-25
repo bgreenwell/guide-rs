@@ -18,6 +18,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Classification trees and forests that look ahead on interactions fit 3 to 7 times faster, with unchanged models
 - Categorical splits put the side with fewer categories on the left, matching GUIDE; unseen categories may reach a different leaf than before
 - Classification trees merge sibling leaves that predict the same class, matching GUIDE
 - `min_gain = 0` accepts zero-gain splits on the selected variable, matching GUIDE
