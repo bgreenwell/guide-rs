@@ -73,6 +73,28 @@ def cases():
     add("class-costs", True, numeric, [[i] for i in range(80)], target,
         costs=[[0.0, 1.0], [4.0, 0.0]], depth=1)
     add("class-constant-response", True, numeric, [[i] for i in range(40)], ["a"] * 40)
+    # Zero-gain splits: every cut leaves both child means at 5, yet the
+    # residual signs still associate with x, so GUIDE splits anyway.
+    pattern = [(0, [0, 10]), (1, [5, 5]), (2, [5, 5]), (3, [0, 10])]
+    zero_x = [x for x, pair in pattern for _ in range(3) for _ in pair]
+    zero_y = [t for _, pair in pattern for _ in range(3) for t in pair]
+    add("ls-zero-gain-numeric", False, numeric, [[x] for x in zero_x], zero_y, depth=1)
+    add("ls-zero-gain-categorical", False, categorical, [["abcd"[x]] for x in zero_x], zero_y, depth=1)
+    # Same-class sibling leaves merge bottom-up, regardless of association
+    # strength; a split survives only if some leaf below changes the class.
+    shares = [39, 21, 21, 39]
+    add("class-same-class-stump", True, numeric, [[x] for x in range(4) for _ in range(40)],
+        ["a" if k < shares[x] else "b" for x in range(4) for k in range(40)], depth=1)
+    pair = [("A", "numeric"), ("B", "numeric")]
+    cells = [(0, 0), (0, 1), (1, 0), (1, 1)]
+    def merge_case(name, last, **kwargs):
+        share = dict(zip(cells, [40, 40, 38, last]))
+        add(name, True, pair, [[a, b] for a, b in cells for _ in range(40)],
+            ["a" if k < share[a, b] else "b" for a, b in cells for k in range(40)],
+            depth=2, **kwargs)
+    merge_case("class-same-class-kept", 12)
+    merge_case("class-same-class-cascade", 24)
+    merge_case("class-same-class-costs", 24, costs=[[0.0, 1.0], [3.0, 0.0]])
     return result
 
 

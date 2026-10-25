@@ -4,7 +4,7 @@ Updated **2026-10-24**, through algorithm revision **`guide-rs-0.1-experimental-
 
 **guide-rs is a working subset of GUIDE, not a full replacement.** Its strongest native validation is for constant classification/regression, multiple-linear squared-error trees, and pruning. Other implemented losses and ensembles have narrower independent checks. No complete subsystem is certified equivalent to every GUIDE option.
 
-The primary oracle is the pinned GUIDE **46.3** build of July 11, 2026; **46.2** is a secondary regression reference. Documentation comes from the **46.1** manual and history through 46.2. The fixed acceptance corpus contains **476 native captures across 238 distinct cases**, plus separately recorded diagnostics. See [reference provenance](reference-upstream.md) and [validation results](validation.md).
+The primary oracle is the pinned GUIDE **46.3** build of July 11, 2026; **46.2** is a secondary regression reference. Documentation comes from the **46.1** manual and history through 46.2. The fixed acceptance corpus contains **488 native captures across 244 distinct cases**, plus separately recorded diagnostics. See [reference provenance](reference-upstream.md) and [validation results](validation.md).
 
 A checked box below means the stated capability exists with tests. It does **not** certify full native parity. Unchecked boxes identify remaining work, including validation of existing implementations.
 
