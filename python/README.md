@@ -12,7 +12,7 @@ The bindings are experimental; see the core's [coverage and remaining work](http
 - Constant, linear and polynomial leaves; squared-error, quantile and Poisson losses; class priors and costs
 - Per-feature roles (`feature_roles`): split only, fit only, both or excluded
 - Bagged ensembles and forests with out-of-bag loss, and bias-adjusted GUIDE importance scores (`guide_rs.importance`)
-- Text, Graphviz DOT and JSON output, the JSON matching models saved by the guide-rs CLI
+- Tree drawings with matplotlib (`guide_rs.plot_tree`), plus text, Graphviz DOT and JSON output, the JSON matching models saved by the guide-rs CLI
 
 ## Installation
 
@@ -23,6 +23,8 @@ cd python
 uv sync
 ```
 
+`plot_tree` needs matplotlib (the `plot` extra).
+
 ## Quick start
 
 ```python
@@ -31,8 +33,10 @@ from guide_rs import GuideClassifier
 
 X, y = load_iris(return_X_y=True, as_frame=True)
 model = GuideClassifier().fit(X, y)
-print(model.to_text())
 print(model.predict_proba(X.head()))
+
+from guide_rs import plot_tree
+plot_tree(model)
 ```
 
 DataFrame columns with object, string, categorical or boolean dtypes are treated as categorical; for arrays, name them with `categorical_features`.
@@ -49,6 +53,7 @@ for score in report["scores"]:
 
 ## Documentation
 
+- Example notebooks comparing GUIDE with scikit-learn's CART trees on its bundled datasets: [classification](examples/classification.ipynb), [regression](examples/regression.ipynb), and [selection bias and importance](examples/selection_bias.ipynb)
 - Estimator parameters: `help(GuideRegressor)`, `help(GuideClassifier)`
 - [Usage and configuration of the core](https://github.com/bgreenwell/guide-rs/blob/main/docs/usage.md)
 
@@ -57,6 +62,7 @@ for score in report["scores"]:
 ```sh
 uv sync                                  # build the extension in editable mode
 uv run ruff check . && uv run pytest     # quality gate
+uv run --group examples python examples/execute.py   # re-run the notebooks
 ```
 
 Branch and commit conventions are in the repository's [AGENTS.md](https://github.com/bgreenwell/guide-rs/blob/main/AGENTS.md).
