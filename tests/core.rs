@@ -694,6 +694,24 @@ fn csv_quotes_multiline_and_schema_roundtrip() {
     assert!(parse_csv("a,b\n1\n", ',').is_err());
     assert!(parse_csv("a,a\n1,2", ',').is_err());
     assert!(parse_csv("a\n\"bad", ',').is_err());
+    assert_eq!(
+        parse_csv("a,b\n1,2\n\n3,4\n\n\n", ',').unwrap(),
+        vec![vec!["a", "b"], vec!["1", "2"], vec!["3", "4"]]
+    );
+    assert_eq!(parse_csv("a,b\r\n1,2\r\n\r\n", ',').unwrap().len(), 2);
+    let err = parse_csv("a,b\n1,2\n\n3\n", ',').unwrap_err();
+    assert!(err.0.contains("CSV line 4 has 1 fields"), "{err}");
+    let err = parse_csv("a,b\n\"x\ny\",1\n2\n", ',').unwrap_err();
+    assert!(err.0.contains("CSV line 4 has 1 fields"), "{err}");
+    let numeric: CsvOptions = serde_json::from_str(
+        r#"{"target":"y","features":[{"name":"x","feature_type":{"kind":"numeric"}}]}"#,
+    )
+    .unwrap();
+    let err = dataset_from_csv("x,y\n1,2\n\nabc,3\n", &numeric, &Task::default()).unwrap_err();
+    assert!(
+        err.0.contains("CSV line 4, column \"x\": expected number"),
+        "{err}"
+    );
     let cfg:CsvOptions=serde_json::from_str(r#"{"target":"target","features":[{"name":"name","feature_type":{"kind":"categorical"},"role":"split"}]}"#).unwrap();
     assert_eq!(
         dataset_from_csv(csv, &cfg, &Task::default())
