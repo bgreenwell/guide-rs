@@ -830,9 +830,10 @@ pub(crate) fn grow(
             .flat_map(|&j| candidates(ctx, ids, j))
             .collect()
     };
+    let (mut left, mut right) = (vec![], vec![]);
     for split in split_candidates {
         let j = split.feature();
-        let (left, right) = partition(ids, &split, ctx.data);
+        partition(ids, &split, ctx.data, &mut left, &mut right);
         if !admissible(ctx, &left, &right) {
             continue;
         }
@@ -861,7 +862,7 @@ pub(crate) fn grow(
                         && left.len().abs_diff(right.len()) < b.1.len().abs_diff(b.2.len()))
             })
         {
-            best = Some((split, left, right, score));
+            best = Some((split, left.clone(), right.clone(), score));
         }
     }
     // GUIDE splits on the selected variable even when the best admissible
@@ -920,8 +921,18 @@ fn best_child_score(ctx: &Context<'_>, ids: &[usize], model: &LeafModel, j: usiz
     if ids.len() < 2 * ctx.options.min_samples_leaf {
         return best;
     }
+    if ctx.classifying() {
+        let mut sweep = ClassSweep::new(ctx, ids, j);
+        for s in candidates(ctx, ids, j) {
+            if let Some(score) = sweep.score(&s) {
+                best = best.min(score);
+            }
+        }
+        return best;
+    }
+    let (mut l, mut r) = (vec![], vec![]);
     for s in candidates(ctx, ids, j) {
-        let (l, r) = partition(ids, &s, ctx.data);
+        partition(ids, &s, ctx.data, &mut l, &mut r);
         if admissible(ctx, &l, &r) {
             best =
                 best.min(ctx.impurity(&ctx.fit_leaf(&l), &l) + ctx.impurity(&ctx.fit_leaf(&r), &r));
@@ -935,10 +946,167 @@ fn admissible(ctx: &Context<'_>, l: &[usize], r: &[usize]) -> bool {
         && l.iter().any(|&i| ctx.weights[i] > 0.0)
         && r.iter().any(|&i| ctx.weights[i] > 0.0)
 }
-fn partition(ids: &[usize], split: &Split, data: &Dataset) -> (Vec<usize>, Vec<usize>) {
-    ids.iter()
-        .copied()
-        .partition(|&i| split.goes_left(&data.rows[i]))
+/// Splits `ids` into `left` and `right`, keeping their order.
+fn partition(
+    ids: &[usize],
+    split: &Split,
+    data: &Dataset,
+    left: &mut Vec<usize>,
+    right: &mut Vec<usize>,
+) {
+    left.clear();
+    right.clear();
+    for &i in ids {
+        if split.goes_left(&data.rows[i]) {
+            left.push(i);
+        } else {
+            right.push(i);
+        }
+    }
+}
+/// What a classification leaf and its admissibility depend on: unweighted
+/// class counts, the row count and the number of positively weighted rows.
+struct ClassCounts {
+    classes: Vec<f64>,
+    rows: usize,
+    weighted: usize,
+}
+impl ClassCounts {
+    fn new(ctx: &Context<'_>) -> Self {
+        Self {
+            classes: vec![0.0; ctx.classes.len()],
+            rows: 0,
+            weighted: 0,
+        }
+    }
+    fn clear(&mut self) {
+        self.classes.fill(0.0);
+        self.rows = 0;
+        self.weighted = 0;
+    }
+    fn add(&mut self, ctx: &Context<'_>, i: usize) {
+        self.classes[ctx.y[i] as usize] += 1.0;
+        self.rows += 1;
+        self.weighted += usize::from(ctx.weights[i] > 0.0);
+    }
+    fn set(&mut self, other: &Self) {
+        self.classes.copy_from_slice(&other.classes);
+        self.rows = other.rows;
+        self.weighted = other.weighted;
+    }
+    fn plus(&mut self, other: &Self) {
+        for (a, b) in self.classes.iter_mut().zip(&other.classes) {
+            *a += b;
+        }
+        self.rows += other.rows;
+        self.weighted += other.weighted;
+    }
+    /// Removes the counts of `other`, a subset of these rows.
+    fn minus(&mut self, other: &Self) {
+        for (a, b) in self.classes.iter_mut().zip(&other.classes) {
+            *a -= b;
+        }
+        self.rows -= other.rows;
+        self.weighted -= other.weighted;
+    }
+    fn admissible(&self, ctx: &Context<'_>) -> bool {
+        self.rows >= ctx.options.min_samples_leaf && self.weighted > 0
+    }
+    /// The leaf impurity, as `ctx.impurity` of the fitted classification leaf.
+    fn gini(&self, ctx: &Context<'_>, scratch: &mut Vec<f64>) -> f64 {
+        scratch.clone_from(&self.classes);
+        ctx.class_probabilities(scratch);
+        ctx.gini(scratch, self.rows)
+    }
+}
+/// Scores the candidate splits of one feature for the classification
+/// lookahead. Numeric cuts without missing codes sweep the rows sorted once;
+/// other splits count their partition directly. Counts are exact integers,
+/// so the scores equal those of leaves fitted to the partitioned rows.
+struct ClassSweep<'a> {
+    ctx: &'a Context<'a>,
+    ids: &'a [usize],
+    total: ClassCounts,
+    missing: ClassCounts,
+    sorted: Vec<(f64, usize)>,
+    next: usize,
+    below: ClassCounts,
+    threshold: f64,
+    left: ClassCounts,
+    right: ClassCounts,
+    scratch: Vec<f64>,
+}
+impl<'a> ClassSweep<'a> {
+    fn new(ctx: &'a Context<'a>, ids: &'a [usize], j: usize) -> Self {
+        let mut total = ClassCounts::new(ctx);
+        let mut missing = ClassCounts::new(ctx);
+        let mut sorted = vec![];
+        for &i in ids {
+            total.add(ctx, i);
+            match ctx.data.rows[i][j].number() {
+                // NaN never goes left of a numeric cut, like a value above it.
+                Some(x) if !x.is_nan() => sorted.push((x, i)),
+                Some(_) => {}
+                None => missing.add(ctx, i),
+            }
+        }
+        sorted.sort_by(|a, b| a.0.total_cmp(&b.0));
+        Self {
+            ctx,
+            ids,
+            below: ClassCounts::new(ctx),
+            left: ClassCounts::new(ctx),
+            right: ClassCounts::new(ctx),
+            total,
+            missing,
+            sorted,
+            next: 0,
+            threshold: f64::NEG_INFINITY,
+            scratch: vec![],
+        }
+    }
+    /// The summed child impurity of `split`, if both children are admissible.
+    fn score(&mut self, split: &Split) -> Option<f64> {
+        let ctx = self.ctx;
+        match split {
+            Split::Numeric {
+                threshold,
+                missing_left,
+                missing_codes: None,
+                ..
+            } => {
+                // Candidates come in increasing threshold order; restart otherwise.
+                if threshold.is_nan() || *threshold < self.threshold {
+                    self.below.clear();
+                    self.next = 0;
+                }
+                self.threshold = *threshold;
+                while let Some(&(x, i)) = self.sorted.get(self.next)
+                    && x <= *threshold
+                {
+                    self.below.add(ctx, i);
+                    self.next += 1;
+                }
+                self.left.set(&self.below);
+                if *missing_left {
+                    self.left.plus(&self.missing);
+                }
+            }
+            _ => {
+                self.left.clear();
+                for &i in self.ids {
+                    if split.goes_left(&ctx.data.rows[i]) {
+                        self.left.add(ctx, i);
+                    }
+                }
+            }
+        }
+        self.right.set(&self.total);
+        self.right.minus(&self.left);
+        (self.left.admissible(ctx) && self.right.admissible(ctx)).then(|| {
+            self.left.gini(ctx, &mut self.scratch) + self.right.gini(ctx, &mut self.scratch)
+        })
+    }
 }
 fn reduce<T: Clone>(v: Vec<T>, max: usize) -> Vec<T> {
     if max == 0 || v.len() <= max {
@@ -1400,4 +1568,76 @@ fn candidates(ctx: &Context<'_>, ids: &[usize], j: usize) -> Vec<Split> {
         }
     }
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn class_sweep_matches_partitioned_leaves() {
+        let feature = |name: &str, feature_type| FeatureSchema {
+            name: name.into(),
+            feature_type,
+            role: Role::Split,
+            flags: None,
+        };
+        let rows: Vec<Vec<Value>> = (0..60)
+            .map(|i| {
+                let x = match i % 13 {
+                    0 => Value::Missing,
+                    7 => Value::Number(f64::NAN),
+                    _ => Value::Number(((i * 7) % 11) as f64),
+                };
+                let c = if i % 9 == 4 {
+                    Value::Missing
+                } else {
+                    Value::Text(["a", "b", "c", "d"][(i * 5) % 4].into())
+                };
+                vec![x, c]
+            })
+            .collect();
+        let data = Dataset {
+            schema: vec![
+                feature("x", FeatureType::Numeric),
+                feature("c", FeatureType::Categorical),
+            ],
+            targets: (0..60)
+                .map(|i| Value::Text(["p", "q", "r"][(i * 3 + i / 7) % 3].into()))
+                .collect(),
+            weights: (0..60)
+                .map(|i| if i % 6 == 0 { 0.0 } else { 1.0 })
+                .collect(),
+            offsets: vec![],
+            rows,
+        };
+        let options = FitOptions {
+            task: Task::Classification,
+            ..Default::default()
+        };
+        let all: Vec<usize> = (0..60).collect();
+        let ctx = Context::new(&data, &options, &all, None).unwrap();
+        let (mut l, mut r, mut scored) = (vec![], vec![], 0);
+        for ids in [
+            all.clone(),
+            all.iter().copied().filter(|i| i % 4 != 1).collect(),
+        ] {
+            for j in 0..2 {
+                let mut splits = candidates(&ctx, &ids, j);
+                assert!(splits.len() > 3);
+                // Out-of-order thresholds restart the sweep.
+                splits.extend(candidates(&ctx, &ids, j).into_iter().rev());
+                let mut sweep = ClassSweep::new(&ctx, &ids, j);
+                for s in &splits {
+                    partition(&ids, s, &data, &mut l, &mut r);
+                    let expected = admissible(&ctx, &l, &r).then(|| {
+                        ctx.impurity(&ctx.fit_leaf(&l), &l) + ctx.impurity(&ctx.fit_leaf(&r), &r)
+                    });
+                    assert_eq!(sweep.score(s), expected);
+                    scored += usize::from(expected.is_some());
+                }
+            }
+        }
+        assert!(scored > 40);
+    }
 }
