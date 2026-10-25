@@ -20,7 +20,7 @@
 - `python3 -m unittest discover -s tools -p 'test_reference_*.py'`: verify capture tooling and fixture integrity.
 - `cargo test --locked --test interoperability -- --ignored`: run independent R checks; requires Rscript, quantreg, and rpart.
 - `cargo test --locked --release --test statistical -- --ignored`: run statistical smoke checks.
-- In `python/`: `uv sync` builds the extension in editable mode (rebuilt automatically when Rust sources change); `cargo clippy --locked --all-targets -- -D warnings` lints the binding crate. `tests/test_estimators.py` requires the estimators to reproduce the core model on every reference case they can express; extend `estimator_for` when exposing new options.
+- In `python/`: `uv sync` builds the extension in editable mode (rebuilt automatically when Rust sources change); `cargo clippy --locked --all-targets -- -D warnings` lints the binding crate. `tests/test_estimators.py` requires the estimators to reproduce the core model on every reference case they can express; extend `estimator_for` when exposing new options. The Sphinx site in `python/docs/` builds from the docstrings (numpydoc format) and the committed notebooks; CI builds it with warnings as errors.
 
 ## Coding Style & Naming Conventions
 
@@ -35,7 +35,7 @@ Use descriptive `#[test]` names stating the behavior, such as `saved_models_pres
 - `main` is the only long-lived branch and must always pass CI. Never commit or push directly to it.
 - Start each change from an up-to-date `main` on a short-lived branch named by type and topic: `feat/survival-data`, `fix/bagging-cv-pruning`, `docs/readme-shape`, `ci/...`, `test/...`, `refactor/...`, `chore/...`.
 - Keep one logical change per branch. Rebase onto `main` before opening a PR rather than merging `main` into the branch.
-- Open a PR for every branch and merge only after all CI jobs pass (Rust and Python jobs on Linux/macOS/Windows, and the independent R job). Merge with a merge commit; do not squash. Delete the branch after merging.
+- Open a PR for every branch and merge only after all CI jobs pass (Rust and Python jobs on Linux/macOS/Windows, the Python docs build, and the independent R job). Merge with a merge commit; do not squash. Delete the branch after merging.
 - Commit messages follow Conventional Commits (`fix(ensemble): ...`) in the imperative mood, first line under 72 characters, with a body explaining why when the subject alone is not enough. Reference issues or PRs in parentheses at the end of the subject, e.g. `(#12)`. Mark breaking changes to the CLI, Rust API, or saved-model format with `!` and a `BREAKING CHANGE:` footer.
 - Each commit should build and pass the quality gate on its own so `git bisect` stays useful.
 - Put native recaptures or new frozen fixtures in their own commit, separate from the code that consumes them, and name the GUIDE version and case family in the message.
