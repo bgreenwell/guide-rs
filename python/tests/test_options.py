@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from guide_rs import GuideClassifier, GuideForestRegressor, GuideRegressor
-from guide_rs._core import Model
+from guide import GuideClassifier, GuideForestRegressor, GuideRegressor
+from guide._core import Model
 
 
 def core_fit(schema, columns, target, options, **kwargs):

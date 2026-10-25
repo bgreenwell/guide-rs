@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 from test_estimators import column, estimator_for
 
-from guide_rs import (
+from guide import (
     GuideClassifier,
     GuideForestClassifier,
     GuideForestRegressor,
@@ -15,7 +15,7 @@ from guide_rs import (
     _core,
     importance,
 )
-from guide_rs._core import Model
+from guide._core import Model
 
 ROOT = Path(__file__).resolve().parents[2]
 IMPORTANCE = sorted((ROOT / "tests/fixtures/importance/guide-46.3").iterdir())

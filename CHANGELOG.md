@@ -9,9 +9,9 @@ adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 - `--threads` CLI option and `n_jobs` estimator parameter set the threads used for parallel fits
-- Python package with scikit-learn tree and forest estimators, feature roles and importance scores
+- Python package (`import guide`) with scikit-learn tree and forest estimators, feature roles and importance scores
 - Python estimators accept periodic features, missing-value flags, logistic and dual-quantile losses, stepwise leaves, prediction truncation and validation pruning
-- `guide_rs.plot_tree` draws fitted trees with matplotlib
+- `guide.plot_tree` draws fitted trees with matplotlib
 - Example notebooks comparing GUIDE with scikit-learn decision trees on its bundled datasets
 - Sphinx documentation for the Python package: user guide, API reference and the example notebooks
 - Multiclass trees split categorical predictors with more than 11 levels instead of rejecting them

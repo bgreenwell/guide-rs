@@ -6,7 +6,7 @@
 - Core modules separate data/configuration, node fitting, variable selection, split search, pruning, ensembles, importance, and numerical routines.
 - `tests/` contains integration, numerical, CLI, and reference comparisons. `tests/fixtures/` preserves native outputs, diagnostics, and example datasets.
 - `tools/` contains Python capture/integrity utilities and independent R oracles.
-- `python/` is a separate Cargo workspace: PyO3 bindings (`src/lib.rs`, module `guide_rs._core`) and the scikit-learn estimators in `guide_rs/`. Options and schemas cross the boundary as core JSON, so validation stays in Rust.
+- `python/` is a separate Cargo workspace: PyO3 bindings (`src/lib.rs`, module `guide._core`) and the scikit-learn estimators in `guide/`. Options and schemas cross the boundary as core JSON, so validation stays in Rust.
 - `examples/` holds JSON configurations; `docs/coverage.md` tracks implemented capabilities and remaining work.
 - Ignored `assets/` and `.reference/upstream/` hold optional local papers and pinned executables. Ordinary tests must remain independent of them.
 

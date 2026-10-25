@@ -1,6 +1,6 @@
 from sklearn.utils.estimator_checks import parametrize_with_checks
 
-from guide_rs import GuideClassifier, GuideForestClassifier, GuideForestRegressor, GuideRegressor
+from guide import GuideClassifier, GuideForestClassifier, GuideForestRegressor, GuideRegressor
 
 
 def expected_failures(estimator):

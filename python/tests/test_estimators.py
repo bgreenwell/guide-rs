@@ -11,8 +11,8 @@ from sklearn.model_selection import GridSearchCV, KFold, cross_val_score
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import FunctionTransformer
 
-from guide_rs import ALGORITHM_VERSION, GuideClassifier, GuideRegressor
-from guide_rs._core import Model
+from guide import ALGORITHM_VERSION, GuideClassifier, GuideRegressor
+from guide._core import Model
 
 ROOT = Path(__file__).resolve().parents[2]
 IRIS = ROOT / "tests/fixtures/datasets/iris.csv"

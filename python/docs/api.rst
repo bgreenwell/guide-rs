@@ -1,7 +1,7 @@
 API reference
 =============
 
-.. currentmodule:: guide_rs
+.. currentmodule:: guide
 
 Estimators
 ----------

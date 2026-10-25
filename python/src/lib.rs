@@ -1,4 +1,4 @@
-//! Python bindings for guide-rs. The `guide_rs` package wraps these in
+//! Python bindings for guide-rs. The `guide` package wraps these in
 //! scikit-learn estimators; options and schemas cross the boundary as JSON so
 //! the core crate's validation applies unchanged.
 use guide_rs::{
@@ -151,7 +151,7 @@ type ValidationInput<'py> = (
 );
 
 /// A fitted tree or ensemble.
-#[pyclass(module = "guide_rs._core", frozen)]
+#[pyclass(module = "guide._core", frozen)]
 struct Model {
     inner: FittedModel,
 }
