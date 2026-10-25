@@ -1,6 +1,7 @@
 """Deterministic, small datasets for the constant-node GUIDE acceptance milestone."""
 import csv
 import io
+import random
 
 
 def case(name, classification, features, rows, targets, *, weights=None,
@@ -107,6 +108,28 @@ def cases():
             [0 if f else 10 for f in low], depth=1)
         add(f"class-categorical-orientation-{k}", True, categorical, rows,
             ["a" if f else "b" for f in low], depth=1)
+    # Multiclass splits on categorical variables with more than 11 levels
+    # search cuts on the first two discriminant coordinates. Designs use an
+    # odd total number of categories (counting NA), so the fewer-levels-left
+    # orientation never ties. random.random() is platform independent.
+    def many_levels(n, classes, seed, missing=0.0):
+        rnd, rows, ys = random.Random(seed), [], []
+        for level in range(n):
+            p = [rnd.random() ** 2 for _ in range(classes)]
+            for _ in range(12):
+                rows.append([f"L{level:02d}"])
+                ys.append("abcdefghijkl"[rnd.choices(range(classes), p)[0]])
+        holes = random.Random(seed + 999)
+        return [[None] if holes.random() < missing else r for r in rows], ys
+    for name, (n, classes, seed, missing, depth) in {
+            "class-multiclass-many-13": (13, 3, 511, 0.0, 1),
+            "class-multiclass-many-21": (21, 3, 502, 0.0, 1),
+            "class-multiclass-many-second-coordinate": (19, 3, 50, 0.0, 1),
+            "class-multiclass-many-12-classes": (15, 12, 503, 0.0, 1),
+            "class-multiclass-many-missing": (14, 3, 505, 0.15, 1),
+            "class-multiclass-many-depth2": (25, 4, 504, 0.0, 2)}.items():
+        rows, ys = many_levels(n, classes, seed, missing)
+        add(name, True, categorical, rows, ys, depth=depth)
     return result
 
 

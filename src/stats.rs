@@ -402,3 +402,60 @@ pub(crate) fn least_squares_ranked(
         .all(|v| v.is_finite())
         .then_some((answer, rank))
 }
+
+/// Eigenvalues (descending) and unit eigenvectors (`vectors[k]` pairs with
+/// `values[k]`) of a small symmetric matrix, by cyclic Jacobi rotations.
+pub fn symmetric_eigen(matrix: &[Vec<f64>]) -> (Vec<f64>, Vec<Vec<f64>>) {
+    let n = matrix.len();
+    let mut a = matrix.to_vec();
+    let mut v: Vec<Vec<f64>> = (0..n)
+        .map(|i| (0..n).map(|j| f64::from(u8::from(i == j))).collect())
+        .collect();
+    for _ in 0..100 {
+        let off: f64 = (0..n)
+            .flat_map(|i| (0..n).filter(move |&j| j != i).map(move |j| (i, j)))
+            .map(|(i, j)| a[i][j] * a[i][j])
+            .sum();
+        let scale: f64 = (0..n).map(|i| a[i][i] * a[i][i]).sum();
+        if off <= f64::EPSILON * f64::EPSILON * scale.max(f64::MIN_POSITIVE) {
+            break;
+        }
+        for p in 0..n {
+            for q in p + 1..n {
+                if a[p][q] == 0.0 {
+                    continue;
+                }
+                let theta = (a[q][q] - a[p][p]) / (2.0 * a[p][q]);
+                let sign = if theta >= 0.0 { 1.0 } else { -1.0 };
+                let t = sign / (theta.abs() + (theta * theta + 1.0).sqrt());
+                let c = 1.0 / (t * t + 1.0).sqrt();
+                let s = t * c;
+                for row in &mut a {
+                    let (akp, akq) = (row[p], row[q]);
+                    row[p] = c * akp - s * akq;
+                    row[q] = s * akp + c * akq;
+                }
+                let (head, tail) = a.split_at_mut(q);
+                for (apk, aqk) in head[p].iter_mut().zip(tail[0].iter_mut()) {
+                    let (x, y) = (*apk, *aqk);
+                    *apk = c * x - s * y;
+                    *aqk = s * x + c * y;
+                }
+                for row in &mut v {
+                    let (vp, vq) = (row[p], row[q]);
+                    row[p] = c * vp - s * vq;
+                    row[q] = s * vp + c * vq;
+                }
+            }
+        }
+    }
+    let mut order: Vec<usize> = (0..n).collect();
+    order.sort_by(|&i, &j| a[j][j].total_cmp(&a[i][i]));
+    (
+        order.iter().map(|&k| a[k][k]).collect(),
+        order
+            .iter()
+            .map(|&k| (0..n).map(|i| v[i][k]).collect())
+            .collect(),
+    )
+}

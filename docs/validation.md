@@ -2,6 +2,12 @@
 
 Local environment: Apple Silicon macOS, Rust 1.99.1. The runtime implementation is pure Rust; R is used only as an independent test oracle. GitHub Actions runs the ordinary suite on Linux, macOS and Windows plus the independent R job; all passed from a clean checkout on 2026-10-25. R prediction-function export was excluded from product scope on 2026-10-24 and removed from the code on 2026-10-25. Historical export checks below remain a record of earlier work; independent R numerical/statistical validation remains in scope.
 
+## High-cardinality multiclass categorical splits, 2026-10-25
+
+Multiclass trees no longer reject categorical predictors with more than 11 levels. They search cuts on the first two discriminant coordinates, as GUIDE does; fits that were previously accepted are unchanged, so the algorithm revision stays `reference12`. Twelve new captures bring the corpus to **556 captures across 278 cases**; see [reference provenance](reference-upstream.md#high-cardinality-multiclass-categorical-splits-2026-10-25). The prespecified selection bias study now passes all seven configurations and runs in CI.
+
+Local checks pass: **88 regular Rust tests plus the README doctest, 12 R comparisons, 3 release statistical and study checks and 48 Python checks**, plus formatting and Clippy with warnings denied.
+
 ## Missing-value flags and categorical orientation, 2026-10-25
 
 New fits record **`guide-rs-0.1-experimental-reference12`**; saved format remains 1, and saved splits gain an optional `missing_codes` field only when a flag is used. Constant-node fits support GUIDE missing-value flags, and categorical splits now put the side with fewer categories on the left, which changes where unseen categories go in unbalanced splits. Fifty-six new native captures bring the corpus to **544 captures across 272 cases**; see [flag validation](missing-flag-validation.md).
