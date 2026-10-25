@@ -18,7 +18,10 @@ ROOT = Path(__file__).resolve().parents[1]
 class ReferenceCaptureTests(unittest.TestCase):
     def test_manual_matches_recorded_provenance(self):
         manual = json.loads((ROOT / "docs/reference-upstream.json").read_text())["manual"]
-        self.assertEqual(hashlib.sha256((ROOT / manual["local_copy"]).read_bytes()).hexdigest(),
+        local_copy = ROOT / manual["local_copy"]
+        if not local_copy.exists():
+            self.skipTest(f"local manual {manual['local_copy']} is not present (ignored by git)")
+        self.assertEqual(hashlib.sha256(local_copy.read_bytes()).hexdigest(),
                          manual["sha256"])
 
     def test_all_frozen_files_match_recorded_hashes_and_runtime(self):
