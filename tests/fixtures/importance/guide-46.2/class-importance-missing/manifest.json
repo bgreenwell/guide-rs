@@ -1,0 +1,88 @@
+{
+  "fixture_format": 1,
+  "case": "class-importance-missing",
+  "created_utc": "2026-10-23T20:26:23.242318+00:00",
+  "binary_sha256": "5ff05c74d9b6554c460d8d8fdfede07ec46616340e6f48cbcd93f62bb4ab5a24",
+  "source_url": "https://pages.stat.wisc.edu/~loh/treeprogs/guide/mac/m1/guide462.zip",
+  "requested_version": "46.2",
+  "completed": true,
+  "settings": {
+    "task": {
+      "kind": "classification"
+    },
+    "node_model": {
+      "kind": "constant"
+    },
+    "max_depth": 1,
+    "min_samples_leaf": 2,
+    "min_gain": 0.0,
+    "interactions": true,
+    "linear_splits": false,
+    "significance_level": 0.1,
+    "max_split_candidates": 0,
+    "pruning": {
+      "kind": "none"
+    },
+    "seed": 0,
+    "class_priors": null,
+    "class_costs": null,
+    "mtry": null
+  },
+  "importance_options": {
+    "permutations": 300,
+    "max_depth": 1,
+    "seed": 0
+  },
+  "independent_raw_statistics": {
+    "signal": {
+      "chi_square": 80,
+      "degrees_of_freedom": 2
+    }
+  },
+  "expected_important": [
+    "signal"
+  ],
+  "expected_zero": [
+    "noise"
+  ],
+  "comparison_scope": "Reported important sets/rank relations; raw scores checked independently. Exact Monte Carlo-adjusted magnitudes and thresholds are not claimed equivalent.",
+  "returncode": 0,
+  "result": {
+    "version": "46.2",
+    "build_date": "April 27, 2026",
+    "score_kind": "normalized",
+    "scores": [
+      {
+        "feature": "signal",
+        "rank": 1.0,
+        "group": "A",
+        "normalized_score": 9.847,
+        "score_tolerance": 0.0005,
+        "missing_native": 40.0
+      }
+    ],
+    "thresholds": {
+      "99": 1.4869,
+      "95": 1.0,
+      "90": 0.7981,
+      "80": 0.6123,
+      "50": 0.242
+    },
+    "omitted_features": [
+      "noise"
+    ]
+  },
+  "file_sha256": {
+    "data.dsc": "53edd1daaac7b97814ed24e113df9ec8dc9eb109c9722c0eea4ce922cfe0bdd3",
+    "data.txt": "1f871c8ef61e9deb5dbe09dd0d2e5554e31c7015447fb939b37e296fc6766fe4",
+    "data.csv": "1a5fddbbb8b184d66b28cfbbd62648302f1249eca5350eae919d85740eed4144",
+    "input.txt": "7ff935c0060b510e4e054ede572ebc3366b242b02d123c9f9361c9bcf3b3de6c",
+    "dataset.json": "e0df329f77922d45e1082fcb4532c37517f1a6778d943ec77aad4a7a2eb06118",
+    "options.json": "d2a06391b1670606df3e7b3290f9c06bb452dd8cd1c7a03f6b5ff0390b19fcd1",
+    "importance.json": "2eb061c32bef0186b1916fb9333f94bdc96c944816e4c45ed2742e131b0971c8",
+    "stdout.txt": "1756309374ef7017af88cfb5e5c4f09d8635b2f6aa0e23cd79f38203802142e8",
+    "stderr.txt": "53b2f633e547df5a49e2d959c63bc5aedf0c64da4da957115ac9e87211a8cb73",
+    "report.out": "2229fdafb72fd9598e09d78d7f5379cd7581696c565bc08f65522209415f3a15",
+    "scores.txt": "ee252739c2cb252267233947c3238296ebc634343ca2c147204fdcc8b10f1bd0"
+  }
+}

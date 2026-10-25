@@ -1,0 +1,28 @@
+GUIDE (46.x constant-node reference)
+46.3 (version)
+1 (model fitting)
+"report.out"
+1 (single tree)
+1 (classification)
+1 (simple node model)
+2 (skip linear splits; keep interactions)
+1 (cross_validation)
+"data.dsc"
+20
+1 (mean-based CV)
+0.25
+1 (estimated priors)
+2 (explicit costs)
+"costs.txt"
+2 (exhaustive cutpoints)
+2 (explicit depth)
+1
+2 (explicit minimum node size)
+2
+0 (no LaTeX)
+3 (store splits)
+"splits.txt"
+2 (store predictions)
+"predictions.txt"
+1 (skip R export)
+1 (root variable rank)

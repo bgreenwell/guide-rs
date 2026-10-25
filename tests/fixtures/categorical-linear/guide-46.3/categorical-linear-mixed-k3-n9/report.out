@@ -1,0 +1,96 @@
+             GGG   U   U  I  DDDD   EEEE
+            G   G  U   U  I  D   D  E
+            G      U   U  I  D   D  E
+            G  GG  U   U  I  D   D  EEE
+            G   G  U   U  I  D   D  E
+            G   G  U   U  I  D   D  E
+             GGG    UUU   I  DDDD   EEEE
+   
+ GUIDE Classification and Regression Trees and Forests
+ Version 46.3 (Build date: July 11, 2026)          
+ Compiled with NAG Fortran 7.2 on macOS Tahoe 26.4.1 for Apple ARM processors    
+ Copyright (c) 1997-2023 Wei-Yin Loh. All rights reserved.
+ This software is based upon work partially supported by the U.S. Army Research Office,
+ National Science Foundation, National Institutes of Health,
+ Bureau of Labor Statistics, USDA Economic Research Service, and Eli Lilly.
+  
+ This job was started on 10/24/26 at 15:19
+  
+ Least squares regression tree
+ No truncation of predicted values
+ No pruning
+ DSC file: data.dsc
+ Training sample file: data.txt
+ Missing value code: NA
+ Records in data file start on line 2
+ D variable is y
+ Piecewise linear model
+ Number of records in data file: 9
+ Length of longest entry in data file: 4
+  
+ Summary information for training sample of size 9
+ d=dependent, b=split and fit cat variable using indicator variables,
+ c=split-only categorical, i=fit-only categorical (via indicators),
+ s=split-only numerical, n=split and fit numerical, f=fit-only numerical,
+ m=missing-value flag variable, p=periodic variable, w=weight
+                                                  #Codes/           
+                                                  Levels/           
+  Column  Name            Minimum      Maximum    Periods   #Missing
+       1  group      i                                  3
+       2  x          f    0.000        6.000    
+       3  y          d    2.000        26.00    
+   =================== Constructed variables ===================
+       4  group.b    f    0.000        1.000    
+       5  group.c    f    0.000        1.000    
+  
+ Numbers of N, F, S, and P below exclude constant variables
+      Total  #cases w/   #missing
+     #cases    miss. D  ord. vals   #X-var   #N-var   #F-var   #S-var
+          9          0          0        0        0        3        0
+     #P-var   #M-var   #B-var   #C-var   #I-var
+          0        0        0        0        1
+ Number of dummy variables created: 2
+ No weight variable in data file
+ Number of cases used for training: 9
+  
+ Constant fitted to cases with missing values in regressor variables
+ Note: too many predictor variables;no interaction and linear splits
+ No nodewise interaction tests
+ Warning: Insufficient records with complete data.
+ Fitting a piecewise-constant model.
+ Split values for N and S variables based on exhaustive search
+ Maximum number of interaction splits: 100
+ Maximum number of split levels: 1
+ Minimum node sample size: 2
+ Tree has no splits
+  
+ Structure of final tree. Each terminal node is marked with a T.
+  
+ D-mean is mean of y in the node
+ Cases fit give the number of cases used to fit node
+ MSE is residual sum of squares divided by number of cases in node
+        Node    Total    Cases Matrix    Node      Node          Split
+        label   cases      fit  rank    D-mean     MSE           variable
+           1T       9        9     1  1.356E+01  5.590E+01   - 
+  
+ Number of terminal nodes of final tree: 1
+ Total number of nodes of final tree: 1
+  
+ Regression tree:
+  
+ Node 1: y-mean = 13.555556
+ 
+ ***************************************************************
+  
+Node 1: Terminal node
+ Coefficients of least squares regression function:
+ Regressor    Coefficient  t-stat      p-value      Minimum         Mean       Maximum
+ Constant      13.56        5.439       0.6167E-03
+ y mean = 13.5556
+ ----------------------------
+ Proportion of variance (R-squared) explained by tree model: 0.0000
+ 
+ Observed and fitted values are stored in predictions.txt
+ Warning: empty regressor name and coefficient file coefficients.txt
+ Split and fit variable names are stored in splits.txt
+ Elapsed time in seconds: 0.38550E-02

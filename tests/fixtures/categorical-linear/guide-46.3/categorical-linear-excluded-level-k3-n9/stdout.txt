@@ -1,0 +1,107 @@
+ GUIDE Classification and Regression Trees and Forests
+ Version 46.3 (Build date: July 11, 2026)          
+ Compiled with NAG Fortran 7.2 on macOS Tahoe 26.4.1 for Apple ARM processors    
+ Copyright (c) 1997-2026 Wei-Yin Loh. All rights reserved.
+ Software based upon work partially supported by the U.S. Army Research Office,
+ National Science Foundation, National Institutes of Health,
+ Bureau of Labor Statistics, USDA Economic Research Service, and Eli Lilly.
+  
+ Choose one of the following options:
+ 0. Read the warranty disclaimer
+ 1. Create a GUIDE input file
+ Input your choice:  Batch run with input file 
+ Input 1 for model fitting, 2 for importance or DIF scoring, 3 for data conversion: 1
+  
+ Job start date and time: 10/24/26 at 15:19
+  
+ Input 1 for single tree, 2 for ensemble of trees: 1
+ Input 1 for classification, 2 for regression, 3 for propensity score tree
+ Input your choice: 2
+ Choose type of regression model:
+ 1=linear, 2=quantile, 3=Poisson, 4=censored response,
+ 5=multiresponse or itemresponse, 6=longitudinal with T variables,
+ 7=binary logistic regression: 1
+ Input 1 for linear, 2 least median of squares: 1
+ Choose complexity of model to use at each node:
+ Choose 0 for stepwise linear regression (recommended for prediction)
+ Choose 1 for multiple regression
+ Choose 2 for best simple polynomial in one N or F variable
+ Choose 3 for constant fit (recommended for interpretability or if there is an R variable)
+ 0: stepwise linear, 1: multiple linear, 2: best simple polynomial,  3: constant,
+ 4: best simple stepwise ANCOVA: 1
+ Input 2 for no intercept term, 1 otherwise: 1
+ Input 0, 1, 2, or 3: 0
+ Input 1 for interaction tests, 2 to skip them: 1
+ Input 1 to prune by CV, 2 for no pruning: 2
+ Bonferroni alpha = 0.100
+  
+ Input name of DSC file (max 100 characters);
+ enclose with matching quotes if it has spaces: data.dsc
+ Reading DSC file ...
+ Training sample file: data.txt
+ Missing value code: NA
+ Records in data file start on line 2
+ D variable is y
+ Reading data file ...
+ Number of records in data file: 10
+ Length of longest entry in data file: 4
+ Checking for missing values ...
+ Finished checking
+ Missing values found in D variable
+ Assigning integer codes to values of 1 categorical variables
+ Re-checking data ...
+ Allocating missing value information ...
+ Assigning codes to missing values, if any ...
+ Data checks complete
+ GUIDE will try to create the variables in the description file.
+ If it is unsuccessful, please create the columns yourself...
+ Creating dummy variables ...
+ Creating missing value indicators ...
+ Rereading data ...
+ Numbers of N, F, S, and P below exclude constant variables
+      Total  #cases w/   #missing
+     #cases    miss. D  ord. vals   #X-var   #N-var   #F-var   #S-var
+         10          1          0        0        0        2        0
+     #P-var   #M-var   #B-var   #C-var   #I-var
+          0        0        0        0        1
+ Number of constant F variables: 1
+ Number of dummy variables created: 3
+ No weight variable in data file
+ Number of cases used for training: 9
+ Number of cases excluded due to 0 W or missing D variable: 1
+ Finished reading data file
+ Constant fitted to cases with missing values in regressor variables
+ Note: too many predictor variables;no interaction and linear splits
+ No nodewise interaction tests
+ Warning: Insufficient records with complete data.
+ Residual df, #predictors = 9 4
+ Fitting a piecewise-constant model.
+ Choose a split point selection method for numerical variables:
+ Choose 1 to use faster method based on sample quantiles
+ Choose 2 to use exhaustive search
+ Input 1 or 2: 2
+ Input max. number of split levels: 1
+ Maximum number of split levels: 1
+ Input 1 for default minimum node size, 2 to specify minimum value: 2
+ Minimum node size: 2
+ Choose 0=no LaTeX, 1=tree without node numbers, 2=tree with node numbers: 0
+ You can store the variables and/or values used to split and fit in a file
+ Choose 1 to skip this step, 2 to store split and fit variables,
+ 3 to store split variables and their values
+ Input your choice: 3
+ Split and fit variable file name: splits.txt
+ Input 2 to save regression coefs in a file, 1 otherwise: 2
+ File name to store regressor names: coefficients.txt
+ Input 2 to save fitted values and node IDs; 1 otherwise: 2
+ File name is predictions.txt
+ Input 1 to skip R function, 2 to output R for training data, 3 to output R for new data file: 1
+ Constructing main tree ...
+ Tree has no splits
+ Number of terminal nodes of final tree: 1
+ Writing predicted values...
+ ...completed
+ Results are stored in report.out
+ Observed and fitted values are stored in predictions.txt
+ Warning: empty regressor name and coefficient file coefficients.txt
+ Split and fit variable names are stored in splits.txt
+ Elapsed time in seconds: 0.3924E-02

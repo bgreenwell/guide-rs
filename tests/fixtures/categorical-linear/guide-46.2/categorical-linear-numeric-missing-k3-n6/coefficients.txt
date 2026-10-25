@@ -1,0 +1,2 @@
+Node Constant x group.b group.c x.NA
+1 13.583 0.0000 0.0000 0.0000 0.0000

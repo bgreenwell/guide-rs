@@ -1,0 +1,30 @@
+GUIDE (multiple-linear tree acceptance)
+46.3
+1 (model fitting)
+"report.out"
+1 (single tree)
+2 (regression)
+1 (linear)
+1 (least squares)
+1 (multiple linear)
+1 (intercept)
+0 (no truncation)
+1 (interaction tests)
+0 (fixed tree size)
+3
+"data.dsc"
+2 (exhaustive cutpoints)
+2 (explicit depth)
+3
+2 (explicit minimum node size)
+12
+0 (no LaTeX)
+3 (store splits)
+"splits.txt"
+2 (store coefficients)
+"coefficients.txt"
+2 (store predictions)
+"predictions.txt"
+2 (R for training data)
+"predict.R"
+1 (root variable rank)

@@ -1,0 +1,4 @@
+    Rank Group    Score       Missing     Variable
+       1  A     1.339E+01           0     b
+       2  A     1.238E+01           0     copy
+       3  A     7.968E+00           0     a

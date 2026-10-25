@@ -1,0 +1,19 @@
+GUIDE (46.x importance reference)
+46.2
+2 (importance scoring)
+"report.out"
+1 (classification)
+1 (interaction tests)
+"data.dsc"
+1 (estimated priors)
+1 (unit costs)
+2 (exhaustive numerical cuts)
+2 (explicit depth)
+1
+2 (explicit minimum size)
+2
+0 (no LaTeX)
+1 (no split storage)
+1 (no selected-variable DSC)
+1 (store importance scores)
+"scores.txt"

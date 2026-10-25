@@ -1,0 +1,12 @@
+{
+  "description": "Actual Rust reference9 model fitted before orientation correction; loading must preserve its routes.",
+  "model_sha256": "6b315dcc3470c99f3e0786bc6a35e9c2dfe4a88142436ee27c5ff63523489ab7",
+  "source_case": "selection-missing-k11",
+  "input_sha256": {
+    "dataset.json": "80b23caa0e0d27ca4f66444dc6ac50b2dcf327d8dcb3cc0dd5b3ff3257f1282f",
+    "options.json": "2b405aff2126fb374965d5737658c543985b128511d99b27df3ac9ec88c29aa8",
+    "data.csv": "50ebd72aea431bfa7450351e1ec0d23ff89e9074b6948df7f04a013ecde92536"
+  },
+  "unseen_at_x23": -17.16,
+  "new_fit_unseen_at_x23": 17.16
+}

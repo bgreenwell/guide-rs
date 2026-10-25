@@ -1,0 +1,261 @@
+{
+  "format_version": 1,
+  "algorithm_version": "guide-rs-0.1-experimental-reference9",
+  "schema": [
+    {
+      "name": "group",
+      "feature_type": {
+        "kind": "categorical"
+      },
+      "role": "both"
+    },
+    {
+      "name": "x",
+      "feature_type": {
+        "kind": "numeric"
+      },
+      "role": "fit"
+    }
+  ],
+  "classes": [],
+  "options": {
+    "task": {
+      "kind": "regression",
+      "loss": {
+        "kind": "squared_error"
+      }
+    },
+    "node_model": {
+      "kind": "linear"
+    },
+    "max_depth": 1,
+    "min_samples_leaf": 2,
+    "min_gain": 0.0,
+    "interactions": true,
+    "linear_splits": false,
+    "significance_level": 0.1,
+    "max_split_candidates": 0,
+    "pruning": {
+      "kind": "none"
+    },
+    "seed": 0,
+    "class_priors": null,
+    "class_costs": null,
+    "mtry": null
+  },
+  "input": {
+    "target": "y",
+    "weight": null,
+    "offset": null,
+    "features": [
+      {
+        "name": "group",
+        "feature_type": {
+          "kind": "categorical"
+        },
+        "role": "both"
+      },
+      {
+        "name": "x",
+        "feature_type": {
+          "kind": "numeric"
+        },
+        "role": "fit"
+      }
+    ],
+    "missing_values": [
+      "",
+      "NA"
+    ],
+    "delimiter": ","
+  },
+  "requires_exposure": false,
+  "ensemble": null,
+  "trees": [
+    {
+      "root": {
+        "id": 0,
+        "sample_count": 96,
+        "weight_sum": 96.0,
+        "risk": 143.0,
+        "impurity": 13728.0,
+        "model": {
+          "kind": "linear",
+          "intercept": -7.265337055731047e-16,
+          "coefficients": [
+            1.2157785043280058e-15,
+            8.973825869789965e-16,
+            1.3368697131896234e-15,
+            9.064933036736786e-16
+          ],
+          "terms": [
+            {
+              "feature": 0,
+              "power": 1,
+              "category": "a",
+              "center": 0.0,
+              "scale": 1.0,
+              "impute": 0.0,
+              "missing_indicator": false
+            },
+            {
+              "feature": 0,
+              "power": 1,
+              "category": "b",
+              "center": 0.0,
+              "scale": 1.0,
+              "impute": 0.0,
+              "missing_indicator": false
+            },
+            {
+              "feature": 0,
+              "power": 1,
+              "category": "c",
+              "center": 0.0,
+              "scale": 1.0,
+              "impute": 0.0,
+              "missing_indicator": false
+            },
+            {
+              "feature": 1,
+              "power": 1,
+              "category": null,
+              "center": 11.5,
+              "scale": 6.922186552431729,
+              "impute": 11.5,
+              "missing_indicator": false
+            }
+          ],
+          "loss": {
+            "kind": "squared_error"
+          },
+          "converged": true
+        },
+        "diagnostics": [
+          {
+            "feature": 0,
+            "chi_square": 0.6666666666666666,
+            "degrees_of_freedom": 3,
+            "p_value": 0.8810148425137847,
+            "importance_p_value": 0.8810148425137847,
+            "log_p_value": -0.12668080583964925,
+            "importance_log_p_value": -0.12668080583964925,
+            "interaction_with": null
+          }
+        ],
+        "split": {
+          "kind": "categorical",
+          "feature": 0,
+          "left_categories": [
+            "a",
+            "b"
+          ],
+          "known_categories": [
+            "a",
+            "b",
+            "c"
+          ],
+          "missing_left": false,
+          "unknown_left": false
+        },
+        "left": {
+          "id": 1,
+          "sample_count": 48,
+          "weight_sum": 48.0,
+          "risk": 18.15478260869565,
+          "impurity": 1742.8591304347824,
+          "model": {
+            "kind": "linear",
+            "intercept": -2.2772452799126154e-31,
+            "coefficients": [
+              2.9485427857881315e-15,
+              10.329106194758998
+            ],
+            "terms": [
+              {
+                "feature": 0,
+                "power": 1,
+                "category": "a",
+                "center": 0.0,
+                "scale": 1.0,
+                "impute": 0.0,
+                "missing_indicator": false
+              },
+              {
+                "feature": 1,
+                "power": 1,
+                "category": null,
+                "center": 11.5,
+                "scale": 6.922186552431729,
+                "impute": 11.5,
+                "missing_indicator": false
+              }
+            ],
+            "loss": {
+              "kind": "squared_error"
+            },
+            "converged": true
+          },
+          "diagnostics": [],
+          "split": null,
+          "left": null,
+          "right": null
+        },
+        "right": {
+          "id": 2,
+          "sample_count": 48,
+          "weight_sum": 48.0,
+          "risk": 18.15478260869565,
+          "impurity": 1742.8591304347824,
+          "model": {
+            "kind": "linear",
+            "intercept": 2.2772452799126154e-31,
+            "coefficients": [
+              -2.9485427857881315e-15,
+              -10.329106194758998
+            ],
+            "terms": [
+              {
+                "feature": 0,
+                "power": 1,
+                "category": "c",
+                "center": 0.0,
+                "scale": 1.0,
+                "impute": 0.0,
+                "missing_indicator": false
+              },
+              {
+                "feature": 1,
+                "power": 1,
+                "category": null,
+                "center": 11.5,
+                "scale": 6.922186552431729,
+                "impute": 11.5,
+                "missing_indicator": false
+              }
+            ],
+            "loss": {
+              "kind": "squared_error"
+            },
+            "converged": true
+          },
+          "diagnostics": [],
+          "split": null,
+          "left": null,
+          "right": null
+        }
+      }
+    }
+  ],
+  "report": {
+    "training_rows": 96,
+    "excluded_rows": 0,
+    "unpruned_leaves": 2,
+    "fitted_leaves": 2,
+    "selected_alpha": 0.0,
+    "pruning_scores": [],
+    "out_of_bag_loss": null,
+    "out_of_bag_rows": 0,
+    "warnings": []
+  }
+}

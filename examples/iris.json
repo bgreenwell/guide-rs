@@ -1,0 +1,8 @@
+{
+  "data": {"target": "Species"},
+  "fit": {
+    "task": {"kind": "classification"},
+    "pruning": {"kind": "cross_validation", "folds": 10, "standard_errors": 0.25},
+    "seed": 42
+  }
+}

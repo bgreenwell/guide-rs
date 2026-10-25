@@ -1,0 +1,99 @@
+             GGG   U   U  I  DDDD   EEEE
+            G   G  U   U  I  D   D  E
+            G      U   U  I  D   D  E
+            G  GG  U   U  I  D   D  EEE
+            G   G  U   U  I  D   D  E
+            G   G  U   U  I  D   D  E
+             GGG    UUU   I  DDDD   EEEE
+   
+ GUIDE Classification and Regression Trees and Forests
+ Version 46.3 (Build date: July 11, 2026)          
+ Compiled with NAG Fortran 7.2 on macOS Tahoe 26.4.1 for Apple ARM processors    
+ Copyright (c) 1997-2023 Wei-Yin Loh. All rights reserved.
+ This software is based upon work partially supported by the U.S. Army Research Office,
+ National Science Foundation, National Institutes of Health,
+ Bureau of Labor Statistics, USDA Economic Research Service, and Eli Lilly.
+  
+ This job was started on 10/24/26 at 13:25
+  
+ Least squares regression tree
+ No truncation of predicted values
+ No pruning
+ DSC file: data.dsc
+ Training sample file: data.txt
+ Missing value code: NA
+ Records in data file start on line 2
+ D variable is y
+ Piecewise linear model
+ Number of records in data file: 9
+ Length of longest entry in data file: 2
+ Smallest and largest positive weights are  1.0000E+00 and 4.0000E+00
+  
+ Summary information for training sample of size 8 (excluding observations
+  with non-positive weight or missing values in d, e, t, r or z variables)
+ d=dependent, b=split and fit cat variable using indicator variables,
+ c=split-only categorical, i=fit-only categorical (via indicators),
+ s=split-only numerical, n=split and fit numerical, f=fit-only numerical,
+ m=missing-value flag variable, p=periodic variable, w=weight
+                                                  #Codes/           
+                                                  Levels/           
+  Column  Name            Minimum      Maximum    Periods   #Missing
+       1  x0         f    1.000        8.000    
+       2  x1         f    0.000        6.000    
+       3  y          d    2.000        17.00    
+       4  weight     w    1.000        4.000    
+  
+ Numbers of N, F, S, and P below exclude constant variables
+      Total  #cases w/   #missing
+     #cases    miss. D  ord. vals   #X-var   #N-var   #F-var   #S-var
+          9          0          0        0        0        2        0
+     #P-var   #M-var   #B-var   #C-var   #I-var
+          0        0        0        0        0
+ Weight variable weight in column: 4
+ Number of cases used for training: 8
+ Number of cases excluded due to 0 W or missing D variable: 1
+  
+ Constant fitted to cases with missing values in regressor variables
+ Note: too many predictor variables;no interaction and linear splits
+ No nodewise interaction tests
+ Warning: Insufficient records with complete data.
+ Fitting a piecewise-constant model.
+ Split values for N and S variables based on exhaustive search
+ Maximum number of interaction splits: 100
+ Maximum number of split levels: 1
+ Minimum node sample size: 2
+ Tree has no splits
+  
+ Structure of final tree. Each terminal node is marked with a T.
+  
+ D-mean is weighted mean of y in the node
+ Cases fit give the number of cases used to fit node
+ MSE is residual sum of squares divided by number of cases in node
+        Node    Total    Cases Matrix    Node      Node          Split
+        label   cases      fit  rank    D-mean     MSE           variable
+           1T       8        8     1  9.050E+00  9.214E+01   - 
+  
+ Number of terminal nodes of final tree: 1
+ Total number of nodes of final tree: 1
+  
+ Regression tree:
+  
+ Node 1: y-mean = 9.0500000
+ 
+ ***************************************************************
+ Predictor means are the weighted means.
+  
+Node 1: Terminal node
+ Coefficients of weighted least squares regression function and weighted means:
+ Regressor    Coefficient  t-stat      p-value      Minimum         Mean       Maximum
+ Constant      9.050        4.115       0.4488E-02
+ y mean = 9.05000
+ ----------------------------
+ Number of cases with non-missing D values excluded from model fitting: 1
+ Prediction RMSE for these cases:    7.050    
+ Proportion of variance (R-squared) explained by tree model: 0.0000
+ 
+ Observed and fitted values are stored in predictions.txt
+ Warning: empty regressor name and coefficient file coefficients.txt
+ Split and fit variable names are stored in splits.txt
+ Elapsed time in seconds: 0.16320E-02

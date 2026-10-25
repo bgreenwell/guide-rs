@@ -1,0 +1,7 @@
+         1 s x x        1   0.3150000000E+02
+         2 s x x        1   0.1550000000E+02
+         4 t NONE NONE   t
+         5 t NONE NONE   t
+         3 s x x        1   0.4750000000E+02
+         6 t NONE NONE   t
+         7 t NONE NONE   t

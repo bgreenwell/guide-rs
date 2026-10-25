@@ -1,0 +1,306 @@
+{
+  "fixture_format": 2,
+  "case": "class-fixed-root-tie",
+  "created_utc": "2026-10-23T20:00:16.831906+00:00",
+  "source_url": "https://pages.stat.wisc.edu/~loh/treeprogs/guide/mac/m1/guide.zip",
+  "binary_sha256": "8d37e993f1948310d9f5003574db43734ab0f23aea0bb6c34c653dbf9a55a526",
+  "requested_version": "46.3",
+  "template_generated_by": "46.3",
+  "completed": true,
+  "settings": {
+    "task": {
+      "kind": "classification"
+    },
+    "node_model": {
+      "kind": "constant"
+    },
+    "max_depth": 2,
+    "min_samples_leaf": 2,
+    "min_gain": 0.0,
+    "interactions": true,
+    "linear_splits": false,
+    "significance_level": 0.1,
+    "max_split_candidates": 0,
+    "pruning": {
+      "kind": "fixed_leaves",
+      "max_leaves": 3
+    },
+    "seed": 0,
+    "class_priors": null,
+    "class_costs": null,
+    "mtry": null
+  },
+  "tolerances": {
+    "cutpoint_absolute": 1e-09,
+    "prediction_absolute": 5e-05,
+    "prediction_relative": 5e-06,
+    "probability_absolute": 5e-06
+  },
+  "returncode": 0,
+  "result": {
+    "version": "46.3",
+    "build_date": "July 11, 2026",
+    "outcome": "fitted",
+    "classes": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "leaf_count": 1,
+    "splits": [],
+    "predictions": [
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "a"
+    ],
+    "observed": [
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "a",
+      "b",
+      "b",
+      "b",
+      "b",
+      "b",
+      "b",
+      "c",
+      "c",
+      "c",
+      "c",
+      "c",
+      "c",
+      "d",
+      "d",
+      "d",
+      "d",
+      "d",
+      "d"
+    ],
+    "terminal_node_ids": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "probabilities": [
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ]
+    ],
+    "pruning_path": [
+      {
+        "index": 0,
+        "pruned_node": 0,
+        "leaves": 4,
+        "alpha": 0.0,
+        "alpha_tolerance": 5e-05
+      },
+      {
+        "index": 1,
+        "pruned_node": 1,
+        "leaves": 1,
+        "alpha": 0.25,
+        "alpha_tolerance": 5e-06
+      }
+    ]
+  },
+  "file_sha256": {
+    "data.dsc": "9b92df8751bf1562e1fb185872208b970b867c54f3834af5d73eb541e29c60c5",
+    "data.txt": "0903aa64e2ca809713bca438ee07c16257513ca6bc578934722a083f2e4e44a7",
+    "data.csv": "6283a6e08fd0e060aebab97c653c38e4cd56c3347b4d4b590037f4d5e9ce9b20",
+    "input.txt": "a9c3b068d1e5fc62f95573e7ed27f6ce531a97c3adc0184cea04999948fb6ed3",
+    "dataset.json": "162e1eca91dcab11a0b5aa882a15a4d1761bf901e7b1881005e33afce78d1f84",
+    "options.json": "f3a99f81a11ef74b3e2b2506b35ae0afb3c1b1e5caecf5c69d8bbb3787c27972",
+    "stdout.txt": "fd29b39140c31dd91ce07e84933061da12fc5e483bf08b78d777fba2ee7f15bd",
+    "stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "report.out": "9d48393e154288edf0f9e67ad48c1c0878ec617ed89662db2210975aa04de8ac",
+    "splits.txt": "b5d759e70b76e825c333bd47e874d8923a73b023bb51b0d2029c4b0126baad74",
+    "predictions.txt": "daad88ea684aca383139a314dbde0dbfb50221f1f1164a09a3137cccd6b03376"
+  }
+}

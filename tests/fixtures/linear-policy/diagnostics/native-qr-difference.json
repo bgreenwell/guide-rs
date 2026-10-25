@@ -1,0 +1,63 @@
+{
+  "completed": true,
+  "case": "linear-policy-two-missing-p4-n9",
+  "r_version": "R version 4.5.2 (2025-10-31)",
+  "script_sha256": "79b6abd7757a662b6ed2dd7a721ab06c103b402b9a0f3bbc75e7b0e42cc01690",
+  "input_sha256": {
+    "data.csv": "7bcbf14a72cac4e2b16822a755144600c5ea19ae134ffaa12e2676769fb75b2c",
+    "dataset.json": "9e40ce57c2d3febca0e1be87a416b427425bf0ddb0715d86add3057830bf1212",
+    "options.json": "2b405aff2126fb374965d5737658c543985b128511d99b27df3ac9ec88c29aa8"
+  },
+  "references": {
+    "46.3": {
+      "binary_sha256": "8d37e993f1948310d9f5003574db43734ab0f23aea0bb6c34c653dbf9a55a526",
+      "manifest_sha256": "ac25e42863c0ca982ba061310b2b77eba1e4ba8f3d33a9cf69908427334206a4"
+    },
+    "46.2": {
+      "binary_sha256": "5ff05c74d9b6554c460d8d8fdfede07ec46616340e6f48cbcd93f62bb4ab5a24",
+      "manifest_sha256": "9c926361fe98154c2b5f24958f8e0ba434c6bb4932d7d06956e85facdfa34244"
+    }
+  },
+  "native_predictions": [
+    2.0,
+    2.5,
+    1.25,
+    5.5,
+    6.25,
+    13.0,
+    11.25,
+    17.0,
+    16.25
+  ],
+  "correct_predictions": [
+    2.000000000000001,
+    2.0000000000000018,
+    1.4000000000000004,
+    6.000000000000001,
+    6.299999999999999,
+    12.999999999999998,
+    11.2,
+    17.0,
+    16.099999999999998
+  ],
+  "native_sse": 3.25,
+  "correct_sse": 2.700000000000001,
+  "native_normal_equations": {
+    "intercept": 0.0,
+    "x0": 0.0,
+    "x0.NA": 0.0,
+    "x1": 0.0,
+    "x1.NA": -0.5,
+    "x2": 0.0,
+    "x3": 0.0
+  },
+  "correct_normal_equations": {
+    "intercept": 1.7763568394002505e-15,
+    "x0": 2.436146522606058e-14,
+    "x0.NA": 8.881784197001252e-16,
+    "x1": 7.105427357601002e-15,
+    "x1.NA": -1.7763568394002505e-15,
+    "x2": 1.9539925233402755e-14,
+    "x3": 8.881784197001252e-15
+  }
+}

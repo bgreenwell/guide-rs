@@ -1,0 +1,24 @@
+GUIDE       (generated from the GUIDE 46.3 interactive input writer)
+  46.3      (version header; tested with 46.2 and 46.3)
+ 1          (model fitting)
+"regression.out"
+ 1          (single tree)
+ 2          (regression)
+ 1          (linear)
+ 1          (least squares)
+ 3          (constant node models)
+ 1          (interaction tests)
+ 2          (no pruning)
+"data.dsc"
+ 2          (exhaustive numerical split search)
+ 2          (specify maximum depth)
+ 1          (one split level)
+ 2          (specify minimum node size)
+ 2          (minimum node size)
+ 0          (no LaTeX)
+ 3          (store split variables and cutpoints)
+"splits.txt"
+ 2          (save fitted values and node IDs)
+"predictions.txt"
+ 1          (skip R export)
+ 1          (rank of root split variable)

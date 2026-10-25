@@ -1,0 +1,9 @@
+         1 s outer outer        1   0.5000000000E+00
+         2 c group group        2   "a" "d"
+         4 t NONE NONE   t
+         2 c group group        2   "a" "d"
+         5 t NONE NONE   t
+         3 c group group        2   "A" "NA"
+         6 t NONE NONE   t
+         3 c group group        2   "A" "NA"
+         7 t NONE NONE   t

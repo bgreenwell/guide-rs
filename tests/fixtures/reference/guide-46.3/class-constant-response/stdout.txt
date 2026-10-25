@@ -1,0 +1,43 @@
+ GUIDE Classification and Regression Trees and Forests
+ Version 46.3 (Build date: July 11, 2026)          
+ Compiled with NAG Fortran 7.2 on macOS Tahoe 26.4.1 for Apple ARM processors    
+ Copyright (c) 1997-2026 Wei-Yin Loh. All rights reserved.
+ Software based upon work partially supported by the U.S. Army Research Office,
+ National Science Foundation, National Institutes of Health,
+ Bureau of Labor Statistics, USDA Economic Research Service, and Eli Lilly.
+  
+ Choose one of the following options:
+ 0. Read the warranty disclaimer
+ 1. Create a GUIDE input file
+ Input your choice:  Batch run with input file 
+ Input 1 for model fitting, 2 for importance or DIF scoring, 3 for data conversion: 1
+  
+ Job start date and time: 10/23/26 at 14:43
+  
+ Input 1 for single tree, 2 for ensemble of trees: 1
+ Input 1 for classification, 2 for regression, 3 for propensity score tree
+ Input your choice: 1
+ Input 1 for simple, 2 for nearest-neighbor, 3 for kernel, 4 for lda,  5 for qda, 6 for bivariate qda, 7 for linear splits and constant models: 1
+ Input 0 for linear, interaction and univariate splits (in this order),
+       1 for univariate, linear and interaction splits (in this order),
+       2 to skip linear splits,
+       3 to skip linear and interaction splits: 2
+ Input 0 to specify tree with fixed no. of nodes, 1 to prune by CV,
+       2 by test sample, 3 for no pruning: 3
+ Bonferroni alpha = 0.100
+  
+ Input name of DSC file (max 100 characters);
+ enclose with matching quotes if it has spaces: data.dsc
+ Reading DSC file ...
+ Training sample file: data.txt
+ Missing value code: NA
+ Records in data file start on line 2
+ D variable is y
+ Reading data file ...
+ Number of records in data file: 40
+ Length of longest entry in data file: 2
+ Checking for missing values ...
+ Finished checking
+ Recoding D values to integers
+ Finished recoding
+ Error: Only one class level in data

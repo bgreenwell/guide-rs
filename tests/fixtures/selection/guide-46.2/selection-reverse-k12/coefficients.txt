@@ -1,0 +1,2 @@
+Node Constant x group.b group.c group.d
+1 0.24879E-14 -0.38970E-15 0.11206E-16 0.33337E-14 0.56533E-14

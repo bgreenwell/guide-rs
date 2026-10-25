@@ -1,0 +1,44 @@
+{
+  "schema": [
+    {
+      "name": "x",
+      "feature_type": {
+        "kind": "numeric"
+      },
+      "role": "fit"
+    },
+    {
+      "name": "z",
+      "feature_type": {
+        "kind": "numeric"
+      },
+      "role": "fit"
+    }
+  ],
+  "rows": [
+    [
+      0,
+      0
+    ],
+    [
+      1,
+      1
+    ],
+    [
+      2,
+      2
+    ],
+    [
+      3,
+      0
+    ]
+  ],
+  "targets": [
+    2.8,
+    0.9,
+    -1.0,
+    9.1
+  ],
+  "weights": [],
+  "offsets": []
+}

@@ -1,0 +1,14 @@
+{
+  "description": "Rust reference8 model fitted before the singleton gate correction; must load without refitting.",
+  "algorithm_version": "guide-rs-0.1-experimental-reference8",
+  "source_case": "categorical-linear-split-and-fit",
+  "model_sha256": "bb40c46b9f9a74a18206e682166802812a340f12b2e081e3fb63bea971698f23",
+  "input_sha256": {
+    "dataset.json": "1a8f4f3da7d1b08150320b0744d7dca0417d876a631e95d05117d480ac2aa84a",
+    "options.json": "2b405aff2126fb374965d5737658c543985b128511d99b27df3ac9ec88c29aa8",
+    "data.csv": "9c2d8b3ba3ac892a750470166c8232231f5dd4eec249ca7af0840b9203d9f258"
+  },
+  "leaves": 2,
+  "root_sse": 28750,
+  "leaf_sse_upper_bound": 1e-20
+}

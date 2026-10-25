@@ -1,0 +1,18 @@
+{
+  "data": {
+    "target": "mpg",
+    "features": [
+      {"name": "wt", "feature_type": {"kind": "numeric"}, "role": "both"},
+      {"name": "hp", "feature_type": {"kind": "numeric"}, "role": "both"},
+      {"name": "cyl", "feature_type": {"kind": "categorical"}, "role": "split"}
+    ]
+  },
+  "fit": {
+    "task": {"kind": "regression", "loss": {"kind": "quantile", "probability": 0.5}},
+    "node_model": {"kind": "linear"},
+    "min_samples_leaf": 8,
+    "max_depth": 3,
+    "pruning": {"kind": "cross_validation", "folds": 5, "standard_errors": 0.25},
+    "seed": 42
+  }
+}

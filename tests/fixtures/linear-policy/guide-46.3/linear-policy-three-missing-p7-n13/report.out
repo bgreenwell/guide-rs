@@ -1,0 +1,113 @@
+             GGG   U   U  I  DDDD   EEEE
+            G   G  U   U  I  D   D  E
+            G      U   U  I  D   D  E
+            G  GG  U   U  I  D   D  EEE
+            G   G  U   U  I  D   D  E
+            G   G  U   U  I  D   D  E
+             GGG    UUU   I  DDDD   EEEE
+   
+ GUIDE Classification and Regression Trees and Forests
+ Version 46.3 (Build date: July 11, 2026)          
+ Compiled with NAG Fortran 7.2 on macOS Tahoe 26.4.1 for Apple ARM processors    
+ Copyright (c) 1997-2023 Wei-Yin Loh. All rights reserved.
+ This software is based upon work partially supported by the U.S. Army Research Office,
+ National Science Foundation, National Institutes of Health,
+ Bureau of Labor Statistics, USDA Economic Research Service, and Eli Lilly.
+  
+ This job was started on 10/24/26 at 13:40
+  
+ Least squares regression tree
+ No truncation of predicted values
+ No pruning
+ DSC file: data.dsc
+ Training sample file: data.txt
+ Missing value code: NA
+ Records in data file start on line 2
+ D variable is y
+ Piecewise linear model
+ Number of records in data file: 13
+ Length of longest entry in data file: 2
+ Missing values found among non-categorical variables
+  
+ Summary information for training sample of size 13
+ d=dependent, b=split and fit cat variable using indicator variables,
+ c=split-only categorical, i=fit-only categorical (via indicators),
+ s=split-only numerical, n=split and fit numerical, f=fit-only numerical,
+ m=missing-value flag variable, p=periodic variable, w=weight
+                                                     #Codes/           
+                                                     Levels/           
+  Column  Name               Minimum      Maximum    Periods   #Missing
+       1  x0            f   1.0000E+00    12.00                    3
+       2  x1            f   0.0000E+00    6.000                    2
+       3  x2            f   0.0000E+00    9.000                    2
+       4  x3            f    0.000        12.00    
+       5  x4            f    0.000        12.00    
+       6  x5            f    0.000        16.00    
+       7  x6            f    0.000        16.00    
+       8  y             d    2.000        25.00    
+   =================== Constructed variables ===================
+       9  x0.NA         f    0.000        1.000    
+      10  x1.NA         f    0.000        1.000    
+      11  x2.NA         f    0.000        1.000    
+  
+ Numbers of N, F, S, and P below exclude constant variables
+      Total  #cases w/   #missing
+     #cases    miss. D  ord. vals   #X-var   #N-var   #F-var   #S-var
+         13          0          7        0        0       10        0
+     #P-var   #M-var   #B-var   #C-var   #I-var
+          0        0        0        0        0
+ Number of missing-value indicators created: 3
+ No weight variable in data file
+ Number of cases used for training: 13
+ Number of cases excluded due to 0 W or missing D variable: 0
+  
+ Missing regressors imputed with means and missing-value indicators added
+ Note: too many predictor variables;no interaction and linear splits
+ No nodewise interaction tests
+ Split values for N and S variables based on exhaustive search
+ Maximum number of interaction splits: 100
+ Maximum number of split levels: 1
+ Minimum node sample size: 2
+ Tree has no splits
+  
+ Structure of final tree. Each terminal node is marked with a T.
+  
+ D-mean is mean of y in the node
+ Cases fit give the number of cases used to fit node
+ MSE and R^2 are based on all cases in node
+        Node    Total    Cases Matrix    Node      Node      Node  Split           Other
+        label   cases      fit  rank    D-mean     MSE       R^2   variable        variables
+           1T      13       13    11  1.200E+01  2.167E+01  0.9431 - 
+  
+ Number of terminal nodes of final tree: 1
+ Total number of nodes of final tree: 1
+  
+ Regression tree:
+  
+ Node 1: y-mean = 12.000000
+ 
+ ***************************************************************
+ Predictor means below are means of cases with no missing values.
+ Regression coefficients are computed from the complete cases.
+  
+Node 1: Terminal node
+ Coefficients of least squares regression function:
+ x0               2.112        2.729       0.1121        1.000        6.300        12.00    
+ x1              -1.864       -1.068       0.3975        0.000        3.182        6.000    
+ x2             -0.1407      -0.1079       0.9239        0.000        4.455        9.000    
+ x3              0.1151       0.1318       0.9072        0.000        6.000        12.00    
+ x4              0.3392       0.4098       0.7216        0.000        5.538        12.00    
+ x5              0.4086       0.6506       0.5820        0.000        8.462        16.00    
+ x6               1.015        1.587       0.2535        0.000        7.846        16.00    
+ x0.NA          -0.6370      -0.7357E-01   0.9480        0.000       0.2308        1.000    
+ x1.NA           -5.162      -0.7502       0.5314        0.000       0.1538        1.000    
+ x2.NA            5.695       0.7094       0.5517        0.000       0.1538        1.000    
+ y mean = 12.0000
+ No truncation of predicted values
+ ----------------------------
+ Proportion of variance (R-squared) explained by tree model: 0.9431
+ 
+ Observed and fitted values are stored in predictions.txt
+ Regressor names and coefficients are stored in coefficients.txt
+ Split and fit variable names are stored in splits.txt
+ Elapsed time in seconds: 0.19010E-02

@@ -1,0 +1,155 @@
+             GGG   U   U  I  DDDD   EEEE
+            G   G  U   U  I  D   D  E
+            G      U   U  I  D   D  E
+            G  GG  U   U  I  D   D  EEE
+            G   G  U   U  I  D   D  E
+            G   G  U   U  I  D   D  E
+             GGG    UUU   I  DDDD   EEEE
+   
+ GUIDE Classification and Regression Trees and Forests
+ Version 46.2 (Build date: April 27, 2026)         
+ Compiled with NAG Fortran 7.2 on macOS Tahoe 26.4.1 for Apple ARM processors    
+ Copyright (c) 1997-2023 Wei-Yin Loh. All rights reserved.
+ This software is based upon work partially supported by the U.S. Army Research Office,
+ National Science Foundation, National Institutes of Health,
+ Bureau of Labor Statistics, USDA Economic Research Service, and Eli Lilly.
+  
+ This job was started on 10/23/26 at 23:56
+  
+ Least squares regression tree
+ No truncation of predicted values
+ Pruning by cross-validation
+ DSC file: data.dsc
+ Training sample file: data.txt
+ Missing value code: NA
+ Records in data file start on line 2
+ D variable is y
+ Piecewise linear model
+ Number of records in data file: 64
+ Length of longest entry in data file: 2
+ Smallest and largest positive weights are  1.0000E+00 and 5.0000E+00
+  
+ Summary information for training sample of size 64
+ d=dependent, b=split and fit cat variable using indicator variables,
+ c=split-only categorical, i=fit-only categorical (via indicators),
+ s=split-only numerical, n=split and fit numerical, f=fit-only numerical,
+ m=missing-value flag variable, p=periodic variable, w=weight
+                                                  #Codes/           
+                                                  Levels/           
+  Column  Name            Minimum      Maximum    Periods   #Missing
+       1  x          s    0.000        63.00    
+       2  z          f   -3.000        3.000    
+       3  y          d   -7.000        28.00    
+       4  weight     w    1.000        5.000    
+  
+ Numbers of N, F, S, and P below exclude constant variables
+      Total  #cases w/   #missing
+     #cases    miss. D  ord. vals   #X-var   #N-var   #F-var   #S-var
+         64          0          0        0        0        1        1
+     #P-var   #M-var   #B-var   #C-var   #I-var
+          0        0        0        0        0
+ Weight variable weight in column: 4
+ Number of cases used for training: 64
+ Number of cases excluded due to 0 W or missing D variable: 0
+  
+ Constant fitted to cases with missing values in regressor variables
+ Pruning by v-fold cross-validation, with v = 64
+ Selected tree is based on mean of CV estimates
+ Number of SE's for pruned tree: 0.2500
+  
+ Weighted error estimates used for pruning
+ Nodewise interaction tests on all variables
+ Split values for N and S variables based on exhaustive search
+ Max number of interaction splits: 100
+ Maximum number of split levels: 2
+ Minimum node sample size: 12
+ Size and CV MSE and SE of subtrees:
+  Tree   #Tnodes  Mean MSE   SE(Mean)    BSE(Mean)  Median MSE  BSE(Median)
+    0        4   1.234E+01   8.001E+00   7.165E+00   2.143E+00   7.508E-01
+    1**      3   1.234E+01   8.001E+00   7.165E+00   2.143E+00   7.508E-01
+    2        2   3.119E+01   1.011E+01   8.911E+00   1.319E+01   2.469E+00
+    3        1   2.381E+02   2.318E+01   2.315E+01   1.814E+02   3.458E+01
+  
+ 0-SE tree based on mean is marked with * and has 3 terminal nodes
+ 0-SE tree based on median is marked with + and has 3 terminal nodes
+ Selected-SE tree based on mean using naive SE is marked with **
+ Selected-SE tree based on mean using bootstrap SE is marked with --
+ Selected-SE tree based on median and bootstrap SE is marked with ++
+ * tree, ** tree, + tree, and ++ tree all the same
+  
+ Following tree is based on mean CV with naive SE estimate (**)
+  
+ Structure of final tree. Each terminal node is marked with a T.
+  
+ D-mean is weighted mean of y in the node
+ Cases fit give the number of cases used to fit node
+ MSE and R^2 are based on all cases in node
+        Node    Total    Cases Matrix    Node      Node      Node  Split           Other
+        label   cases      fit  rank    D-mean     MSE       R^2   variable        variables
+           1       64       64     2  1.004E+01  2.273E+02  0.2414 x 
+           2T      32       32     2  1.398E+00  9.048E+00  0.8835 x 
+           3       32       32     2  1.833E+01  2.987E+01  0.6599 x 
+           6T      16       16     2  1.548E+01  2.250E+00  0.9655 - 
+           7T      16       16     2  2.112E+01  2.399E+00  0.9646 - 
+  
+ Number of terminal nodes of final tree: 3
+ Total number of nodes of final tree: 5
+  
+ Regression tree:
+  
+ Node 1: x <= 31.500000
+   Node 2: y-mean = 1.3978495
+ Node 1: x > 31.500000 or NA
+   Node 3: x <= 47.500000
+     Node 6: y-mean = 15.479167
+   Node 3: x > 47.500000 or NA
+     Node 7: y-mean = 21.122449
+ 
+ ***************************************************************
+ Predictor means are the weighted means.
+  
+ WARNING: p-values below not adjusted for split search. For a bootstrap solution see:
+  
+ 1. Loh et al. (2016), "Identification of subgroups with differential treatment effects
+ for longitudinal and multiresponse variables", Statistics in Medicine, v.35, 4837-4855.
+  
+ 2. Loh et al. (2019), "Subgroups from regression trees with adjustment for prognostic
+ effects and post-selection inference", Statistics in Medicine, v.38, 545-557.
+  
+ 3. Loh and Zhou (2020), "The GUIDE approach to subgroup identification",
+ in "Design and Analysis of Subgroups with Biopharmaceutical Applications", Springer, pp.147-165.
+  
+Node 1: Intermediate node
+ A case goes into Node 2 if x <= 31.500000
+ x mean = 31.842105
+ z             2.173        4.442       0.3745E-04   -3.000       0.5263E-01    3.000    
+ No truncation of predicted values
+ ----------------------------
+Node 2: Terminal node
+ Coefficients of weighted least squares regression function and weighted means:
+ z             2.061        15.08       0.1370E-14   -3.000      -0.5376E-01    3.000    
+ y mean = 1.39785
+ No truncation of predicted values
+ ----------------------------
+Node 3: Intermediate node
+ A case goes into Node 6 if x <= 47.500000
+ x mean = 47.350515
+ ----------------------------
+Node 6: Terminal node
+ Coefficients of weighted least squares regression function and weighted means:
+ z             1.926        19.80       0.1230E-10   -3.000       0.2083        3.000    
+ y mean = 15.4792
+ No truncation of predicted values
+ ----------------------------
+Node 7: Terminal node
+ Coefficients of weighted least squares regression function and weighted means:
+ z             2.020        19.54       0.1477E-10   -3.000       0.1020        3.000    
+ y mean = 21.1224
+ No truncation of predicted values
+ ----------------------------
+ Proportion of variance (R-squared) explained by tree model: 0.9819
+ 
+ Observed and fitted values are stored in predictions.txt
+ Regressor names and coefficients are stored in coefficients.txt
+ Split and fit variable names are stored in splits.txt
+ Elapsed time in seconds: 0.21550E-01

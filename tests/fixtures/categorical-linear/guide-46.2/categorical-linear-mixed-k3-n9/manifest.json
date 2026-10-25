@@ -1,0 +1,123 @@
+{
+  "fixture_format": 2,
+  "case": "categorical-linear-mixed-k3-n9",
+  "created_utc": "2026-10-24T19:19:27.744634+00:00",
+  "source_url": "https://pages.stat.wisc.edu/~loh/treeprogs/guide/mac/m1/guide462.zip",
+  "binary_sha256": "5ff05c74d9b6554c460d8d8fdfede07ec46616340e6f48cbcd93f62bb4ab5a24",
+  "requested_version": "46.2",
+  "template_generated_by": "46.3",
+  "completed": true,
+  "settings": {
+    "task": {
+      "kind": "regression",
+      "loss": {
+        "kind": "squared_error"
+      }
+    },
+    "node_model": {
+      "kind": "linear"
+    },
+    "max_depth": 1,
+    "min_samples_leaf": 2,
+    "min_gain": 0.0,
+    "interactions": true,
+    "linear_splits": false,
+    "significance_level": 0.1,
+    "max_split_candidates": 0,
+    "pruning": {
+      "kind": "none"
+    },
+    "seed": 0,
+    "class_priors": null,
+    "class_costs": null,
+    "mtry": null
+  },
+  "tolerances": {
+    "cutpoint_absolute": 1e-09,
+    "prediction_absolute": 5e-05,
+    "prediction_relative": 5e-06,
+    "probability_absolute": 5e-06
+  },
+  "returncode": 0,
+  "result": {
+    "version": "46.2",
+    "build_date": "April 27, 2026",
+    "outcome": "fitted",
+    "classes": [],
+    "leaf_count": 1,
+    "splits": [],
+    "predictions": [
+      13.5556,
+      13.5556,
+      13.5556,
+      13.5556,
+      13.5556,
+      13.5556,
+      13.5556,
+      13.5556,
+      13.5556
+    ],
+    "observed": [
+      2.0,
+      14.5,
+      26.0,
+      6.5,
+      18.0,
+      16.5,
+      10.0,
+      8.5,
+      20.0
+    ],
+    "terminal_node_ids": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "probabilities": [],
+    "training_rows": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "prediction_tolerances": [
+      5.0001000000000005e-05,
+      5.0001000000000005e-05,
+      5.0001000000000005e-05,
+      5.0001000000000005e-05,
+      5.0001000000000005e-05,
+      5.0001000000000005e-05,
+      5.0001000000000005e-05,
+      5.0001000000000005e-05,
+      5.0001000000000005e-05
+    ],
+    "active_count": 9,
+    "expected_fit": "constant",
+    "nominal_minimum": 10
+  },
+  "file_sha256": {
+    "data.dsc": "540391e76c274fdefa76a544870880f3f4ae812faabdb7db684045eff4a51f8d",
+    "data.txt": "daeb0cf8d6a50c6725feb99e9954040ba1f4120f6b204900a2ee6a8dbc5ad455",
+    "data.csv": "9aff0a39f2cfd914f9dc391d7a8673c47e7a88be035fa457fb29156860296627",
+    "input.txt": "8c7e903144a0f265ca4107d55acc79c1aa0a77eb634119b3cdb9926ef6e0cbb4",
+    "dataset.json": "ccad7b9632824fb0385ade903e89e745ad30ffcadf635dc64986a09faf9c0e99",
+    "options.json": "2b405aff2126fb374965d5737658c543985b128511d99b27df3ac9ec88c29aa8",
+    "stdout.txt": "209d4bea26fd30e7d07373b29e2763bd9e537010a324b7588647482aabd7d816",
+    "stderr.txt": "092e035a3cdec636adb676d0d9e6bcdf6e8566e1026576438d6beb0d74c14b05",
+    "report.out": "0c9c1a4c6fbbba8850829d254d9ce81f35a7d4c2911028e63c8cd209257e1e9a",
+    "splits.txt": "90c7a6f78ed71dba98ad6a4c58d929cf52d10f9d2031bcff03f9e139ac5d9935",
+    "predictions.txt": "61f70a24ace05a1bd4598343e761140acd135889c362e26a2ed0ef39a65e7b6d",
+    "coefficients.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

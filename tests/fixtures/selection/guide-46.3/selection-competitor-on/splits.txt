@@ -1,0 +1,4 @@
+         1 c group group        2   "a" "b"
+         2 t other other   t
+         1 c group group        2   "a" "b"
+         3 t other other   t

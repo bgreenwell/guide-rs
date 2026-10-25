@@ -1,0 +1,2 @@
+    Rank Group    Score       Missing     Variable
+       1  A     9.847E+00          40     signal

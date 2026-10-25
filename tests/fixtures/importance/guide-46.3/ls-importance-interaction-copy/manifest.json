@@ -1,0 +1,117 @@
+{
+  "fixture_format": 1,
+  "case": "ls-importance-interaction-copy",
+  "created_utc": "2026-10-23T20:26:20.378082+00:00",
+  "binary_sha256": "8d37e993f1948310d9f5003574db43734ab0f23aea0bb6c34c653dbf9a55a526",
+  "source_url": "https://pages.stat.wisc.edu/~loh/treeprogs/guide/mac/m1/guide.zip",
+  "requested_version": "46.3",
+  "completed": true,
+  "settings": {
+    "task": {
+      "kind": "regression",
+      "loss": {
+        "kind": "squared_error"
+      }
+    },
+    "node_model": {
+      "kind": "constant"
+    },
+    "max_depth": 1,
+    "min_samples_leaf": 2,
+    "min_gain": 0.0,
+    "interactions": true,
+    "linear_splits": false,
+    "significance_level": 0.1,
+    "max_split_candidates": 0,
+    "pruning": {
+      "kind": "none"
+    },
+    "seed": 0,
+    "class_priors": null,
+    "class_costs": null,
+    "mtry": null
+  },
+  "importance_options": {
+    "permutations": 300,
+    "max_depth": 1,
+    "seed": 0
+  },
+  "independent_raw_statistics": {
+    "a": {
+      "chi_square": 80,
+      "degrees_of_freedom": 3
+    },
+    "b": {
+      "chi_square": 80,
+      "degrees_of_freedom": 3
+    },
+    "copy": {
+      "chi_square": 80,
+      "degrees_of_freedom": 3
+    }
+  },
+  "expected_important": [
+    "a",
+    "b",
+    "copy"
+  ],
+  "expected_zero": [
+    "noise"
+  ],
+  "comparison_scope": "Reported important sets/rank relations; raw scores checked independently. Exact Monte Carlo-adjusted magnitudes and thresholds are not claimed equivalent.",
+  "returncode": 0,
+  "result": {
+    "version": "46.3",
+    "build_date": "July 11, 2026",
+    "score_kind": "normalized",
+    "scores": [
+      {
+        "feature": "b",
+        "rank": 1.0,
+        "group": "A",
+        "normalized_score": 13.39,
+        "score_tolerance": 0.005,
+        "missing_native": 0.0
+      },
+      {
+        "feature": "copy",
+        "rank": 2.0,
+        "group": "A",
+        "normalized_score": 12.38,
+        "score_tolerance": 0.005,
+        "missing_native": 0.0
+      },
+      {
+        "feature": "a",
+        "rank": 3.0,
+        "group": "A",
+        "normalized_score": 7.968,
+        "score_tolerance": 0.0005,
+        "missing_native": 0.0
+      }
+    ],
+    "thresholds": {
+      "99": 1.5934,
+      "95": 1.0,
+      "90": 0.6629,
+      "80": 0.5251,
+      "50": 0.3217
+    },
+    "omitted_features": [
+      "noise"
+    ]
+  },
+  "file_sha256": {
+    "data.dsc": "1c995a4d677eb4bc4253563e2ee3e9883d94f6ca21d16196c4935b77966e7549",
+    "data.txt": "c59e9b45a5729c7da30c2ee6e17830e5b0f7fbbeeabba481caaf9b70528f264c",
+    "data.csv": "b8a4a8148623f2e8f054061130575385a3069af74431c37dfcbc20669a8f1c9e",
+    "input.txt": "1fd11e49036ab229ac213dbd7ecf2c228df9dce0d88ec2564cd83971d79159c4",
+    "dataset.json": "24a0db58b90dbf0fd008a1e45f719b6eafe41678ca58e2bdcb6328e9d8f99deb",
+    "options.json": "6fcbf3326fa88ffdef6a9af4827e7200da64e1926618289cf30aac0cdabb4cf4",
+    "importance.json": "2eb061c32bef0186b1916fb9333f94bdc96c944816e4c45ed2742e131b0971c8",
+    "stdout.txt": "ee4eda1007ec0df666c5657b4fa7a2245c949d9ac350f14d008dc661bbbbeaba",
+    "stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "report.out": "82b0c7222d63292fd2717be9d098aaeb754fa4f3088e8ca9e620d8fac6b2a300",
+    "scores.txt": "abbc106c7d5b392bf55324c427db18fdf0fee98453f04cdfb94dc20d3b791e9c"
+  }
+}

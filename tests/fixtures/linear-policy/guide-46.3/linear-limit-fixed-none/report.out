@@ -1,0 +1,140 @@
+             GGG   U   U  I  DDDD   EEEE
+            G   G  U   U  I  D   D  E
+            G      U   U  I  D   D  E
+            G  GG  U   U  I  D   D  EEE
+            G   G  U   U  I  D   D  E
+            G   G  U   U  I  D   D  E
+             GGG    UUU   I  DDDD   EEEE
+   
+ GUIDE Classification and Regression Trees and Forests
+ Version 46.3 (Build date: July 11, 2026)          
+ Compiled with NAG Fortran 7.2 on macOS Tahoe 26.4.1 for Apple ARM processors    
+ Copyright (c) 1997-2023 Wei-Yin Loh. All rights reserved.
+ This software is based upon work partially supported by the U.S. Army Research Office,
+ National Science Foundation, National Institutes of Health,
+ Bureau of Labor Statistics, USDA Economic Research Service, and Eli Lilly.
+  
+ This job was started on 10/24/26 at 13:25
+  
+ Least squares regression tree
+ No truncation of predicted values
+ Largest tree with at most 3 terminal nodes *** tree may not be optimal! ***
+ DSC file: data.dsc
+ Training sample file: data.txt
+ Missing value code: NA
+ Records in data file start on line 2
+ D variable is y
+ Piecewise linear model
+ Number of records in data file: 64
+ Length of longest entry in data file: 3
+  
+ Summary information for training sample of size 64
+ d=dependent, b=split and fit cat variable using indicator variables,
+ c=split-only categorical, i=fit-only categorical (via indicators),
+ s=split-only numerical, n=split and fit numerical, f=fit-only numerical,
+ m=missing-value flag variable, p=periodic variable, w=weight
+                                                  #Codes/           
+                                                  Levels/           
+  Column  Name            Minimum      Maximum    Periods   #Missing
+       1  g          s    0.000        63.00    
+       2  z          f    0.000        15.00    
+       3  y          d    0.000        745.0    
+  
+ Numbers of N, F, S, and P below exclude constant variables
+      Total  #cases w/   #missing
+     #cases    miss. D  ord. vals   #X-var   #N-var   #F-var   #S-var
+         64          0          0        0        0        1        1
+     #P-var   #M-var   #B-var   #C-var   #I-var
+          0        0        0        0        0
+ No weight variable in data file
+ Number of cases used for training: 64
+  
+ Constant fitted to cases with missing values in regressor variables
+ Nodewise interaction tests on all variables
+ Split values for N and S variables based on exhaustive search
+ Maximum number of interaction splits: 100
+ Maximum number of split levels: 2
+ Minimum node sample size: 10
+  
+ Pruning sequence
+   Subtree     Pruned  #Terminal        True           Geometric
+    number       node      nodes        alpha             mean
+         0          0          4       0.0000          0.0000    
+         1          2          3       1250.0          1500.0    
+         2          3          2       1800.0          8697.4    
+         3          1          1       42025.         0.17977+309
+  
+  
+ Structure of final tree. Each terminal node is marked with a T.
+  
+ D-mean is mean of y in the node
+ Cases fit give the number of cases used to fit node
+ MSE and R^2 are based on all cases in node
+        Node    Total    Cases Matrix    Node      Node      Node  Split           Other
+        label   cases      fit  rank    D-mean     MSE       R^2   variable        variables
+           1       64       64     2  3.325E+02  4.690E+04  0.0952 g 
+           2T      32       32     2  1.275E+02  3.047E+03  0.6260 g 
+           3       32       32     2  5.375E+02  4.221E+03  0.5472 g 
+           6T      16       16     2  4.775E+02  4.080E+02  0.9305 - 
+           7T      16       16     2  5.975E+02  4.080E+02  0.9305 - 
+  
+ Number of terminal nodes of final tree: 3
+ Total number of nodes of final tree: 5
+  
+ Regression tree:
+  
+ Node 1: g <= 31.500000
+   Node 2: y-mean = 127.50000
+ Node 1: g > 31.500000 or NA
+   Node 3: g <= 47.500000
+     Node 6: y-mean = 477.50000
+   Node 3: g > 47.500000 or NA
+     Node 7: y-mean = 597.50000
+ 
+ ***************************************************************
+  
+ WARNING: p-values below not adjusted for split search. For a bootstrap solution see:
+  
+ 1. Loh et al. (2016), "Identification of subgroups with differential treatment effects
+ for longitudinal and multiresponse variables", Statistics in Medicine, v.35, 4837-4855.
+  
+ 2. Loh et al. (2019), "Subgroups from regression trees with adjustment for prognostic
+ effects and post-selection inference", Statistics in Medicine, v.38, 545-557.
+  
+ 3. Loh and Zhou (2020), "The GUIDE approach to subgroup identification",
+ in "Design and Analysis of Subgroups with Biopharmaceutical Applications", Springer, pp.147-165.
+  
+Node 1: Intermediate node
+ A case goes into Node 2 if g <= 31.500000
+ g mean = 31.500000
+ z             15.00        2.554       0.1311E-01    0.000        7.500        15.00    
+ No truncation of predicted values
+ ----------------------------
+Node 2: Terminal node
+ Coefficients of least squares regression function:
+ z             15.00        7.086       0.7038E-07    0.000        7.500        15.00    
+ y mean = 127.500
+ No truncation of predicted values
+ ----------------------------
+Node 3: Intermediate node
+ A case goes into Node 6 if g <= 47.500000
+ g mean = 47.500000
+ ----------------------------
+Node 6: Terminal node
+ Coefficients of least squares regression function:
+ z             15.00        13.69       0.1689E-08    0.000        7.500        15.00    
+ y mean = 477.500
+ No truncation of predicted values
+ ----------------------------
+Node 7: Terminal node
+ Coefficients of least squares regression function:
+ z             15.00        13.69       0.1689E-08    0.000        7.500        15.00    
+ y mean = 597.500
+ No truncation of predicted values
+ ----------------------------
+ Proportion of variance (R-squared) explained by tree model: 0.9680
+ 
+ Observed and fitted values are stored in predictions.txt
+ Regressor names and coefficients are stored in coefficients.txt
+ Split and fit variable names are stored in splits.txt
+ Elapsed time in seconds: 0.47570E-02

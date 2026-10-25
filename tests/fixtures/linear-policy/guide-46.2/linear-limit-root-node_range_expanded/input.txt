@@ -1,0 +1,28 @@
+GUIDE (numeric multiple-linear policy acceptance)
+46.2
+1
+"report.out"
+1
+2
+1
+1
+1
+1
+2
+1
+2
+"data.dsc"
+2
+2
+1
+2
+2
+0
+3
+"splits.txt"
+2
+"coefficients.txt"
+2
+"predictions.txt"
+1 (skip R)
+1

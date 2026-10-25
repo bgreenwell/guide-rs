@@ -1,0 +1,120 @@
+ GUIDE Classification and Regression Trees and Forests
+ Version 46.3 (Build date: July 11, 2026)          
+ Compiled with NAG Fortran 7.2 on macOS Tahoe 26.4.1 for Apple ARM processors    
+ Copyright (c) 1997-2026 Wei-Yin Loh. All rights reserved.
+ Software based upon work partially supported by the U.S. Army Research Office,
+ National Science Foundation, National Institutes of Health,
+ Bureau of Labor Statistics, USDA Economic Research Service, and Eli Lilly.
+  
+ Choose one of the following options:
+ 0. Read the warranty disclaimer
+ 1. Create a GUIDE input file
+ Input your choice:  Batch run with input file 
+ Input 1 for model fitting, 2 for importance or DIF scoring, 3 for data conversion: 2
+  
+ Job start date and time: 10/23/26 at 16:26
+  
+ Input 1 for classification, 2 for regression, 3 for propensity score tree
+ Input your choice: 1
+ Input 1 for univariate and interaction splits,
+       2 to skip interaction splits: 1
+ Bonferroni alpha = 0.100
+  
+ Input name of DSC file (max 100 characters);
+ enclose with matching quotes if it has spaces: data.dsc
+ Reading DSC file ...
+ Training sample file: data.txt
+ Missing value code: NA
+ Records in data file start on line 2
+ D variable is y
+ Reading data file ...
+ Number of records in data file: 80
+ Length of longest entry in data file: 1
+ Checking for missing values ...
+ Finished checking
+ Recoding D values to integers
+ Finished recoding
+ Number of classes: 2
+ Re-checking data ...
+ Assigning codes to missing values, if any ...
+ Data checks complete
+ Rereading data ...
+ Class  #Cases     Proportion
+ a          40     0.50000000
+ b          40     0.50000000
+ Numbers of N, F, S, and P below exclude constant variables
+      Total  #cases w/   #missing
+     #cases    miss. D  ord. vals   #X-var   #N-var   #F-var   #S-var
+         80          0          0        0        0        0        4
+     #P-var   #M-var   #B-var   #C-var   #I-var
+          0        0        0        0        0
+ Number of cases used for training: 80
+ Finished reading data file
+ Choose 1 for estimated priors, 2 for equal priors, 3 to input priors from a file
+ Input 1, 2, or 3: 1
+ Choose 1 for unit misclassification costs, 2 to input costs from a file
+ Input 1 or 2: 1
+ Univariate split highest priority
+ Interaction and linear splits 2nd and 3rd priorities
+ Choose a split point selection method for numerical variables:
+ Choose 1 to use faster method based on sample quantiles
+ Choose 2 to use exhaustive search
+ Input 1 or 2: 2
+ Input max. number of split levels: 1
+ Maximum number of split levels: 1
+ Input 1 for default minimum node size, 2 to specify minimum value: 2
+ Minimum node size: 2
+ Choose 0=no LaTeX, 1=tree without node numbers, 2=tree with node numbers: 0
+ You can store the variables and/or values used to split and fit in a file
+ Choose 1 to skip this step, 2 to store split and fit variables,
+ 3 to store split variables and their values
+ Input your choice: 1
+ You can create a DSC file with the selected variables included or excluded
+ Input 2 to create such a file, 1 otherwise: 1
+ You can also output the importance scores and variable names to a file
+ Input 1 to create such a file, 2 otherwise: 1
+ Importance scores file name: scores.txt
+ Starting 300 permutations to standardize means of importance scores
+ Finished 10 permutations
+ Finished 20 permutations
+ Finished 30 permutations
+ Finished 40 permutations
+ Finished 50 permutations
+ Finished 60 permutations
+ Finished 70 permutations
+ Finished 80 permutations
+ Finished 90 permutations
+ Finished 100 permutations
+ Finished 110 permutations
+ Finished 120 permutations
+ Finished 130 permutations
+ Finished 140 permutations
+ Finished 150 permutations
+ Finished 160 permutations
+ Finished 170 permutations
+ Finished 180 permutations
+ Finished 190 permutations
+ Finished 200 permutations
+ Finished 210 permutations
+ Finished 220 permutations
+ Finished 230 permutations
+ Finished 240 permutations
+ Finished 250 permutations
+ Finished 260 permutations
+ Finished 270 permutations
+ Finished 280 permutations
+ Finished 290 permutations
+ Finished 300 permutations
+ Finished permutations to standardize means of importance scores
+ Constructing tree ...
+ Note: final tree is shorter due to pruning of sibling nodes with same predicted values.
+ Number of terminal nodes of final tree: 1
+ Number of variables above 99% threshold is 3
+ Number of variables between 95% and 99% thresholds is 0
+ Number of variables between 90% and 95% thresholds is 0
+ Number of variables between 80% and 90% thresholds is 0
+ Number of variables between 50% and 80% thresholds is 0
+ Number of variables below 50% threshold (excluding F, I and R variables) is 1
+ Results are stored in report.out
+ Importance scores are stored in scores.txt
+ Elapsed time in seconds: 0.1463

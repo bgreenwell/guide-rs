@@ -1,0 +1,56 @@
+{
+  "fixture_format": 2,
+  "case": "class-constant-response",
+  "created_utc": "2026-10-23T18:43:40.332772+00:00",
+  "source_url": "https://pages.stat.wisc.edu/~loh/treeprogs/guide/mac/m1/guide.zip",
+  "binary_sha256": "8d37e993f1948310d9f5003574db43734ab0f23aea0bb6c34c653dbf9a55a526",
+  "requested_version": "46.3",
+  "template_generated_by": "46.3",
+  "completed": true,
+  "settings": {
+    "task": {
+      "kind": "classification"
+    },
+    "node_model": {
+      "kind": "constant"
+    },
+    "max_depth": 2,
+    "min_samples_leaf": 2,
+    "min_gain": 0.0,
+    "interactions": true,
+    "linear_splits": false,
+    "significance_level": 0.1,
+    "max_split_candidates": 0,
+    "pruning": {
+      "kind": "none"
+    },
+    "seed": 0,
+    "class_priors": null,
+    "class_costs": null,
+    "mtry": null
+  },
+  "tolerances": {
+    "cutpoint_absolute": 1e-09,
+    "prediction_absolute": 5e-05,
+    "prediction_relative": 5e-06,
+    "probability_absolute": 5e-06
+  },
+  "returncode": 0,
+  "result": {
+    "version": "46.3",
+    "build_date": "July 11, 2026",
+    "outcome": "rejected",
+    "error_code": "single_class"
+  },
+  "file_sha256": {
+    "data.dsc": "9b92df8751bf1562e1fb185872208b970b867c54f3834af5d73eb541e29c60c5",
+    "data.txt": "79db94b8c7a552f002cb7f5ff9c4c65bc29815e97f17161295424867d44c587f",
+    "data.csv": "914a9b55bc5f9249710927eed235babb0aac65bc35e2c5e5499ac4a93ae6f7e5",
+    "input.txt": "136c2d30ec724b50b5b128cbb998e4401e95d810d3542b93b967e41552df91b4",
+    "dataset.json": "758f7413d0999aae20af9cc64f760b47e211f9bdad44ef1f3816ba7330f749c1",
+    "options.json": "9e16ed76c126cadc499a020f3bb4cf4ccbb2fbf1693d477dcd981f577a9711b6",
+    "stdout.txt": "1d6aa74a289471f06b1e7ee82fdf2df3d04b3e6aa855540540d740c55df6df7d",
+    "stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "report.out": "3ea1f4d1dfeae8a1087ccd46faf498ce30d3207e101042de451c22c0b45e8125"
+  }
+}

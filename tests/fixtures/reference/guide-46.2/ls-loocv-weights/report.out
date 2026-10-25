@@ -1,0 +1,135 @@
+             GGG   U   U  I  DDDD   EEEE
+            G   G  U   U  I  D   D  E
+            G      U   U  I  D   D  E
+            G  GG  U   U  I  D   D  EEE
+            G   G  U   U  I  D   D  E
+            G   G  U   U  I  D   D  E
+             GGG    UUU   I  DDDD   EEEE
+   
+ GUIDE Classification and Regression Trees and Forests
+ Version 46.2 (Build date: April 27, 2026)         
+ Compiled with NAG Fortran 7.2 on macOS Tahoe 26.4.1 for Apple ARM processors    
+ Copyright (c) 1997-2023 Wei-Yin Loh. All rights reserved.
+ This software is based upon work partially supported by the U.S. Army Research Office,
+ National Science Foundation, National Institutes of Health,
+ Bureau of Labor Statistics, USDA Economic Research Service, and Eli Lilly.
+  
+ This job was started on 10/23/26 at 16:00
+  
+ Least squares regression tree
+ Pruning by cross-validation
+ DSC file: data.dsc
+ Training sample file: data.txt
+ Missing value code: NA
+ Records in data file start on line 2
+ D variable is y
+ Piecewise constant model
+ Number of records in data file: 20
+ Length of longest entry in data file: 2
+ Smallest and largest positive weights are  1.0000E+00 and 5.0000E+00
+  
+ Summary information for training sample of size 20
+ d=dependent, b=split and fit cat variable using indicator variables,
+ c=split-only categorical, i=fit-only categorical (via indicators),
+ s=split-only numerical, n=split and fit numerical, f=fit-only numerical,
+ m=missing-value flag variable, p=periodic variable, w=weight
+                                                  #Codes/           
+                                                  Levels/           
+  Column  Name            Minimum      Maximum    Periods   #Missing
+       1  x          s    0.000        19.00    
+       2  y          d    2.000        8.000    
+       3  weight     w    1.000        5.000    
+  
+ Numbers of N, F, S, and P below exclude constant variables
+      Total  #cases w/   #missing
+     #cases    miss. D  ord. vals   #X-var   #N-var   #F-var   #S-var
+         20          0          0        0        0        0        1
+     #P-var   #M-var   #B-var   #C-var   #I-var
+          0        0        0        0        0
+ Weight variable weight in column: 3
+ Number of cases used for training: 20
+ Number of cases excluded due to 0 W or missing D variable: 0
+  
+ Pruning by v-fold cross-validation, with v = 20
+ Selected tree is based on mean of CV estimates
+ Number of SE's for pruned tree: 0.2500
+  
+ Weighted error estimates used for pruning
+ Nodewise interaction tests on all variables
+ Split values for N and S variables based on exhaustive search
+ Max number of interaction splits: 100
+ Maximum number of split levels: 1
+ Minimum node sample size: 2
+ Size and CV MSE and SE of subtrees:
+  Tree   #Tnodes  Mean MSE   SE(Mean)    BSE(Mean)  Median MSE  BSE(Median)
+    0**      2   1.800E+00   1.754E+00   1.622E+00   0.000E+00   0.000E+00
+    1        1   3.067E+01   3.499E+00   3.539E+00   2.992E+01   6.364E+00
+  
+ 0-SE tree based on mean is marked with * and has 2 terminal nodes
+ 0-SE tree based on median is marked with + and has 2 terminal nodes
+ Selected-SE tree based on mean using naive SE is marked with **
+ Selected-SE tree based on mean using bootstrap SE is marked with --
+ Selected-SE tree based on median and bootstrap SE is marked with ++
+ * tree, ** tree, + tree, and ++ tree all the same
+  
+ Following tree is based on mean CV with naive SE estimate (**)
+  
+ Structure of final tree. Each terminal node is marked with a T.
+  
+ D-mean is weighted mean of y in the node
+ Cases fit give the number of cases used to fit node
+ MSE is residual sum of squares divided by number of cases in node
+        Node    Total    Cases Matrix    Node      Node      Split          Interacting
+        label   cases      fit  rank    D-mean     MSE       variable       variable
+           1       20       20     1  5.000E+00  2.842E+01   x 
+           2T      10       10     1  2.000E+00  0.000E+00   - 
+           3T      10       10     1  8.000E+00  0.000E+00   - 
+  
+ Number of terminal nodes of final tree: 2
+ Total number of nodes of final tree: 3
+  
+ Regression tree:
+  
+ Node 1: x <= 9.5000000
+   Node 2: y-mean = 2.0000000
+ Node 1: x > 9.5000000 or NA
+   Node 3: y-mean = 8.0000000
+ 
+ ***************************************************************
+ Predictor means are the weighted means.
+  
+ WARNING: p-values below not adjusted for split search. For a bootstrap solution see:
+  
+ 1. Loh et al. (2016), "Identification of subgroups with differential treatment effects
+ for longitudinal and multiresponse variables", Statistics in Medicine, v.35, 4837-4855.
+  
+ 2. Loh et al. (2019), "Subgroups from regression trees with adjustment for prognostic
+ effects and post-selection inference", Statistics in Medicine, v.38, 545-557.
+  
+ 3. Loh and Zhou (2020), "The GUIDE approach to subgroup identification",
+ in "Design and Analysis of Subgroups with Biopharmaceutical Applications", Springer, pp.147-165.
+  
+Node 1: Intermediate node
+ A case goes into Node 2 if x <= 9.5000000
+ x mean = 10.166667
+ Coefficients of weighted least squares regression function and weighted means:
+ Regressor    Coefficient  t-stat      p-value
+ Constant      5.000        6.742        0.000    
+ ----------------------------
+Node 2: Terminal node
+ Coefficients of weighted least squares regression function and weighted means:
+ Regressor    Coefficient  t-stat      p-value
+ Constant      2.000       0.1798+308    0.000    
+ y mean = 2.00000
+ ----------------------------
+Node 3: Terminal node
+ Coefficients of weighted least squares regression function and weighted means:
+ Regressor    Coefficient  t-stat      p-value
+ Constant      8.000       0.1798+308    0.000    
+ y mean = 8.00000
+ ----------------------------
+ Proportion of variance (R-squared) explained by tree model: 1.0000
+ 
+ Observed and fitted values are stored in predictions.txt
+ Split and fit variable names are stored in splits.txt
+ Elapsed time in seconds: 0.62340E-02

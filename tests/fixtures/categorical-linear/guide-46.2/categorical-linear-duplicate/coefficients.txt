@@ -1,0 +1,2 @@
+Node Constant group.b group.c other.b other.c
+1 2.0000 6.0000 12.000 0.0000 0.0000

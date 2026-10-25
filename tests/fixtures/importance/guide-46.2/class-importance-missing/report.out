@@ -1,0 +1,124 @@
+             GGG   U   U  I  DDDD   EEEE
+            G   G  U   U  I  D   D  E
+            G      U   U  I  D   D  E
+            G  GG  U   U  I  D   D  EEE
+            G   G  U   U  I  D   D  E
+            G   G  U   U  I  D   D  E
+             GGG    UUU   I  DDDD   EEEE
+   
+ GUIDE Classification and Regression Trees and Forests
+ Version 46.2 (Build date: April 27, 2026)         
+ Compiled with NAG Fortran 7.2 on macOS Tahoe 26.4.1 for Apple ARM processors    
+ Copyright (c) 1997-2023 Wei-Yin Loh. All rights reserved.
+ This software is based upon work partially supported by the U.S. Army Research Office,
+ National Science Foundation, National Institutes of Health,
+ Bureau of Labor Statistics, USDA Economic Research Service, and Eli Lilly.
+  
+ This job was started on 10/23/26 at 16:26
+  
+ Classification tree
+ No pruning
+ DSC file: data.dsc
+ Training sample file: data.txt
+ Missing value code: NA
+ Records in data file start on line 2
+ D variable is y
+ Number of records in data file: 80
+ Length of longest entry in data file: 2
+ Missing values found among non-categorical variables
+ Number of classes: 2
+ Training sample class proportions of D variable y:
+ Class  #Cases     Proportion
+ a          20     0.25000000
+ b          60     0.75000000
+  
+ Numbers of N, F, S, and P below exclude constant variables
+      Total  #cases w/   #missing
+     #cases    miss. D  ord. vals   #X-var   #N-var   #F-var   #S-var
+         80          0         40        0        0        0        2
+     #P-var   #M-var   #B-var   #C-var   #I-var
+          0        0        0        0        0
+ Number of cases used for training: 80
+ Number of cases excluded due to 0 W or missing D variable: 0
+  
+ Importance scoring of variables
+ Simple node models
+ Estimated priors
+ Unit misclassification costs
+ Univariate split highest priority
+ Interaction and linear splits 2nd and 3rd priorities
+ Split values for N and S variables based on exhaustive search
+ Max number of interaction splits: 100
+ Maximum number of split levels: 1
+ Minimum node sample size: 2
+ Using 300 permutations to standardize means of importance scores
+ Finished permutations to standardize means of importance scores
+  
+ Structure of final tree. Each terminal node is marked with a T.
+  
+ Node cost is node misclassification cost divided by number of cases in node
+        Node    Total    Train    Predicted        Node    Split          Interacting
+       label    cases    cases    class            cost    variables      variable
+           1       80       80    b              2.500E-01 signal 
+           2T      20       20    a              0.000E+00 - 
+           3T      60       60    b              0.000E+00 - 
+  
+ Number of terminal nodes of final tree: 2
+ Total number of nodes of final tree: 3
+ Second best split variable (based on curvature test) at root node is noise
+  
+ Classification tree:
+  
+ Node 1: signal <= 0.50000000
+   Node 2: a
+ Node 1: signal > 0.50000000 or NA
+   Node 3: b
+ 
+ ***************************************************************
+ Predictor means below are means of cases with no missing values.
+  
+Node 1: Intermediate node
+ A case goes into Node 2 if signal <= 0.50000000
+ signal mean = 0.50000000
+ Class      Number   Posterior
+ a              20  0.2500E+00
+ b              60  0.7500E+00
+ Number of training cases misclassified = 20
+ Predicted class is b
+ ----------------------------
+Node 2: Terminal node
+ Class      Number   Posterior
+ a              20  0.9907E+00
+ b               0  0.9259E-02
+ Number of training cases misclassified = 0
+ Predicted class is a
+ ----------------------------
+Node 3: Terminal node
+ Class      Number   Posterior
+ a               0  0.3086E-02
+ b              60  0.9969E+00
+ Number of training cases misclassified = 0
+ Predicted class is b
+ ----------------------------
+ ******************************************************
+ Variables used for splitting:
+ signal
+ 
+ Number of terminal nodes: 2
+ 
+ Scaled importance scores of predictor variables
+      Score     Rank  Variable
+  9.847E+00     1.00  signal
+ 99% threshold is 1.4869
+ 95% threshold is 1.0000
+ 90% threshold is 0.7981
+ 80% threshold is 0.6123
+ 50% threshold is 0.2420
+ Number of variables above 99% threshold is 1
+ Number of variables between 95% and 99% thresholds is 0
+ Number of variables between 90% and 95% thresholds is 0
+ Number of variables between 80% and 90% thresholds is 0
+ Number of variables between 50% and 80% thresholds is 0
+ Number of variables below 50% threshold (excluding F, I and R variables) is 1
+ Importance scores are stored in scores.txt
+ Elapsed time in seconds: 0.90793E-01

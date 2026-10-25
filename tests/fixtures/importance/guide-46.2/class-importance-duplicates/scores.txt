@@ -1,0 +1,3 @@
+    Rank Group    Score       Missing     Variable
+       1  A     1.258E+01           0     signal
+       2  A     1.222E+01           0     copy

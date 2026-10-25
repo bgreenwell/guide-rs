@@ -1,0 +1,14 @@
+{
+  "data": {
+    "target": "y",
+    "features": [
+      {"name": "x", "feature_type": {"kind": "numeric"}, "role": "fit"}
+    ]
+  },
+  "fit": {
+    "task": {"kind": "regression", "loss": {"kind": "squared_error"}},
+    "node_model": {"kind": "linear"},
+    "prediction_truncation": "global_range",
+    "pruning": {"kind": "none"}
+  }
+}

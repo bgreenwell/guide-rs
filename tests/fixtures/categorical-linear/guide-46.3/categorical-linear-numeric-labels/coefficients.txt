@@ -1,0 +1,2 @@
+Node Constant group.10 group.2 group.NA group.z
+1 14.000 -6.0000 -12.000 0.0000 0.0000

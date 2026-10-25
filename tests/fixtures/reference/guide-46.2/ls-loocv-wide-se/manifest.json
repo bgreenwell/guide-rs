@@ -1,0 +1,152 @@
+{
+  "fixture_format": 2,
+  "case": "ls-loocv-wide-se",
+  "created_utc": "2026-10-23T20:00:17.273070+00:00",
+  "source_url": "https://pages.stat.wisc.edu/~loh/treeprogs/guide/mac/m1/guide462.zip",
+  "binary_sha256": "5ff05c74d9b6554c460d8d8fdfede07ec46616340e6f48cbcd93f62bb4ab5a24",
+  "requested_version": "46.2",
+  "template_generated_by": "46.3",
+  "completed": true,
+  "settings": {
+    "task": {
+      "kind": "regression",
+      "loss": {
+        "kind": "squared_error"
+      }
+    },
+    "node_model": {
+      "kind": "constant"
+    },
+    "max_depth": 1,
+    "min_samples_leaf": 2,
+    "min_gain": 0.0,
+    "interactions": true,
+    "linear_splits": false,
+    "significance_level": 0.1,
+    "max_split_candidates": 0,
+    "pruning": {
+      "kind": "cross_validation",
+      "folds": 20,
+      "standard_errors": 5.0
+    },
+    "seed": 0,
+    "class_priors": null,
+    "class_costs": null,
+    "mtry": null
+  },
+  "tolerances": {
+    "cutpoint_absolute": 1e-09,
+    "prediction_absolute": 5e-05,
+    "prediction_relative": 5e-06,
+    "probability_absolute": 5e-06
+  },
+  "returncode": 0,
+  "result": {
+    "version": "46.2",
+    "build_date": "April 27, 2026",
+    "outcome": "fitted",
+    "classes": [],
+    "leaf_count": 1,
+    "splits": [],
+    "predictions": [
+      5.0,
+      5.0,
+      5.0,
+      5.0,
+      5.0,
+      5.0,
+      5.0,
+      5.0,
+      5.0,
+      5.0,
+      5.0,
+      5.0,
+      5.0,
+      5.0,
+      5.0,
+      5.0,
+      5.0,
+      5.0,
+      5.0,
+      5.0
+    ],
+    "observed": [
+      2.0,
+      2.0,
+      2.0,
+      2.0,
+      2.0,
+      2.0,
+      2.0,
+      2.0,
+      2.0,
+      2.0,
+      8.0,
+      8.0,
+      8.0,
+      8.0,
+      8.0,
+      8.0,
+      8.0,
+      8.0,
+      8.0,
+      8.0
+    ],
+    "terminal_node_ids": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "probabilities": [],
+    "pruning_scores": [
+      {
+        "index": 0,
+        "leaves": 2,
+        "mean_loss": 1.8,
+        "standard_error": 1.754,
+        "mean_loss_tolerance": 0.0005,
+        "standard_error_tolerance": 0.0005,
+        "selected": false
+      },
+      {
+        "index": 1,
+        "leaves": 1,
+        "mean_loss": 9.972,
+        "standard_error": 0.0,
+        "mean_loss_tolerance": 0.0005,
+        "standard_error_tolerance": 0.0005,
+        "selected": true
+      }
+    ]
+  },
+  "file_sha256": {
+    "data.dsc": "9b92df8751bf1562e1fb185872208b970b867c54f3834af5d73eb541e29c60c5",
+    "data.txt": "4937b88c93bd6b15c260225b8265842ec991bb9e843e4f1e7512cfc1d3eafb32",
+    "data.csv": "0bd817072123194cdf097faa67149a007026d4e522610b11d9b9a1c771306a1a",
+    "input.txt": "103deb65770c6e59c5a0477dcfefedc68722e25509ed61ace4bbaebe5be77bfa",
+    "dataset.json": "5f796d5fd4b8f82a263d234b0604e2ef877979951568eb79dc99dbc4141200dc",
+    "options.json": "fbf0f8ce87aa11501ae9519a88f43cb686810fab971e042423488afc5e799e9f",
+    "stdout.txt": "eb3b84b1f5c54833ce580aad60880e152c62fb23736ba469baaa92fa322f7c48",
+    "stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "report.out": "d800ce95d6cf8fcecead219c4fe05ff64b951103d574d022eb7f176991ba96ad",
+    "splits.txt": "6588ab81d4c010fcc576121445bd6899f32fa0639eee2013d9bc1d64da3de245",
+    "predictions.txt": "84938e450766413eb1c7c1c2c79ce050cf92d2555569dcf2d60c31a60d1bc647"
+  }
+}

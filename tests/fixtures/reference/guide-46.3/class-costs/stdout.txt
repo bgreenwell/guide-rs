@@ -1,0 +1,94 @@
+ GUIDE Classification and Regression Trees and Forests
+ Version 46.3 (Build date: July 11, 2026)          
+ Compiled with NAG Fortran 7.2 on macOS Tahoe 26.4.1 for Apple ARM processors    
+ Copyright (c) 1997-2026 Wei-Yin Loh. All rights reserved.
+ Software based upon work partially supported by the U.S. Army Research Office,
+ National Science Foundation, National Institutes of Health,
+ Bureau of Labor Statistics, USDA Economic Research Service, and Eli Lilly.
+  
+ Choose one of the following options:
+ 0. Read the warranty disclaimer
+ 1. Create a GUIDE input file
+ Input your choice:  Batch run with input file 
+ Input 1 for model fitting, 2 for importance or DIF scoring, 3 for data conversion: 1
+  
+ Job start date and time: 10/23/26 at 14:43
+  
+ Input 1 for single tree, 2 for ensemble of trees: 1
+ Input 1 for classification, 2 for regression, 3 for propensity score tree
+ Input your choice: 1
+ Input 1 for simple, 2 for nearest-neighbor, 3 for kernel, 4 for lda,  5 for qda, 6 for bivariate qda, 7 for linear splits and constant models: 1
+ Input 0 for linear, interaction and univariate splits (in this order),
+       1 for univariate, linear and interaction splits (in this order),
+       2 to skip linear splits,
+       3 to skip linear and interaction splits: 2
+ Input 0 to specify tree with fixed no. of nodes, 1 to prune by CV,
+       2 by test sample, 3 for no pruning: 3
+ Bonferroni alpha = 0.100
+  
+ Input name of DSC file (max 100 characters);
+ enclose with matching quotes if it has spaces: data.dsc
+ Reading DSC file ...
+ Training sample file: data.txt
+ Missing value code: NA
+ Records in data file start on line 2
+ D variable is y
+ Reading data file ...
+ Number of records in data file: 80
+ Length of longest entry in data file: 2
+ Checking for missing values ...
+ Finished checking
+ Recoding D values to integers
+ Finished recoding
+ Number of classes: 2
+ Re-checking data ...
+ Assigning codes to missing values, if any ...
+ Data checks complete
+ Rereading data ...
+ Class  #Cases     Proportion
+ a          44     0.55000000
+ b          36     0.45000000
+ Numbers of N, F, S, and P below exclude constant variables
+      Total  #cases w/   #missing
+     #cases    miss. D  ord. vals   #X-var   #N-var   #F-var   #S-var
+         80          0          0        0        0        0        1
+     #P-var   #M-var   #B-var   #C-var   #I-var
+          0        0        0        0        0
+ Number of cases used for training: 80
+ Finished reading data file
+ Choose 1 for estimated priors, 2 for equal priors, 3 to input priors from a file
+ Input 1, 2, or 3: 1
+ Choose 1 for unit misclassification costs, 2 to input costs from a file
+ Input 1 or 2: 2
+ Input the name of a file containing the cost matrix C(i|j),
+ where C(i|j) is the cost of classifying class j as class i
+ Rows of the matrix must be in alphabetical order of the class names
+ Input name of file:  costs.txt
+ Univariate split highest priority
+ Interaction splits 2nd priority; no linear splits
+ Choose a split point selection method for numerical variables:
+ Choose 1 to use faster method based on sample quantiles
+ Choose 2 to use exhaustive search
+ Input 1 or 2: 2
+ Input max. number of split levels: 1
+ Maximum number of split levels: 1
+ Input 1 for default minimum node size, 2 to specify minimum value: 2
+ Minimum node size: 2
+ Choose 0=no LaTeX, 1=tree without node numbers, 2=tree with node numbers: 0
+ You can store the variables and/or values used to split and fit in a file
+ Choose 1 to skip this step, 2 to store split and fit variables,
+ 3 to store split variables and their values
+ Input your choice: 3
+ Split and fit variable file name: splits.txt
+ Input 2 to save fitted values and node IDs; 1 otherwise: 2
+ File name is predictions.txt
+ Input 1 to skip R function, 2 to output R for training data, 3 to output R for new data file: 1
+ Constructing main tree ...
+ Best split variable at root node is x
+ Number of terminal nodes of final tree: 2
+ Writing predicted values...
+ ...completed
+ Results are stored in report.out
+ Observed and fitted values are stored in predictions.txt
+ Split and fit variable names are stored in splits.txt
+ Elapsed time in seconds: 0.5141E-02

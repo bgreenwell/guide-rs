@@ -1,0 +1,24 @@
+{
+  "task": {
+    "kind": "classification"
+  },
+  "node_model": {
+    "kind": "constant"
+  },
+  "max_depth": 2,
+  "min_samples_leaf": 2,
+  "min_gain": 0.0,
+  "interactions": true,
+  "linear_splits": false,
+  "significance_level": 0.1,
+  "max_split_candidates": 0,
+  "pruning": {
+    "kind": "cross_validation",
+    "folds": 24,
+    "standard_errors": 0.25
+  },
+  "seed": 0,
+  "class_priors": null,
+  "class_costs": null,
+  "mtry": null
+}

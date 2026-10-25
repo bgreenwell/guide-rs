@@ -1,0 +1,59 @@
+{
+  "recorded_utc": "2026-10-23T13:55:14.639397+00:00",
+  "source_page": "https://pages.stat.wisc.edu/~loh/guide.html",
+  "host_macos": "26.5.1",
+  "history": {
+    "url": "https://pages.stat.wisc.edu/~loh/treeprogs/guide/history.txt",
+    "sha256": "f12ef4cee42f56d64a270f9c8e9bae1c234eea1b53631e20c1566eb3b1e14bba",
+    "latest_documented_version": "46.2",
+    "local_copy": ".reference/upstream/history.txt"
+  },
+  "references": [
+    {
+      "version": "46.3",
+      "build_date": "July 11, 2026",
+      "source_url": "https://pages.stat.wisc.edu/~loh/treeprogs/guide/mac/m1/guide.zip",
+      "archive_sha256": "f9a908947c687de9bae5a6ce691c699cd37c713ed91f0bce8a71973e41843309",
+      "binary_sha256": "8d37e993f1948310d9f5003574db43734ab0f23aea0bb6c34c653dbf9a55a526",
+      "size_bytes": 4112536,
+      "architecture": "arm64",
+      "minimum_macos": "26.0.0",
+      "local_binary": ".reference/upstream/macos-arm64/guide",
+      "probe_returncode": 0,
+      "dylibs": [
+        "/usr/lib/libSystem.B.dylib"
+      ]
+    },
+    {
+      "version": "46.2",
+      "build_date": "April 27, 2026",
+      "source_url": "https://pages.stat.wisc.edu/~loh/treeprogs/guide/mac/m1/guide462.zip",
+      "archive_sha256": "93f3bd41f595f18b64325b440103a2867571b75c681c08bb31214fb4310885cb",
+      "binary_sha256": "5ff05c74d9b6554c460d8d8fdfede07ec46616340e6f48cbcd93f62bb4ab5a24",
+      "size_bytes": 4079160,
+      "architecture": "arm64",
+      "minimum_macos": "26.0.0",
+      "local_binary": ".reference/upstream/macos-arm64-46.2/guide",
+      "probe_returncode": 0,
+      "dylibs": [
+        "/usr/lib/libSystem.B.dylib"
+      ]
+    }
+  ],
+  "notes": [
+    "The current guide.zip runtime is 46.3; the source page and history still advertise 46.2.",
+    "GUIDE 46.3 is the primary project target; 46.2 is a secondary regression reference. Fixtures retain their observed runtime version.",
+    "Archive metadata was preserved with ditto; no security attributes were removed.",
+    "Downloaded binaries are local-only under the ignored .reference directory."
+  ],
+  "primary_target_version": "46.3",
+  "secondary_regression_version": "46.2",
+  "manual": {
+    "version": "46.1",
+    "date": "2026-01-24",
+    "pages": 359,
+    "local_copy": "assets/guide-manual.pdf",
+    "source_url": "https://pages.stat.wisc.edu/~loh/treeprogs/guide/guideman.pdf",
+    "sha256": "d76ba4eb5e9804862bf6c1ad88c8ad62ea43df0bbad66caf15d5bb2b1cbc17f8"
+  }
+}

@@ -1,0 +1,10 @@
+         1 c b a        1   "a"
+         2 c a a        1   "a"
+         4 t NONE NONE   t
+         2 c a a        1   "a"
+         5 t NONE NONE   t
+         1 c b a        1   "a"
+         3 c a a        1   "a"
+         6 t NONE NONE   t
+         3 c a a        1   "a"
+         7 t NONE NONE   t

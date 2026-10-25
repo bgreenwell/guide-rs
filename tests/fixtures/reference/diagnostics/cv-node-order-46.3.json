@@ -1,0 +1,47 @@
+{
+  "description": "Read-only LLDB observations of the first stopped CV fold on the pinned GUIDE 46.3 executable; no machine-code patches.",
+  "binary_sha256": "8d37e993f1948310d9f5003574db43734ab0f23aea0bb6c34c653dbf9a55a526",
+  "case": "ls-loocv-path",
+  "input_sha256": {
+    "input.txt": "b27a167980eeaac03c71ac9c825e7559f5ba7756b88bf5e34c45d73cafde0a3c",
+    "data.dsc": "9b92df8751bf1562e1fb185872208b970b867c54f3834af5d73eb541e29c60c5",
+    "data.txt": "6e81fd81a527c8e46d4d119f95b67e2d0ccb585a6ea3cc06da131b043f306f7a"
+  },
+  "function": "cv_test_",
+  "breakpoint_address": "0x100246278",
+  "aslr_disabled": true,
+  "node_numbers": [
+    1,
+    3,
+    7,
+    6,
+    2,
+    5,
+    4
+  ],
+  "terminal_flags": [
+    0,
+    0,
+    1,
+    1,
+    0,
+    1,
+    1
+  ],
+  "node_alphas": [
+    5.693761814744801,
+    1.173913043478261,
+    0,
+    0,
+    0.11857707509881422,
+    0,
+    0
+  ],
+  "selected_candidate_alpha": 1.173913043478261,
+  "main_tree_evaluation_alphas": [
+    0.375,
+    4.242640687119285
+  ],
+  "interpretation": "The scan chooses node 3, although node 2 has lower alpha. The node-number condition rejects the cheaper node after visiting the right subtree first.",
+  "rust_policy": "Choose the globally smallest alpha, retaining deterministic ties; preserve this native discrepancy instead of reproducing the flaw."
+}

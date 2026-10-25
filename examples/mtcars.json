@@ -1,0 +1,9 @@
+{
+  "data": {"target": "mpg"},
+  "fit": {
+    "task": {"kind": "regression", "loss": {"kind": "squared_error"}},
+    "pruning": {"kind": "cross_validation", "folds": 5, "standard_errors": 0.25},
+    "seed": 42
+  },
+  "importance": {"permutations": 300, "max_depth": 4, "seed": 42}
+}

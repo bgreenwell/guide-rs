@@ -1,0 +1,91 @@
+{
+  "fixture_format": 1,
+  "case": "ls-importance-missing",
+  "created_utc": "2026-10-23T20:26:19.899203+00:00",
+  "binary_sha256": "8d37e993f1948310d9f5003574db43734ab0f23aea0bb6c34c653dbf9a55a526",
+  "source_url": "https://pages.stat.wisc.edu/~loh/treeprogs/guide/mac/m1/guide.zip",
+  "requested_version": "46.3",
+  "completed": true,
+  "settings": {
+    "task": {
+      "kind": "regression",
+      "loss": {
+        "kind": "squared_error"
+      }
+    },
+    "node_model": {
+      "kind": "constant"
+    },
+    "max_depth": 1,
+    "min_samples_leaf": 2,
+    "min_gain": 0.0,
+    "interactions": true,
+    "linear_splits": false,
+    "significance_level": 0.1,
+    "max_split_candidates": 0,
+    "pruning": {
+      "kind": "none"
+    },
+    "seed": 0,
+    "class_priors": null,
+    "class_costs": null,
+    "mtry": null
+  },
+  "importance_options": {
+    "permutations": 300,
+    "max_depth": 1,
+    "seed": 0
+  },
+  "independent_raw_statistics": {
+    "signal": {
+      "chi_square": 80,
+      "degrees_of_freedom": 2
+    }
+  },
+  "expected_important": [
+    "signal"
+  ],
+  "expected_zero": [
+    "noise"
+  ],
+  "comparison_scope": "Reported important sets/rank relations; raw scores checked independently. Exact Monte Carlo-adjusted magnitudes and thresholds are not claimed equivalent.",
+  "returncode": 0,
+  "result": {
+    "version": "46.3",
+    "build_date": "July 11, 2026",
+    "score_kind": "normalized",
+    "scores": [
+      {
+        "feature": "signal",
+        "rank": 1.0,
+        "group": "A",
+        "normalized_score": 9.847,
+        "score_tolerance": 0.0005,
+        "missing_native": 40.0
+      }
+    ],
+    "thresholds": {
+      "99": 1.4869,
+      "95": 1.0,
+      "90": 0.7407,
+      "80": 0.608,
+      "50": 0.242
+    },
+    "omitted_features": [
+      "noise"
+    ]
+  },
+  "file_sha256": {
+    "data.dsc": "53edd1daaac7b97814ed24e113df9ec8dc9eb109c9722c0eea4ce922cfe0bdd3",
+    "data.txt": "ae1f37150b411d66c105098955bf4e501b05f9179d80dae28421a00c56fdb177",
+    "data.csv": "64bdef0ea2fc9b6997595bb8aedb6caad9194c932e1ba8ec64d35944714a365f",
+    "input.txt": "1fd11e49036ab229ac213dbd7ecf2c228df9dce0d88ec2564cd83971d79159c4",
+    "dataset.json": "eaffb9bc69704b4ff0cf405c13c805b6f92df5e0c52544dba2a662a7b93e4fb8",
+    "options.json": "6fcbf3326fa88ffdef6a9af4827e7200da64e1926618289cf30aac0cdabb4cf4",
+    "importance.json": "2eb061c32bef0186b1916fb9333f94bdc96c944816e4c45ed2742e131b0971c8",
+    "stdout.txt": "8bbba0cedf5adbe6ee9c7c178f3fdf5c4ae2bd6e134adf7a98a5e9cc7a67e953",
+    "stderr.txt": "53b2f633e547df5a49e2d959c63bc5aedf0c64da4da957115ac9e87211a8cb73",
+    "report.out": "2e2516d7a1cfac3324e81dab57304502c521191a5194f70d7033b8cdad0679c3",
+    "scores.txt": "ee252739c2cb252267233947c3238296ebc634343ca2c147204fdcc8b10f1bd0"
+  }
+}

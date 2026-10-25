@@ -1,0 +1,64 @@
+{
+  "schema": [
+    {
+      "name": "group",
+      "feature_type": {
+        "kind": "categorical"
+      },
+      "role": "fit"
+    },
+    {
+      "name": "x",
+      "feature_type": {
+        "kind": "numeric"
+      },
+      "role": "fit"
+    }
+  ],
+  "rows": [
+    [
+      null,
+      null
+    ],
+    [
+      "b",
+      3
+    ],
+    [
+      "c",
+      6
+    ],
+    [
+      "a",
+      2
+    ],
+    [
+      "b",
+      5
+    ],
+    [
+      "c",
+      null
+    ],
+    [
+      "a",
+      4
+    ],
+    [
+      null,
+      0
+    ]
+  ],
+  "targets": [
+    20.0,
+    14.5,
+    26.0,
+    6.5,
+    18.0,
+    14.5,
+    10.0,
+    20.5
+  ],
+  "weights": [],
+  "offsets": []
+}

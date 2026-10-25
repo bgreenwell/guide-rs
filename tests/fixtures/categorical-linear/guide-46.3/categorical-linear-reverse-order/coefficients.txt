@@ -1,0 +1,2 @@
+Node Constant group.alpha group.beta group.unknown group.zeta
+1 2.0000 12.000 6.0000 0.0000 0.0000

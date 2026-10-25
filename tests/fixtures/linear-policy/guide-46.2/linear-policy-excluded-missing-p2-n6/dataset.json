@@ -1,0 +1,59 @@
+{
+  "schema": [
+    {
+      "name": "x0",
+      "feature_type": {
+        "kind": "numeric"
+      },
+      "role": "fit"
+    },
+    {
+      "name": "x1",
+      "feature_type": {
+        "kind": "numeric"
+      },
+      "role": "fit"
+    }
+  ],
+  "rows": [
+    [
+      0,
+      0
+    ],
+    [
+      1,
+      3
+    ],
+    [
+      2,
+      6
+    ],
+    [
+      3,
+      2
+    ],
+    [
+      4,
+      5
+    ],
+    [
+      5,
+      1
+    ],
+    [
+      null,
+      null
+    ]
+  ],
+  "targets": [
+    2,
+    2,
+    2,
+    6,
+    6,
+    13,
+    null
+  ],
+  "weights": [],
+  "offsets": []
+}

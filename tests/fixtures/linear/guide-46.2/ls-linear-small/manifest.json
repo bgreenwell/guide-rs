@@ -1,0 +1,72 @@
+{
+  "fixture_format": 1,
+  "case": "ls-linear-small",
+  "created_utc": "2026-10-24T01:41:55.127291+00:00",
+  "source_url": "https://pages.stat.wisc.edu/~loh/treeprogs/guide/mac/m1/guide462.zip",
+  "binary_sha256": "5ff05c74d9b6554c460d8d8fdfede07ec46616340e6f48cbcd93f62bb4ab5a24",
+  "requested_version": "46.2",
+  "template_generated_by": "46.3",
+  "completed": true,
+  "settings": {
+    "task": {
+      "kind": "regression",
+      "loss": {
+        "kind": "squared_error"
+      }
+    },
+    "node_model": {
+      "kind": "linear"
+    },
+    "max_depth": 1,
+    "min_samples_leaf": 2,
+    "min_gain": 0.0,
+    "interactions": true,
+    "linear_splits": false,
+    "significance_level": 0.1,
+    "max_split_candidates": 0,
+    "pruning": {
+      "kind": "none"
+    },
+    "seed": 0,
+    "class_priors": null,
+    "class_costs": null,
+    "mtry": null
+  },
+  "returncode": 0,
+  "result": {
+    "version": "46.2",
+    "build_date": "April 27, 2026",
+    "leaves": 1,
+    "intercept": 2.95,
+    "coefficients": {},
+    "imputations": {},
+    "predictions": [
+      2.95,
+      2.95,
+      2.95,
+      2.95
+    ],
+    "prediction_tolerances": [
+      5.001e-06,
+      5.001e-06,
+      5.001e-06,
+      5.001e-06
+    ],
+    "native_difference": "small_multiple_fallback"
+  },
+  "file_sha256": {
+    "data.dsc": "6f01b7fd10a8181f8b63dea5293d999ae21188c0c00e12bc06760bd4477ab51c",
+    "data.txt": "f6d4786d11d2529582398fbcfa0a202bbabac99f216c1027fa05f3c7efa82ddc",
+    "data.csv": "5e6638036ac39f5dc421cd8bce4a812b0c0010729bdfd019f2dcce1d5ad2539c",
+    "input.txt": "efe4be50578190d754e7f586e6d312ae79c03816fa3ea53e2cf80a456834afbe",
+    "dataset.json": "863a49bc558e95d05a5fb7736e28ff4fef47d7b72c201105a568e757af5d31fb",
+    "options.json": "2b405aff2126fb374965d5737658c543985b128511d99b27df3ac9ec88c29aa8",
+    "stdout.txt": "3d15f511d0547c529cb4e203fdebec14f1453a4ab6cced5a926bdceecdcdb189",
+    "stderr.txt": "092e035a3cdec636adb676d0d9e6bcdf6e8566e1026576438d6beb0d74c14b05",
+    "report.out": "aa943e0866dc2047e055ff79f1a73975c697e1519a24fea667965942f8e92e2d",
+    "splits.txt": "90c7a6f78ed71dba98ad6a4c58d929cf52d10f9d2031bcff03f9e139ac5d9935",
+    "predictions.txt": "622975cb5392c2bbb9d44c0e499bad8b8439280d357c972c66611008a9b5022a",
+    "coefficients.txt": "43427537fd02576c3b0ae2912bb0415f46198cc5deaed64e76b2c21352b8ae9e",
+    "predict.R": "40ab809649b28d3aabedc0b424a7bbbdbd11a0e764614eedff95318ca39f3728"
+  }
+}

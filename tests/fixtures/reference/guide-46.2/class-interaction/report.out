@@ -1,0 +1,166 @@
+             GGG   U   U  I  DDDD   EEEE
+            G   G  U   U  I  D   D  E
+            G      U   U  I  D   D  E
+            G  GG  U   U  I  D   D  EEE
+            G   G  U   U  I  D   D  E
+            G   G  U   U  I  D   D  E
+             GGG    UUU   I  DDDD   EEEE
+   
+ GUIDE Classification and Regression Trees and Forests
+ Version 46.2 (Build date: April 27, 2026)         
+ Compiled with NAG Fortran 7.2 on macOS Tahoe 26.4.1 for Apple ARM processors    
+ Copyright (c) 1997-2023 Wei-Yin Loh. All rights reserved.
+ This software is based upon work partially supported by the U.S. Army Research Office,
+ National Science Foundation, National Institutes of Health,
+ Bureau of Labor Statistics, USDA Economic Research Service, and Eli Lilly.
+  
+ This job was started on 10/23/26 at 14:43
+  
+ Classification tree
+ No pruning
+ DSC file: data.dsc
+ Training sample file: data.txt
+ Missing value code: NA
+ Records in data file start on line 2
+ D variable is y
+ Number of records in data file: 80
+ Length of longest entry in data file: 3
+ Number of classes: 2
+ Training sample class proportions of D variable y:
+ Class  #Cases     Proportion
+ no         40     0.50000000
+ yes        40     0.50000000
+  
+ Summary information for training sample of size 80
+ d=dependent, b=split and fit cat variable using indicator variables,
+ c=split-only categorical, i=fit-only categorical (via indicators),
+ s=split-only numerical, n=split and fit numerical, f=fit-only numerical,
+ m=missing-value flag variable, p=periodic variable, w=weight
+                                                  #Codes/           
+                                                  Levels/           
+  Column  Name            Minimum      Maximum    Periods   #Missing
+       1  a          s    0.000        1.000    
+       2  b          s    0.000        1.000    
+       3  y          d                                  2
+  
+ Numbers of N, F, S, and P below exclude constant variables
+      Total  #cases w/   #missing
+     #cases    miss. D  ord. vals   #X-var   #N-var   #F-var   #S-var
+         80          0          0        0        0        0        2
+     #P-var   #M-var   #B-var   #C-var   #I-var
+          0        0        0        0        0
+ Number of cases used for training: 80
+  
+ Simple node models
+ Estimated priors
+ Unit misclassification costs
+ Univariate split highest priority
+ Interaction splits 2nd priority; no linear splits
+ Split values for N and S variables based on exhaustive search
+ Max number of interaction splits: 100
+ Maximum number of split levels: 2
+ Minimum node sample size: 2
+ Non-univariate split at root node
+  
+ Structure of final tree. Each terminal node is marked with a T.
+  
+ Node cost is node misclassification cost divided by number of cases in node
+        Node    Total    Train    Predicted        Node    Split          Interacting
+       label    cases    cases    class            cost    variables      variable
+           1       80       80    no             5.000E-01 b :a
+           2       40       40    no             5.000E-01 a 
+           4T      20       20    no             0.000E+00 - 
+           5T      20       20    yes            0.000E+00 - 
+           3       40       40    no             5.000E-01 a 
+           6T      20       20    yes            0.000E+00 - 
+           7T      20       20    no             0.000E+00 - 
+  
+ Number of terminal nodes of final tree: 4
+ Total number of nodes of final tree: 7
+ Second best split variable (based on interaction test) at root node is a
+  
+ Classification tree:
+  
+ Node 1: b <= 0.50000000
+   Node 2: a <= 0.50000000
+     Node 4: no
+   Node 2: a > 0.50000000 or NA
+     Node 5: yes
+ Node 1: b > 0.50000000 or NA
+   Node 3: a <= 0.50000000
+     Node 6: yes
+   Node 3: a > 0.50000000 or NA
+     Node 7: no
+ 
+ ***************************************************************
+  
+Node 1: Intermediate node
+ A case goes into Node 2 if b <= 0.50000000
+ b mean = 0.50000000
+ Class      Number   Posterior
+ no             40  0.5000E+00
+ yes            40  0.5000E+00
+ Number of training cases misclassified = 40
+ Predicted class is no
+ ----------------------------
+Node 2: Intermediate node
+ A case goes into Node 4 if a <= 0.50000000
+ a mean = 0.50000000
+ Class      Number   Posterior
+ no             20  0.5000E+00
+ yes            20  0.5000E+00
+ Number of training cases misclassified = 20
+ Predicted class is no
+ ----------------------------
+Node 4: Terminal node
+ Class      Number   Posterior
+ no             20  0.9938E+00
+ yes             0  0.6173E-02
+ Number of training cases misclassified = 0
+ Predicted class is no
+ ----------------------------
+Node 5: Terminal node
+ Class      Number   Posterior
+ no              0  0.6173E-02
+ yes            20  0.9938E+00
+ Number of training cases misclassified = 0
+ Predicted class is yes
+ ----------------------------
+Node 3: Intermediate node
+ A case goes into Node 6 if a <= 0.50000000
+ a mean = 0.50000000
+ Class      Number   Posterior
+ no             20  0.5000E+00
+ yes            20  0.5000E+00
+ Number of training cases misclassified = 20
+ Predicted class is no
+ ----------------------------
+Node 6: Terminal node
+ Class      Number   Posterior
+ no              0  0.6173E-02
+ yes            20  0.9938E+00
+ Number of training cases misclassified = 0
+ Predicted class is yes
+ ----------------------------
+Node 7: Terminal node
+ Class      Number   Posterior
+ no             20  0.9938E+00
+ yes             0  0.6173E-02
+ Number of training cases misclassified = 0
+ Predicted class is no
+ ----------------------------
+ 
+ Classification matrix for training sample:
+ Predicted      True class
+ class             no       yes
+ no                40         0
+ yes                0        40
+ Total             40        40
+ 
+ Number of cases used for tree construction: 80
+ Number misclassified: 0
+ Resubstitution estimate of mean misclassification cost: 0.0000000
+ 
+ Observed and fitted values are stored in predictions.txt
+ Split and fit variable names are stored in splits.txt
+ Elapsed time in seconds: 0.56680E-02

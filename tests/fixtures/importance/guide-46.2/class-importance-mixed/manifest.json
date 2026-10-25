@@ -1,0 +1,100 @@
+{
+  "fixture_format": 1,
+  "case": "class-importance-mixed",
+  "created_utc": "2026-10-23T20:26:23.408919+00:00",
+  "binary_sha256": "5ff05c74d9b6554c460d8d8fdfede07ec46616340e6f48cbcd93f62bb4ab5a24",
+  "source_url": "https://pages.stat.wisc.edu/~loh/treeprogs/guide/mac/m1/guide462.zip",
+  "requested_version": "46.2",
+  "completed": true,
+  "settings": {
+    "task": {
+      "kind": "classification"
+    },
+    "node_model": {
+      "kind": "constant"
+    },
+    "max_depth": 1,
+    "min_samples_leaf": 2,
+    "min_gain": 0.0,
+    "interactions": true,
+    "linear_splits": false,
+    "significance_level": 0.1,
+    "max_split_candidates": 0,
+    "pruning": {
+      "kind": "none"
+    },
+    "seed": 0,
+    "class_priors": null,
+    "class_costs": null,
+    "mtry": null
+  },
+  "importance_options": {
+    "permutations": 300,
+    "max_depth": 1,
+    "seed": 0
+  },
+  "independent_raw_statistics": {
+    "signal": {
+      "chi_square": 80,
+      "degrees_of_freedom": 3
+    },
+    "noise": {
+      "chi_square": 0.8,
+      "degrees_of_freedom": 3
+    }
+  },
+  "expected_important": [
+    "signal"
+  ],
+  "expected_zero": [
+    "group"
+  ],
+  "comparison_scope": "Reported important sets/rank relations; raw scores checked independently. Exact Monte Carlo-adjusted magnitudes and thresholds are not claimed equivalent.",
+  "returncode": 0,
+  "result": {
+    "version": "46.2",
+    "build_date": "April 27, 2026",
+    "score_kind": "normalized",
+    "scores": [
+      {
+        "feature": "signal",
+        "rank": 1.0,
+        "group": "A",
+        "normalized_score": 1.999,
+        "score_tolerance": 0.0005,
+        "missing_native": 0.0
+      },
+      {
+        "feature": "noise",
+        "rank": 2.0,
+        "group": "F",
+        "normalized_score": 0.001107,
+        "score_tolerance": 5e-07,
+        "missing_native": 0.0
+      }
+    ],
+    "thresholds": {
+      "99": 1.4994,
+      "95": 1.0,
+      "90": 0.7311,
+      "80": 0.6037,
+      "50": 0.3257
+    },
+    "omitted_features": [
+      "group"
+    ]
+  },
+  "file_sha256": {
+    "data.dsc": "5da10c60487e0d524800ab48f28885ca2de01ea2116443b0b1dbe6070dd26111",
+    "data.txt": "2156ae0a8669dfc7f904669cf866d97fb7614ef76cc83ae64c9b5161b283bd49",
+    "data.csv": "fac450a03f211af33801688eea29c310ff271a804d4d695fabef9e6dd5db4c7a",
+    "input.txt": "7ff935c0060b510e4e054ede572ebc3366b242b02d123c9f9361c9bcf3b3de6c",
+    "dataset.json": "fb7c5a0e2f6458865fd35afcc2ae0699e28bbbfcd4e00fb6c7eb6f1e92a98614",
+    "options.json": "d2a06391b1670606df3e7b3290f9c06bb452dd8cd1c7a03f6b5ff0390b19fcd1",
+    "importance.json": "2eb061c32bef0186b1916fb9333f94bdc96c944816e4c45ed2742e131b0971c8",
+    "stdout.txt": "58e3d8553deed5bc1cb88f767f5b966492d63d351c03f3cd5e24ed39ca91186d",
+    "stderr.txt": "87b5b8bb4a0a6bd30605d782da011cc7a51719c96290ee6b9881a1a09c79a984",
+    "report.out": "74d29fa232c404dc4b9938759ceb58c6124e4672929bb247ea81deb832af5d94",
+    "scores.txt": "999a8ad851d482422d8b882ffda05a34ed328b55317b73d57e5a8f1608773273"
+  }
+}

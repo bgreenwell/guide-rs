@@ -1,0 +1,3 @@
+    Rank Group    Score       Missing     Variable
+       1  A     1.999E+00           0     signal
+       2  F     1.126E-03           0     noise

@@ -1,0 +1,30 @@
+GUIDE (root-only numerical least-squares acceptance)
+46.3
+1 (model fitting)
+"report.out"
+1 (single tree)
+2 (regression)
+1 (linear)
+1 (least squares)
+0 (stepwise)
+1 (univariate splits)
+2 (forward and backward)
+1 (variable limit)
+0.05 (entry alpha)
+0 (no truncation)
+1 (interaction tests)
+2 (no pruning)
+"data.dsc"
+2 (explicit depth)
+1
+2 (explicit minimum node size)
+2
+0 (no LaTeX)
+3 (store splits)
+"splits.txt"
+2 (store coefficients or selected variables)
+"coefficients.txt"
+2 (store predictions)
+"predictions.txt"
+2 (R for training data)
+"predict.R"
