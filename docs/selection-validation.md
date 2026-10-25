@@ -46,3 +46,21 @@ cargo test --locked --test interoperability selection_sign_tables -- --ignored
 ```
 
 The [orientation follow-up](orientation-validation.md) validates missing/unseen routes and records a separate categorical CV discrepancy. Next validate multi-predictor zero-score/zero-gain behavior. Stepwise parity remains deferred; R prediction export remains excluded.
+
+## Multi-predictor zero scores, zero gain and ties, 2026-10-25
+
+Black-box probes with both pinned executables (multiple-linear SSE with a fit-only `x`, and constant regression/classification) established:
+
+- **No stopping on all-zero scores.** With two or more eligible split predictors whose residual-sign statistics are all exactly zero, native GUIDE still splits, with interaction tests on or off. Only the singleton rule above stops growth.
+- **Zero-gain splits.** Native splits the selected variable even when its best admissible split leaves the loss unchanged. Rust reproduces this with `min_gain = 0`; numerical cuts take the first (lowest) equal-loss threshold, as native does.
+- **Same-class merging.** Native classification merges sibling leaves that predict the same prior- and cost-adjusted class, bottom-up. Strong association does not prevent the merge (a chi-square of 122.9 still produced one leaf), and a zero-gain split survives when a split below it changes a class. Rust applies the same rule during fitting.
+- **Tie order is a known difference.** Among exactly tied scores, native's choice is deterministic and unchanged by scaling or shifting the response or reversing rows, but it is not column order. Candidates behave as if numeric predictors are listed before categorical ones, and the winning list position depends on the number of tied candidates:
+
+| Tied candidates | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+|---|---|---|---|---|---|---|---|---|
+| Native winner position | 2 | 1 | 1 | 2 | 2 | 2 | 3 | 3 |
+| Native second-best position | 1 | 2 | 3 | 4 | 5 | 5 | 6 | 6 |
+
+  No standard heapsort, Shell sort or insertion sort variant reproduces this sequence. Rust keeps its documented lowest-index tie-break. Exact ties of this kind need constructed data and are not expected in practice; this table is an unfrozen probe observation, not an acceptance fixture.
+
+The constant-node findings are frozen as twelve captures in the core corpus (see [reference provenance](reference-upstream.md#zero-gain-splits-and-same-class-leaf-merging-2026-10-25)). A depth-2 classification design with priors 0.3/0.7 keeps three native leaves but two Rust leaves; that difference predates this change and is tracked separately in the coverage checklist.

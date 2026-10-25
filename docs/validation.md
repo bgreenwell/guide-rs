@@ -2,6 +2,14 @@
 
 Local environment: Apple Silicon macOS, Rust 1.99.1. The runtime implementation is pure Rust; R is used only as an independent test oracle. GitHub Actions runs the ordinary suite on Linux, macOS and Windows plus the independent R job; all passed from a clean checkout on 2026-10-25. R prediction-function export was excluded from product scope on 2026-10-24 and removed from the code on 2026-10-25. Historical export checks below remain a record of earlier work; independent R numerical/statistical validation remains in scope.
 
+## Zero-gain splits and same-class merging, 2026-10-25
+
+New fits record **`guide-rs-0.1-experimental-reference11`**; saved format remains 1 and stored trees load unchanged. With `min_gain = 0` the selected variable is split even at zero gain, and classification fits merge same-class sibling leaves bottom-up. Twelve new native captures bring the corpus to **488 captures across 244 cases**; see [selection validation](selection-validation.md#multi-predictor-zero-scores-zero-gain-and-ties-2026-10-25).
+
+The null-selection smoke check previously counted only surviving root splits; merged classification roots now count their selected variable, keeping 500 fits per configuration. Its bound is unchanged and all four configurations pass (p = 0.17, 0.93, 0.53, 0.21).
+
+Local checks pass: **83 regular Rust tests plus the README doctest, 12 R comparisons, 2 release statistical checks and 44 Python checks**, plus formatting and Clippy with warnings denied.
+
 ## First commit and post-import fixes, 2026-10-25
 
 The repository received its first commit and CI runs. Fixes since then: bagged ensembles reject CV pruning on bootstrap samples, CSV input skips blank lines and reports line/column locations, the CLI uses clap with file-path error context, and R prediction export was removed with its two export-only R tests. No numerical behavior changed; the algorithm revision remains **`guide-rs-0.1-experimental-reference10`** and saved format remains 1.

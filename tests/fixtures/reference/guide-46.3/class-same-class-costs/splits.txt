@@ -1,0 +1,5 @@
+         1 s A A        1   0.5000000000E+00
+         2 t NONE NONE "a"
+         3 s B B        1   0.5000000000E+00
+         6 t NONE NONE "a"
+         7 t NONE NONE "b"
