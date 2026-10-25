@@ -74,7 +74,7 @@ The resulting plot is the README's headline figure. This design follows the simu
 
 ### 4. Benchmarks
 
-- Accuracy and training time against LightGBM, XGBoost, CatBoost, scikit-learn trees, `rpart`, `partykit::ctree` and `mboost::blackboost`.
+- Predictive performance (log loss, Brier score and AUROC for classification; squared-error and quantile loss for regression) and training time against LightGBM, XGBoost, CatBoost, scikit-learn trees, `rpart`, `partykit::ctree` and `mboost::blackboost`.
 - Use a standard tabular benchmark suite (e.g., the Grinsztajn, Oyallon & Varoquaux 2022 suite) plus datasets with many high-cardinality categoricals, where unbiased selection should matter most.
 - Track importance fidelity on synthetic data: rank correlation between estimated and true variable importance.
 
@@ -117,7 +117,7 @@ After the first tree, the chi-square p-values lose inferential meaning: the resi
 ### Positioning and prior art
 
 - Closest precedent: `blackboost` in R's mboost, which boosts conditional inference trees, another unbiased-selection family (Bühlmann & Hothorn 2007; Hofner et al. 2014; Hothorn, Hornik & Zeileis 2006). Use it as the primary benchmark.
-- Expect accuracy roughly on par with LightGBM, not better: selection bias mainly harms interpretation, not prediction. The value is importance scores (split counts, gain, SHAP) that are not inflated for high-cardinality or continuous noise variables, plus native interaction reporting.
+- Expect predictive performance roughly on par with LightGBM, not better: selection bias mainly harms interpretation, not prediction. The value is importance scores (split counts, gain, SHAP) that are not inflated for high-cardinality or continuous noise variables, plus native interaction reporting.
 - Benchmark where the difference should show: datasets mixing many-level categoricals with genuine low-cardinality signal.
 
 ### Performance notes
