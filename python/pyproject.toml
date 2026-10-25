@@ -1,0 +1,45 @@
+[build-system]
+requires = ["maturin>=1.8,<2"]
+build-backend = "maturin"
+
+[project]
+name = "guide-rs"
+version = "0.1.0"
+description = "scikit-learn estimators for GUIDE-style classification and regression trees"
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Brandon Greenwell", email = "greenwell.brandon@gmail.com" }]
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24", "scikit-learn>=1.6"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Rust",
+    "Topic :: Scientific/Engineering",
+]
+
+[project.urls]
+Repository = "https://github.com/bgreenwell/guide-rs"
+
+[dependency-groups]
+dev = ["pandas>=2", "pytest>=8", "ruff>=0.6"]
+
+[tool.maturin]
+module-name = "guide_rs._core"
+features = ["pyo3/extension-module"]
+
+[tool.uv]
+# Rebuild the extension when Rust sources change.
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "Cargo.toml" },
+    { file = "src/**/*.rs" },
+    { file = "../Cargo.toml" },
+    { file = "../src/**/*.rs" },
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint.isort]
+# The compiled guide_rs._core module has no source file for ruff to find.
+known-first-party = ["guide_rs"]
