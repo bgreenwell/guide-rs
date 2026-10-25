@@ -58,7 +58,7 @@ These are the next priorities before expanding into the missing specialized fami
 - [ ] Validate periodic association rotation invariance and missing/unknown routing.
 - [ ] Validate random multifold CV, native test-sample pruning, broader model-based pruning and prediction-limit combinations.
 - [ ] Explain the additional categorical CV-table discrepancy while preserving independently verified CV. Its output, direct native refits and independent values are already frozen and tested.
-- [ ] Audit bagging with CV on duplicate bootstrap rows; validate ensemble-specific defaults, fitting policies and random missing routes.
+- [ ] Validate ensemble-specific defaults, fitting policies and random missing routes. CV pruning on bootstrap samples is now rejected; out-of-bag pruning remains unimplemented.
 - [ ] Audit 45.x–46.3 defaults and option combinations, including multiple-linear depth, expanded classification settings, priors/costs and weight conventions.
 - [ ] Expand fixed-seed smoke checks into prespecified acceptance studies for selection bias, interaction power and importance familywise calibration.
 

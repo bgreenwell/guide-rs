@@ -525,6 +525,31 @@ fn cv_fixed_size_and_validation_pruning() {
     );
 }
 #[test]
+fn bagging_rejects_cross_validation_pruning_on_bootstrap_rows() {
+    let d = data(
+        (0..30).map(|i| vec![i as f64]).collect(),
+        (0..30).map(|i| if i < 15 { 0.0 } else { 5.0 }).collect(),
+    );
+    let o = FitOptions {
+        pruning: Pruning::CrossValidation {
+            folds: 5,
+            standard_errors: 0.0,
+        },
+        ..options()
+    };
+    let err = FittedModel::fit_ensemble(&d, &o, &EnsembleOptions::default()).unwrap_err();
+    assert!(err.0.contains("cross-validation"), "{err}");
+    let o = FitOptions {
+        pruning: Pruning::CostComplexity { alpha: 0.1 },
+        ..options()
+    };
+    let e = EnsembleOptions {
+        trees: 5,
+        ..Default::default()
+    };
+    assert!(FittedModel::fit_ensemble(&d, &o, &e).is_ok());
+}
+#[test]
 fn ensemble_is_repeatable_and_has_oob_predictions() {
     let d = data(
         (0..30).map(|i| vec![i as f64]).collect(),

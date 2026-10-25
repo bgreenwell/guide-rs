@@ -57,6 +57,14 @@ impl FittedModel {
         if matches!(options.pruning, Pruning::Validation) {
             return Err(invalid("ensemble validation pruning is not implemented"));
         }
+        // Bootstrap samples repeat rows, so copies of one observation would land
+        // in both the training and held-out folds and bias the CV error downward.
+        if matches!(options.pruning, Pruning::CrossValidation { .. }) {
+            return Err(invalid(
+                "ensemble trees cannot use cross-validation pruning on bootstrap samples; \
+                 use pruning kind none, cost_complexity or fixed_leaves",
+            ));
+        }
         let ids = data.active_rows();
         let global = Context::new(data, options, &ids, None)?;
         let size = ((ids.len() as f64 * ensemble.sample_fraction).round() as usize).max(1);
