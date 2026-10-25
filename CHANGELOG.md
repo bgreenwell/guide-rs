@@ -21,6 +21,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 - Classification trees and forests that look ahead on interactions fit 3 to 7 times faster, with unchanged models
 - Ensemble trees, cross-validation folds and importance permutations are fitted in parallel, with results independent of the thread count
+- Pruning large trees is faster: the pruning sequence no longer copies the tree per stage, and held-out rows are routed once
 - Categorical splits put the side with fewer categories on the left, matching GUIDE; unseen categories may reach a different leaf than before
 - Classification trees merge sibling leaves that predict the same class, matching GUIDE
 - `min_gain = 0` accepts zero-gain splits on the selected variable, matching GUIDE

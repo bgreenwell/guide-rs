@@ -11,57 +11,209 @@ pub struct PruningScore {
     pub mean_loss: f64,
     pub standard_error: f64,
 }
-pub(crate) fn weakest_link_path(tree: &Tree) -> Vec<(f64, Tree)> {
-    let mut current = tree.clone();
-    let mut path = vec![(0.0, current.clone())];
-    let mut last = 0.0_f64;
-    while current.root.leaves() > 1 {
-        let mut weakest = None;
-        minimum_alpha(&current.root, &mut weakest);
-        let (mut alpha, id) = weakest.expect("an internal node exists");
-        alpha = alpha.max(last).max(0.0);
-        prune_node(&mut current.root, id);
-        path.push((alpha, current.clone()));
-        last = alpha;
-    }
-    path
+/// The weakest-link pruning sequence of a tree. Stage 0 is the full tree and
+/// each later stage collapses one more internal node; subtrees are built only
+/// on request. Cached leaf counts and risks are updated with the same
+/// left-plus-right sums as a recursive recount, so the alphas are unchanged.
+pub(crate) struct PrunePath<'a> {
+    tree: &'a Tree,
+    /// Complexity parameter of each stage.
+    alphas: Vec<f64>,
+    /// Leaf count of each stage.
+    leaves: Vec<usize>,
+    /// The stage at which each node id becomes a leaf; `usize::MAX` if never.
+    collapsed_at: Vec<usize>,
 }
-fn minimum_alpha(n: &Node, best: &mut Option<(f64, usize)>) {
-    if n.split.is_none() {
-        return;
-    }
-    let a = (n.risk - n.leaf_risk()) / (n.leaves() - 1) as f64;
-    let a = a.max(0.0);
-    // Native GUIDE retains separate stages for tied branches. Visit parents
-    // before children, left before right, and prune only one weakest link.
-    if best.is_none_or(|(alpha, _)| stats::strictly_less(a, alpha)) {
-        *best = Some((a, n.id));
-    }
-    if let Some(l) = &n.left {
-        minimum_alpha(l, best);
-    }
-    if let Some(r) = &n.right {
-        minimum_alpha(r, best);
+fn internal(n: &Node) -> Option<(&Node, &Node)> {
+    match (&n.split, &n.left, &n.right) {
+        (Some(_), Some(l), Some(r)) => Some((l, r)),
+        _ => None,
     }
 }
-fn prune_node(n: &mut Node, id: usize) {
-    if n.id == id {
-        n.collapse();
-        return;
+impl<'a> PrunePath<'a> {
+    pub(crate) fn new(tree: &'a Tree) -> Self {
+        fn max_id(n: &Node) -> usize {
+            internal(n).map_or(n.id, |(l, r)| n.id.max(max_id(l)).max(max_id(r)))
+        }
+        let size = max_id(&tree.root) + 1;
+        let mut leaves = vec![1; size];
+        let mut leaf_risk = vec![0.0; size];
+        let mut parent = vec![usize::MAX; size];
+        let mut children = vec![None; size];
+        let mut risk = vec![0.0; size];
+        fn index(
+            n: &Node,
+            leaves: &mut [usize],
+            leaf_risk: &mut [f64],
+            parent: &mut [usize],
+            children: &mut [Option<(usize, usize)>],
+            risk: &mut [f64],
+        ) {
+            risk[n.id] = n.risk;
+            if let Some((l, r)) = internal(n) {
+                index(l, leaves, leaf_risk, parent, children, risk);
+                index(r, leaves, leaf_risk, parent, children, risk);
+                parent[l.id] = n.id;
+                parent[r.id] = n.id;
+                children[n.id] = Some((l.id, r.id));
+                leaves[n.id] = leaves[l.id] + leaves[r.id];
+                leaf_risk[n.id] = leaf_risk[l.id] + leaf_risk[r.id];
+            } else {
+                leaf_risk[n.id] = n.risk;
+            }
+        }
+        index(
+            &tree.root,
+            &mut leaves,
+            &mut leaf_risk,
+            &mut parent,
+            &mut children,
+            &mut risk,
+        );
+        let root = tree.root.id;
+        let mut path = Self {
+            tree,
+            alphas: vec![0.0],
+            leaves: vec![leaves[root]],
+            collapsed_at: vec![usize::MAX; size],
+        };
+        let mut last = 0.0_f64;
+        while leaves[root] > 1 {
+            let mut weakest = None;
+            path.minimum_alpha(&tree.root, &leaves, &leaf_risk, &mut weakest);
+            let (mut alpha, id) = weakest.expect("an internal node exists");
+            alpha = alpha.max(last).max(0.0);
+            path.collapsed_at[id] = path.alphas.len();
+            leaves[id] = 1;
+            leaf_risk[id] = risk[id];
+            let mut a = parent[id];
+            while a != usize::MAX {
+                // Every parent has two children.
+                let (l, r) = children[a].expect("parent of a node");
+                leaves[a] = leaves[l] + leaves[r];
+                leaf_risk[a] = leaf_risk[l] + leaf_risk[r];
+                a = parent[a];
+            }
+            path.alphas.push(alpha);
+            path.leaves.push(leaves[root]);
+            last = alpha;
+        }
+        path
     }
-    if let Some(l) = &mut n.left {
-        prune_node(l, id);
+    fn minimum_alpha(
+        &self,
+        n: &Node,
+        leaves: &[usize],
+        leaf_risk: &[f64],
+        best: &mut Option<(f64, usize)>,
+    ) {
+        let Some((l, r)) = internal(n) else {
+            return;
+        };
+        if self.collapsed_at[n.id] != usize::MAX {
+            return;
+        }
+        let a = (n.risk - leaf_risk[n.id]) / (leaves[n.id] - 1) as f64;
+        let a = a.max(0.0);
+        // Native GUIDE retains separate stages for tied branches. Visit parents
+        // before children, left before right, and prune only one weakest link.
+        if best.is_none_or(|(alpha, _)| stats::strictly_less(a, alpha)) {
+            *best = Some((a, n.id));
+        }
+        self.minimum_alpha(l, leaves, leaf_risk, best);
+        self.minimum_alpha(r, leaves, leaf_risk, best);
     }
-    if let Some(r) = &mut n.right {
-        prune_node(r, id);
+    fn len(&self) -> usize {
+        self.alphas.len()
     }
-}
-fn at_alpha(path: &[(f64, Tree)], alpha: f64) -> &Tree {
-    path.iter()
-        .rev()
-        .find(|(a, _)| *a <= alpha)
-        .map(|(_, t)| t)
-        .unwrap_or(&path[0].1)
+    /// The last stage whose alpha does not exceed `alpha`, or the full tree.
+    fn stage_at(&self, alpha: f64) -> usize {
+        (0..self.len())
+            .rev()
+            .find(|&k| self.alphas[k] <= alpha)
+            .unwrap_or(0)
+    }
+    fn collapsed(&self, n: &Node, stage: usize) -> bool {
+        self.collapsed_at[n.id] <= stage
+    }
+    fn subtree(&self, stage: usize) -> Tree {
+        fn copy(path: &PrunePath<'_>, n: &Node, stage: usize) -> Node {
+            let mut node = Node {
+                id: n.id,
+                sample_count: n.sample_count,
+                weight_sum: n.weight_sum,
+                risk: n.risk,
+                impurity: n.impurity,
+                model: n.model.clone(),
+                diagnostics: n.diagnostics.clone(),
+                split: None,
+                left: None,
+                right: None,
+            };
+            if let Some((l, r)) = internal(n)
+                && !path.collapsed(n, stage)
+            {
+                node.split = n.split.clone();
+                node.left = Some(Box::new(copy(path, l, stage)));
+                node.right = Some(Box::new(copy(path, r, stage)));
+            }
+            node
+        }
+        Tree {
+            root: copy(self, &self.tree.root, stage),
+        }
+    }
+    /// Held-out `(loss, weight)` of each row in `ids` at each of `stages`.
+    /// A row's leaf at any stage is the first collapsed node on its path
+    /// through the full tree, so each row is routed once.
+    fn losses(
+        &self,
+        ctx: &Context<'_>,
+        data: &Dataset,
+        ids: &[usize],
+        stages: &[usize],
+    ) -> Result<Vec<Vec<(f64, f64)>>> {
+        let mut result = vec![Vec::with_capacity(ids.len()); stages.len()];
+        let mut nodes = vec![];
+        let mut cache = vec![];
+        for &i in ids {
+            nodes.clear();
+            let mut n = &self.tree.root;
+            nodes.push(n);
+            while let Some((l, r)) = internal(n) {
+                // `internal` returned children, so the split exists.
+                n = if n.split.as_ref().expect("split").goes_left(&data.rows[i]) {
+                    l
+                } else {
+                    r
+                };
+                nodes.push(n);
+            }
+            cache.clear();
+            cache.resize(nodes.len(), None);
+            let weight = if ctx.classifying() {
+                1.0
+            } else {
+                data.weight(i)
+            };
+            for (out, &stage) in result.iter_mut().zip(stages) {
+                let d = nodes
+                    .iter()
+                    .position(|n| self.collapsed(n, stage))
+                    .unwrap_or(nodes.len() - 1);
+                let loss = match cache[d] {
+                    Some(loss) => loss,
+                    None => {
+                        let loss = row_loss(ctx, &nodes[d].model, data, i)?;
+                        cache[d] = Some(loss);
+                        loss
+                    }
+                };
+                out.push((loss, weight));
+            }
+        }
+        Ok(result)
+    }
 }
 pub(crate) fn prune(
     tree: Tree,
@@ -72,23 +224,21 @@ pub(crate) fn prune(
     if matches!(ctx.options.pruning, Pruning::None) {
         return Ok(tree);
     }
-    let path = weakest_link_path(&tree);
+    let path = PrunePath::new(&tree);
     match ctx.options.pruning {
-        Pruning::None => Ok(tree),
+        Pruning::None => Ok(tree.clone()),
         Pruning::CostComplexity { alpha } => {
-            let t = at_alpha(&path, alpha).clone();
             report.selected_alpha = alpha;
-            Ok(t)
+            Ok(path.subtree(path.stage_at(alpha)))
         }
         Pruning::FixedLeaves { max_leaves } => {
             // The path ends at the root-only tree and max_leaves is validated
             // positive, so some subtree always qualifies.
-            let (alpha, t) = path
-                .iter()
-                .find(|(_, t)| t.root.leaves() <= max_leaves)
+            let stage = (0..path.len())
+                .find(|&k| path.leaves[k] <= max_leaves)
                 .unwrap();
-            report.selected_alpha = *alpha;
-            Ok(t.clone())
+            report.selected_alpha = path.alphas[stage];
+            Ok(path.subtree(stage))
         }
         Pruning::Validation => {
             let data = validation
@@ -105,12 +255,12 @@ pub(crate) fn prune(
             let ids = data.active_rows();
             let mut best = 0;
             let mut best_loss = f64::INFINITY;
-            for (j, (alpha, t)) in path.iter().enumerate() {
-                let losses = external_losses(ctx, t, data, &ids)?;
-                let (m, se) = weighted_summary(&losses);
+            let stages: Vec<usize> = (0..path.len()).collect();
+            for (j, losses) in path.losses(ctx, data, &ids, &stages)?.iter().enumerate() {
+                let (m, se) = weighted_summary(losses);
                 report.pruning_scores.push(PruningScore {
-                    alpha: *alpha,
-                    leaves: t.root.leaves(),
+                    alpha: path.alphas[j],
+                    leaves: path.leaves[j],
                     mean_loss: m,
                     standard_error: se,
                 });
@@ -119,8 +269,8 @@ pub(crate) fn prune(
                     best_loss = m;
                 }
             }
-            report.selected_alpha = path[best].0;
-            Ok(path[best].1.clone())
+            report.selected_alpha = path.alphas[best];
+            Ok(path.subtree(best))
         }
         Pruning::CrossValidation {
             folds,
@@ -155,15 +305,16 @@ pub(crate) fn prune(
                 shift = (shift + g.len()) % folds;
             }
             let alphas: Vec<f64> = path
+                .alphas
                 .iter()
                 .enumerate()
-                .map(|(i, (a, _))| {
+                .map(|(i, a)| {
                     if i + 1 == path.len() {
                         f64::INFINITY
                     } else if *a == 0.0 {
                         0.0
                     } else {
-                        a.sqrt() * path[i + 1].0.sqrt()
+                        a.sqrt() * path.alphas[i + 1].sqrt()
                     }
                 })
                 .collect();
@@ -210,19 +361,19 @@ pub(crate) fn prune(
                         ctx.options,
                         0,
                     )?;
-                    let fp = weakest_link_path(&full);
-                    alphas
+                    let fp = PrunePath::new(&full);
+                    let stages: Vec<usize> = alphas
                         .iter()
                         .enumerate()
                         .map(|(j, &alpha)| {
-                            let subtree = if j == 0 && path.len() > 1 {
-                                &fp[0].1
+                            if j == 0 && path.len() > 1 {
+                                0
                             } else {
-                                at_alpha(&fp, alpha)
-                            };
-                            external_losses(ctx, subtree, ctx.data, held)
+                                fp.stage_at(alpha)
+                            }
                         })
-                        .collect()
+                        .collect();
+                    fp.losses(ctx, ctx.data, held, &stages)
                 })
                 .collect();
             for losses in fold_losses {
@@ -230,11 +381,11 @@ pub(crate) fn prune(
                     results[j].extend(l);
                 }
             }
-            for (j, (alpha, t)) in path.iter().enumerate() {
-                let (m, se) = weighted_summary(&results[j]);
+            for (j, losses) in results.iter().enumerate() {
+                let (m, se) = weighted_summary(losses);
                 report.pruning_scores.push(PruningScore {
-                    alpha: *alpha,
-                    leaves: t.root.leaves(),
+                    alpha: path.alphas[j],
+                    leaves: path.leaves[j],
                     mean_loss: m,
                     standard_error: se,
                 });
@@ -255,57 +406,41 @@ pub(crate) fn prune(
                 .rev()
                 .find(|&j| stats::less_or_close(report.pruning_scores[j].mean_loss, cutoff))
                 .unwrap();
-            report.selected_alpha = path[chosen].0;
-            Ok(path[chosen].1.clone())
+            report.selected_alpha = path.alphas[chosen];
+            Ok(path.subtree(chosen))
         }
     }
 }
-fn external_losses(
-    ctx: &Context<'_>,
-    tree: &Tree,
-    data: &Dataset,
-    ids: &[usize],
-) -> Result<Vec<(f64, f64)>> {
+/// The held-out loss of row `i` under a leaf model.
+fn row_loss(ctx: &Context<'_>, leaf: &LeafModel, data: &Dataset, i: usize) -> Result<f64> {
     // Priors affect the fitted classifier, not the held-out population. Native
     // GUIDE averages the observed misclassification costs over validation rows.
     // Callers pass only active rows, whose responses are observed and typed
     // by the validated task, so the response accessors below cannot fail.
-    ids.iter()
-        .map(|&i| {
-            let leaf = &tree.root.leaf(&data.rows[i]).model;
-            let loss = if let LeafModel::Classification {
-                predicted_class, ..
-            } = leaf
-            {
-                let label = data.targets[i].label().unwrap();
-                let y = ctx
-                    .classes
-                    .binary_search(&label)
-                    .map_err(|_| invalid(format!("unknown validation class {label}")))?;
-                ctx.costs[y][*predicted_class]
-            } else {
-                leaf.regression_loss(
-                    &data.rows[i],
-                    data.offset(i),
-                    data.targets[i].number().unwrap(),
-                    &ctx.loss,
-                )
-            };
-            if !loss.is_finite() {
-                return Err(invalid(
-                    "nonfinite validation loss; rescale the response or inspect the fitted model",
-                ));
-            }
-            Ok((
-                loss,
-                if ctx.classifying() {
-                    1.0
-                } else {
-                    data.weight(i)
-                },
-            ))
-        })
-        .collect()
+    let loss = if let LeafModel::Classification {
+        predicted_class, ..
+    } = leaf
+    {
+        let label = data.targets[i].label().unwrap();
+        let y = ctx
+            .classes
+            .binary_search(&label)
+            .map_err(|_| invalid(format!("unknown validation class {label}")))?;
+        ctx.costs[y][*predicted_class]
+    } else {
+        leaf.regression_loss(
+            &data.rows[i],
+            data.offset(i),
+            data.targets[i].number().unwrap(),
+            &ctx.loss,
+        )
+    };
+    if !loss.is_finite() {
+        return Err(invalid(
+            "nonfinite validation loss; rescale the response or inspect the fitted model",
+        ));
+    }
+    Ok(loss)
 }
 fn weighted_summary(values: &[(f64, f64)]) -> (f64, f64) {
     let scale = values.iter().map(|v| v.1).fold(0.0, f64::max);
@@ -330,4 +465,57 @@ fn weighted_summary(values: &[(f64, f64)]) -> (f64, f64) {
         0.0
     };
     (mean_scaled * loss_scale, se * loss_scale)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn indexed_stages_match_materialized_subtrees() {
+        let x = |i: usize| ((i * 37) % 101) as f64;
+        let data = Dataset {
+            schema: vec![FeatureSchema {
+                name: "x".into(),
+                feature_type: FeatureType::Numeric,
+                role: Role::Split,
+                flags: None,
+            }],
+            rows: (0..120).map(|i| vec![Value::Number(x(i))]).collect(),
+            targets: (0..120)
+                .map(|i| Value::Number((x(i) / 10.0).floor() + (i % 7) as f64 * 0.3))
+                .collect(),
+            weights: vec![],
+            offsets: vec![],
+        };
+        let options = FitOptions {
+            pruning: Pruning::None,
+            min_samples_leaf: 3,
+            ..Default::default()
+        };
+        let ids: Vec<usize> = (0..120).collect();
+        let ctx = Context::new(&data, &options, &ids, None).unwrap();
+        let mut rng = ChaCha8Rng::seed_from_u64(0);
+        let tree = Tree {
+            root: grow(&ctx, &ids, 0, &mut 0, &mut rng, SelectionMode::Fit),
+        };
+        let path = PrunePath::new(&tree);
+        assert!(path.len() > 5);
+        assert_eq!(path.leaves[0], tree.root.leaves());
+        assert_eq!(path.leaves[path.len() - 1], 1);
+        let stages: Vec<usize> = (0..path.len()).rev().collect();
+        let losses = path.losses(&ctx, &data, &ids, &stages).unwrap();
+        for (losses, &stage) in losses.iter().zip(&stages) {
+            let subtree = path.subtree(stage);
+            assert_eq!(subtree.root.leaves(), path.leaves[stage]);
+            let expected: Vec<(f64, f64)> = ids
+                .iter()
+                .map(|&i| {
+                    let leaf = &subtree.root.leaf(&data.rows[i]).model;
+                    (row_loss(&ctx, leaf, &data, i).unwrap(), 1.0)
+                })
+                .collect();
+            assert_eq!(losses, &expected);
+        }
+    }
 }
