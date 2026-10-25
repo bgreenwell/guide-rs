@@ -2,8 +2,8 @@
 //! scikit-learn estimators; options and schemas cross the boundary as JSON so
 //! the core crate's validation applies unchanged.
 use guide_rs::{
-    Dataset, EnsembleOptions, FeatureSchema, FeatureType, FitOptions, FittedModel, Prediction,
-    Task, Value,
+    Dataset, EnsembleOptions, FeatureSchema, FeatureType, FitOptions, FittedModel,
+    ImportanceOptions, Prediction, Task, Value,
 };
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -81,6 +81,45 @@ fn targets(task: &Task, target: &Bound<'_, PyAny>) -> PyResult<Vec<Value>> {
     })
 }
 
+fn dataset(
+    schema: &str,
+    columns: &[Bound<'_, PyAny>],
+    target: &Bound<'_, PyAny>,
+    options: &FitOptions,
+    weights: Option<Vec<f64>>,
+    exposure: Option<Vec<f64>>,
+) -> PyResult<Dataset> {
+    let schema: Vec<FeatureSchema> = serde_json::from_str(schema).map_err(value_error)?;
+    Ok(Dataset {
+        rows: rows(&schema, columns)?,
+        targets: targets(&options.task, target)?,
+        schema,
+        weights: weights.unwrap_or_default(),
+        offsets: exposure.unwrap_or_default(),
+    })
+}
+
+/// Importance scores as JSON, in the format of `guide-rs importance`.
+#[pyfunction]
+#[pyo3(signature = (schema, columns, target, options, importance, weights=None))]
+fn importance(
+    py: Python<'_>,
+    schema: &str,
+    columns: Vec<Bound<'_, PyAny>>,
+    target: Bound<'_, PyAny>,
+    options: &str,
+    importance: &str,
+    weights: Option<Vec<f64>>,
+) -> PyResult<String> {
+    let options: FitOptions = serde_json::from_str(options).map_err(value_error)?;
+    let importance: ImportanceOptions = serde_json::from_str(importance).map_err(value_error)?;
+    let data = dataset(schema, &columns, &target, &options, weights, None)?;
+    let result = py
+        .detach(|| guide_rs::importance(&data, &options, &importance))
+        .map_err(value_error)?;
+    serde_json::to_string(&result).map_err(value_error)
+}
+
 /// A fitted tree or ensemble.
 #[pyclass(module = "guide_rs._core", frozen)]
 struct Model {
@@ -104,19 +143,12 @@ impl Model {
         exposure: Option<Vec<f64>>,
         ensemble: Option<&str>,
     ) -> PyResult<Self> {
-        let schema: Vec<FeatureSchema> = serde_json::from_str(schema).map_err(value_error)?;
         let options: FitOptions = serde_json::from_str(options).map_err(value_error)?;
         let ensemble: Option<EnsembleOptions> = ensemble
             .map(serde_json::from_str)
             .transpose()
             .map_err(value_error)?;
-        let data = Dataset {
-            rows: rows(&schema, &columns)?,
-            targets: targets(&options.task, &target)?,
-            schema,
-            weights: weights.unwrap_or_default(),
-            offsets: exposure.unwrap_or_default(),
-        };
+        let data = dataset(schema, &columns, &target, &options, weights, exposure)?;
         let inner = py
             .detach(|| match &ensemble {
                 Some(e) => FittedModel::fit_ensemble(&data, &options, e),
@@ -229,6 +261,7 @@ impl Model {
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Model>()?;
+    m.add_function(wrap_pyfunction!(importance, m)?)?;
     m.add("ALGORITHM_VERSION", guide_rs::ALGORITHM_VERSION)?;
     Ok(())
 }

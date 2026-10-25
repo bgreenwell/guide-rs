@@ -43,7 +43,7 @@ def estimator_for(options, schema):
         options.get("mtry") is not None
         or options.get("prediction_truncation", "none") != "none"
         or options["pruning"]["kind"] not in PRUNING
-        or any(f["feature_type"]["kind"] == "periodic" for f in schema)
+        or any(f["feature_type"]["kind"] == "periodic" or f["role"] == "flag" for f in schema)
     ):
         return None
     params = {
@@ -54,40 +54,30 @@ def estimator_for(options, schema):
         "significance_level": options["significance_level"],
         "max_split_candidates": options["max_split_candidates"],
         "random_state": options["seed"],
+        "feature_roles": {f["name"]: f["role"] for f in schema},
         **PRUNING[options["pruning"]["kind"]](options["pruning"]),
     }
     if task["kind"] == "classification":
-        roles = {"split"}
-        estimator = GuideClassifier(
+        return GuideClassifier(
             linear_splits=options["linear_splits"],
             class_priors=options["class_priors"],
             class_costs=options["class_costs"],
             **params,
         )
-    else:
-        loss = task["loss"]
-        if options["linear_splits"] or loss["kind"] not in ("squared_error", "quantile", "poisson"):
-            return None
-        if node["kind"] == "constant":
-            roles = {"split"}
-        elif node["kind"] in ("linear", "polynomial"):
-            roles = {"both"}
-        else:
-            return None
-        estimator = GuideRegressor(
-            loss=loss["kind"],
-            quantile=loss.get("probability", 0.5),
-            node_model=node["kind"],
-            degree=node.get("degree", 2),
-            **params,
-        )
-    expected = {
-        "split" if f["feature_type"]["kind"] == "categorical" else role for f in schema
-        for role in roles
-    }
-    if {f["role"] for f in schema} != expected:
+    loss = task["loss"]
+    if (
+        options["linear_splits"]
+        or loss["kind"] not in ("squared_error", "quantile", "poisson")
+        or node["kind"] not in ("constant", "linear", "polynomial")
+    ):
         return None
-    return estimator
+    return GuideRegressor(
+        loss=loss["kind"],
+        quantile=loss.get("probability", 0.5),
+        node_model=node["kind"],
+        degree=node.get("degree", 2),
+        **params,
+    )
 
 
 def reference_cases():
@@ -102,7 +92,13 @@ CASES = list(reference_cases())
 
 
 def test_reference_corpus_is_covered():
-    assert len(CASES) >= 50
+    assert len(CASES) >= 230
+
+
+def column(values, categorical):
+    if categorical:
+        return [rust_label(v) for v in values]
+    return [np.nan if v is None else float(v) for v in values]
 
 
 @pytest.mark.filterwarnings("ignore:Positive classification weights")
@@ -110,52 +106,38 @@ def test_reference_corpus_is_covered():
 def test_estimator_fits_the_core_model(options, dataset):
     # The core's fits are validated against the frozen GUIDE captures; the
     # estimator must produce the same model from the same configuration.
-    schema, rows, targets = dataset["schema"], dataset["rows"], dataset["targets"]
+    # sklearn rejects missing responses, so both fits use only rows with an
+    # observed response. Prediction-only rows still shape the core's dummy
+    # coding of categorical fit variables, as in GUIDE, so for those cases
+    # the estimator matches a capture without its prediction rows.
+    schema = dataset["schema"]
+    active = [i for i, y in enumerate(dataset["targets"]) if y is not None]
+    rows = [dataset["rows"][i] for i in active]
     classifying = options["task"]["kind"] == "classification"
-
-    def column(values, categorical):
-        if categorical:
-            return [rust_label(v) for v in values]
-        return [np.nan if v is None else float(v) for v in values]
-
-    def fit_core():
-        return Model.fit(
-            json.dumps(schema),
-            [column([r[j] for r in rows], f["feature_type"]["kind"] == "categorical")
-             for j, f in enumerate(schema)],
-            column(targets, classifying),
-            json.dumps(options),
-            weights=dataset.get("weights") or None,
-            exposure=dataset.get("offsets") or None,
-        )
-
-    # The estimator takes only rows with an observed response.
-    active = [i for i, y in enumerate(targets) if y is not None]
-    X = pd.DataFrame({
-        f["name"]: pd.Series(
-            column([rows[i][j] for i in active], f["feature_type"]["kind"] == "categorical"),
-            dtype=object if f["feature_type"]["kind"] == "categorical" else float,
-        )
-        for j, f in enumerate(schema)
-    })
-    y = column([targets[i] for i in active], classifying)
+    y = column([dataset["targets"][i] for i in active], classifying)
     kwargs = {}
     if dataset.get("weights"):
         kwargs["sample_weight"] = [dataset["weights"][i] for i in active]
     if dataset.get("offsets"):
         kwargs["exposure"] = [dataset["offsets"][i] for i in active]
+    categorical = [f["feature_type"]["kind"] == "categorical" for f in schema]
+    columns = [column([r[j] for r in rows], cat) for j, cat in enumerate(categorical)]
+    X = pd.DataFrame({
+        f["name"]: pd.Series(values, dtype=object if cat else float)
+        for f, values, cat in zip(schema, columns, categorical)
+    })
     estimator = estimator_for(options, schema)
     try:
-        core = fit_core()
+        core = Model.fit(
+            json.dumps(schema), columns, y, json.dumps(options),
+            weights=kwargs.get("sample_weight"), exposure=kwargs.get("exposure"),
+        )
     except ValueError as error:
         with pytest.raises(ValueError, match=re.escape(str(error))):
             estimator.fit(X, y, **kwargs)
         return
     estimator.fit(X, y, **kwargs)
-    ours, theirs = json.loads(estimator.to_json()), json.loads(core.to_json())
-    for model in (ours, theirs):
-        del model["report"]["training_rows"], model["report"]["excluded_rows"]
-    assert ours == theirs
+    assert json.loads(estimator.to_json()) == json.loads(core.to_json())
 
 
 @pytest.fixture
