@@ -45,6 +45,11 @@ impl From<serde_json::Error> for Error {
     }
 }
 pub type Result<T> = std::result::Result<T, Error>;
+
+/// Compiles the README's Rust example as a doctest.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+pub struct ReadmeDoctests;
 pub(crate) fn invalid(message: impl Into<String>) -> Error {
     Error(message.into())
 }
