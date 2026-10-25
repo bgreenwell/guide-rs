@@ -15,6 +15,7 @@ fn data(x: Vec<Vec<f64>>, y: Vec<f64>) -> Dataset {
                 name: format!("x{j}"),
                 feature_type: FeatureType::Numeric,
                 role: Role::Split,
+                flags: None,
             })
             .collect(),
         rows: x
@@ -215,6 +216,7 @@ fn sibling_leaves_with_the_same_class_are_merged_bottom_up() {
             name: name.into(),
             feature_type: FeatureType::Numeric,
             role: Role::Split,
+            flags: None,
         })
         .to_vec();
     let d = Dataset {
@@ -234,6 +236,51 @@ fn sibling_leaves_with_the_same_class_are_merged_bottom_up() {
     // Costs make the (A=1, B=1) cell predict b, so both splits survive.
     o.class_costs = Some(vec![vec![0.0, 1.0], vec![3.0, 0.0]]);
     assert_eq!(FittedModel::fit(&d, &o).unwrap().trees[0].root.leaves(), 3);
+}
+#[test]
+fn flag_schemas_are_validated() {
+    let feature = |name: &str, kind: FeatureType, role: Role, flags: Option<&str>| FeatureSchema {
+        name: name.into(),
+        feature_type: kind,
+        role,
+        flags: flags.map(Into::into),
+    };
+    let fit = |schema: Vec<FeatureSchema>| {
+        let d = Dataset {
+            rows: vec![vec![Value::Missing, Value::Text("A".into())]; 4],
+            schema,
+            targets: (0..4).map(|i| Value::Number(i as f64)).collect(),
+            weights: vec![],
+            offsets: vec![],
+        };
+        FittedModel::fit(&d, &options()).map(|_| ()).unwrap_err().0
+    };
+    let x = || feature("x", FeatureType::Numeric, Role::Split, None);
+    let categorical = FeatureType::Categorical;
+    assert!(
+        fit(vec![
+            x(),
+            feature("f", categorical.clone(), Role::Flag, Some("z"))
+        ])
+        .contains("unknown feature")
+    );
+    assert!(
+        fit(vec![
+            x(),
+            feature("f", FeatureType::Numeric, Role::Flag, Some("x"))
+        ])
+        .contains("must be categorical")
+    );
+    assert!(
+        fit(vec![
+            x(),
+            feature("f", categorical.clone(), Role::Flag, None)
+        ])
+        .contains("used together")
+    );
+    assert!(
+        fit(vec![x(), feature("f", categorical, Role::Split, Some("x"))]).contains("used together")
+    );
 }
 #[test]
 fn missingness_can_be_the_predictor() {

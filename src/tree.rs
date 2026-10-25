@@ -8,6 +8,24 @@ use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+/// Missing values routed by their flag code (GUIDE M variables): a missing
+/// value goes left exactly when its code is in `left`. Missing values with
+/// no code, or with a code unseen in training, go right.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct MissingCodes {
+    pub flag: usize,
+    pub left: Vec<String>,
+}
+impl MissingCodes {
+    fn goes_left(&self, row: &[Value]) -> bool {
+        missing_code(row, Some(self.flag)).is_some_and(|code| self.left.iter().any(|l| l == code))
+    }
+}
+fn route_missing(codes: &Option<MissingCodes>, missing_left: bool, row: &[Value]) -> bool {
+    codes.as_ref().map_or(missing_left, |c| c.goes_left(row))
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Split {
@@ -21,6 +39,9 @@ pub enum Split {
         feature: usize,
         threshold: f64,
         missing_left: bool,
+        /// Overrides `missing_left` for features with a missing-value flag.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        missing_codes: Option<MissingCodes>,
     },
     Categorical {
         feature: usize,
@@ -28,9 +49,15 @@ pub enum Split {
         known_categories: Vec<String>,
         missing_left: bool,
         unknown_left: bool,
+        /// Overrides `missing_left` for features with a missing-value flag.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        missing_codes: Option<MissingCodes>,
     },
+    /// Missing values go left; with `missing_codes`, only those codes do.
     Missing {
         feature: usize,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        missing_codes: Option<MissingCodes>,
     },
     Periodic {
         feature: usize,
@@ -46,7 +73,7 @@ impl Split {
             Self::Linear { features, .. } => features[0],
             Self::Numeric { feature, .. }
             | Self::Categorical { feature, .. }
-            | Self::Missing { feature }
+            | Self::Missing { feature, .. }
             | Self::Periodic { feature, .. } => *feature,
         }
     }
@@ -63,17 +90,24 @@ impl Split {
                 .zip(row[features[1]].number())
                 .map(|(a, b)| a * coefficients[0] + b * coefficients[1] <= *threshold)
                 .unwrap_or(*missing_left),
-            Self::Missing { .. } => v.is_missing(),
+            Self::Missing { missing_codes, .. } => {
+                v.is_missing() && route_missing(missing_codes, true, row)
+            }
             Self::Numeric {
                 threshold,
                 missing_left,
+                missing_codes,
                 ..
-            } => v.number().map(|x| x <= *threshold).unwrap_or(*missing_left),
+            } => v
+                .number()
+                .map(|x| x <= *threshold)
+                .unwrap_or_else(|| route_missing(missing_codes, *missing_left, row)),
             Self::Categorical {
                 left_categories,
                 known_categories,
                 missing_left,
                 unknown_left,
+                missing_codes,
                 ..
             } => {
                 if let Some(s) = v.label() {
@@ -83,7 +117,7 @@ impl Split {
                         left_categories.contains(&s)
                     }
                 } else {
-                    *missing_left
+                    route_missing(missing_codes, *missing_left, row)
                 }
             }
             Self::Periodic {
@@ -479,7 +513,31 @@ pub(crate) fn collect_warnings(n: &Node, w: &mut Vec<String>) {
         collect_warnings(r, w);
     }
 }
+/// GUIDE converts flags to indicator variables for linear models; that
+/// conversion is not implemented, and code subsets are enumerated exhaustively.
+const MAX_MISSING_CODES: usize = 10;
 pub(crate) fn validate_supported(data: &Dataset, options: &FitOptions) -> Result<()> {
+    for (j, flag) in flag_columns(&data.schema).into_iter().enumerate() {
+        let Some(flag) = flag else { continue };
+        if options.node_model != NodeModel::Constant {
+            return Err(invalid(
+                "missing-value flags require constant node models; GUIDE's flag-to-indicator conversion for linear models is not implemented",
+            ));
+        }
+        let codes: std::collections::BTreeSet<_> = data
+            .rows
+            .iter()
+            .filter(|row| row[j].is_missing())
+            .filter_map(|row| missing_code(row, Some(flag)))
+            .collect();
+        if codes.len() > MAX_MISSING_CODES {
+            return Err(invalid(format!(
+                "flag {} has {} missing-value codes; at most {MAX_MISSING_CODES} are supported",
+                data.schema[flag].name,
+                codes.len()
+            )));
+        }
+    }
     if options.node_model != NodeModel::Constant && !data.schema.iter().any(|s| s.role.fits()) {
         return Err(invalid(
             "nonconstant node models require at least one feature with role fit or both",
@@ -663,6 +721,25 @@ pub(crate) fn validate_node(
                         .any(|v| !known_categories.contains(v)) =>
                 {
                     return Err(invalid("invalid categorical split metadata"));
+                }
+                Split::Numeric {
+                    feature,
+                    missing_codes: Some(c),
+                    ..
+                }
+                | Split::Categorical {
+                    feature,
+                    missing_codes: Some(c),
+                    ..
+                }
+                | Split::Missing {
+                    feature,
+                    missing_codes: Some(c),
+                } if c.flag >= schema.len()
+                    || schema[c.flag].role != Role::Flag
+                    || schema[c.flag].flags.as_ref() != Some(&schema[*feature].name) =>
+                {
+                    return Err(invalid("split missing codes must use the feature's flag"));
                 }
                 Split::Periodic {
                     start, end, period, ..
@@ -894,17 +971,150 @@ fn reduce<T: Clone>(v: Vec<T>, max: usize) -> Vec<T> {
             .collect()
     }
 }
+/// Missing-value routes for a split on feature `j`: all missing right, all
+/// missing left and, for a flagged feature, each nonempty subset of the
+/// node's missing codes going left. Unlike GUIDE 46.3, which never sends all
+/// flagged missing values right, the empty subset stays a candidate.
+fn missing_routes(ctx: &Context<'_>, ids: &[usize], j: usize) -> Vec<(bool, Option<MissingCodes>)> {
+    let missing: Vec<usize> = ids
+        .iter()
+        .copied()
+        .filter(|&i| ctx.data.rows[i][j].is_missing())
+        .collect();
+    if missing.is_empty() {
+        return vec![(false, None)];
+    }
+    let Some(flag) = ctx.flags[j] else {
+        return vec![(false, None), (true, None)];
+    };
+    let mut routes = vec![(false, None)];
+    {
+        let codes: std::collections::BTreeSet<&str> = missing
+            .iter()
+            .filter_map(|&i| missing_code(&ctx.data.rows[i], Some(flag)))
+            .collect();
+        let codes: Vec<&str> = codes.into_iter().collect();
+        // GUIDE writes "or NA" only when the node's codes are every code the
+        // data file records for this feature's missing values; otherwise it
+        // names the codes, and unseen or uncoded values go right.
+        let mut universe = std::collections::BTreeSet::new();
+        let mut uncoded = false;
+        for row in ctx.data.rows.iter().filter(|r| r[j].is_missing()) {
+            match missing_code(row, Some(flag)) {
+                Some(code) => {
+                    universe.insert(code);
+                }
+                None => uncoded = true,
+            }
+        }
+        let complete = !uncoded && universe.len() == codes.len();
+        let all = (1usize << codes.len()) - 1;
+        for mask in 1..=all {
+            if mask == all && complete {
+                continue; // identical to sending every missing value left
+            }
+            let left = codes
+                .iter()
+                .enumerate()
+                .filter(|(b, _)| mask & (1 << b) != 0)
+                .map(|(_, c)| (*c).to_owned())
+                .collect();
+            routes.push((false, Some(MissingCodes { flag, left })));
+        }
+    }
+    // Last, so that cut splits prefer named codes on equal loss, as in GUIDE.
+    routes.push((true, None));
+    routes
+}
+/// GUIDE 46.2/46.3 put the side with fewer categories on the left, counting
+/// missing values as one category, or each flag code and uncoded missing
+/// values separately; ties keep the given orientation. Unseen levels and
+/// uncoded missing values always go right, so a split needing them on the
+/// left keeps its orientation.
+fn orient_fewer_left(split: Split, node_missing: &[&[Value]]) -> Split {
+    let Split::Categorical {
+        feature,
+        left_categories,
+        known_categories,
+        missing_left,
+        unknown_left,
+        missing_codes,
+    } = split
+    else {
+        return split;
+    };
+    let flag = missing_codes.as_ref().map(|c| c.flag);
+    let codes: std::collections::BTreeSet<&str> = node_missing
+        .iter()
+        .filter_map(|row| missing_code(row, flag))
+        .collect();
+    let uncoded = node_missing
+        .iter()
+        .any(|row| missing_code(row, flag).is_none());
+    let (left_missing, right_missing) = match &missing_codes {
+        Some(c) => (
+            c.left.len(),
+            codes.len() - c.left.len() + usize::from(uncoded),
+        ),
+        None if node_missing.is_empty() => (0, 0),
+        None => (usize::from(missing_left), usize::from(!missing_left)),
+    };
+    let left = left_categories.len() + left_missing;
+    let right = known_categories.len() - left_categories.len() + right_missing;
+    if left <= right || (missing_codes.is_some() && uncoded) {
+        return Split::Categorical {
+            feature,
+            left_categories,
+            known_categories,
+            missing_left,
+            unknown_left,
+            missing_codes,
+        };
+    }
+    let flipped_codes = missing_codes.and_then(|c| {
+        let left: Vec<String> = codes
+            .iter()
+            .filter(|code| !c.left.iter().any(|l| l == *code))
+            .map(|code| (*code).to_owned())
+            .collect();
+        (!left.is_empty()).then_some(MissingCodes { flag: c.flag, left })
+    });
+    Split::Categorical {
+        feature,
+        left_categories: known_categories
+            .iter()
+            .filter(|c| !left_categories.contains(c))
+            .cloned()
+            .collect(),
+        known_categories,
+        // Without missing values in the node the route is a default, kept right.
+        missing_left: !node_missing.is_empty() && flag.is_none() && !missing_left,
+        unknown_left,
+        missing_codes: flipped_codes,
+    }
+}
 fn candidates(ctx: &Context<'_>, ids: &[usize], j: usize) -> Vec<Split> {
     let mut result = vec![];
-    let missing = ids.iter().any(|&i| ctx.data.rows[i][j].is_missing());
-    if missing && ids.iter().any(|&i| !ctx.data.rows[i][j].is_missing()) {
-        result.push(Split::Missing { feature: j });
+    let routes = missing_routes(ctx, ids, j);
+    if routes.len() > 1 && ids.iter().any(|&i| !ctx.data.rows[i][j].is_missing()) {
+        // Missing-only splits try "all missing left" before named codes,
+        // so equal-loss ties choose it, as in GUIDE.
+        result.push(Split::Missing {
+            feature: j,
+            missing_codes: None,
+        });
+        for (_, missing_codes) in routes.iter().filter(|(_, c)| c.is_some()) {
+            result.push(Split::Missing {
+                feature: j,
+                missing_codes: missing_codes.clone(),
+            });
+        }
     }
-    let directions = if missing {
-        vec![false, true]
-    } else {
-        vec![false]
-    };
+    let directions: Vec<bool> = routes
+        .iter()
+        .filter(|(_, codes)| codes.is_none())
+        .map(|(left, _)| *left)
+        .collect();
     match ctx.data.schema[j].feature_type {
         FeatureType::Numeric => {
             let mut values: Vec<f64> = ids
@@ -934,11 +1144,12 @@ fn candidates(ctx: &Context<'_>, ids: &[usize], j: usize) -> Vec<Split> {
                 if threshold < lower || threshold >= upper {
                     continue;
                 }
-                for &missing_left in &directions {
+                for (missing_left, missing_codes) in &routes {
                     result.push(Split::Numeric {
                         feature: j,
                         threshold,
-                        missing_left,
+                        missing_left: *missing_left,
+                        missing_codes: missing_codes.clone(),
                     });
                 }
             }
@@ -1025,6 +1236,7 @@ fn candidates(ctx: &Context<'_>, ids: &[usize], j: usize) -> Vec<Split> {
                         known_categories: known.clone(),
                         missing_left: left.iter().any(|level| level.is_none()),
                         unknown_left: false,
+                        missing_codes: None,
                     });
                 }
                 return result;
@@ -1064,15 +1276,40 @@ fn candidates(ctx: &Context<'_>, ids: &[usize], j: usize) -> Vec<Split> {
                     ctx.options.max_split_candidates,
                 )
             };
+            // Prefixes of the real-level order crossed with every missing
+            // route contain the optimum over levels and codes jointly.
+            let node_missing: Vec<&[Value]> = ids
+                .iter()
+                .map(|&i| ctx.data.rows[i].as_slice())
+                .filter(|row| row[j].is_missing())
+                .collect();
+            // Uncoded missing values always go right, so a partition placing
+            // them with a level set needs that set's complement on the left.
+            let mut sets = sets;
+            if let Some(flag) = ctx.flags[j]
+                && node_missing
+                    .iter()
+                    .any(|row| missing_code(row, Some(flag)).is_none())
+            {
+                let complements: Vec<Vec<String>> = sets
+                    .iter()
+                    .map(|set| known.iter().filter(|c| !set.contains(c)).cloned().collect())
+                    .collect();
+                sets.extend(complements);
+            }
             for left_categories in sets {
-                for &missing_left in &directions {
-                    result.push(Split::Categorical {
-                        feature: j,
-                        left_categories: left_categories.clone(),
-                        known_categories: known.clone(),
-                        missing_left,
-                        unknown_left: false,
-                    });
+                for (missing_left, missing_codes) in &routes {
+                    result.push(orient_fewer_left(
+                        Split::Categorical {
+                            feature: j,
+                            left_categories: left_categories.clone(),
+                            known_categories: known.clone(),
+                            missing_left: *missing_left,
+                            unknown_left: false,
+                            missing_codes: missing_codes.clone(),
+                        },
+                        &node_missing,
+                    ));
                 }
             }
         }

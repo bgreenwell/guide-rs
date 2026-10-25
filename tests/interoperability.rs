@@ -671,6 +671,7 @@ fn weighted_poisson_with_exposure_agrees_with_r_glm() {
             name: "x".into(),
             feature_type: FeatureType::Numeric,
             role: Role::Both,
+            flags: None,
         }],
         ..Default::default()
     };
@@ -774,6 +775,7 @@ fn quantile_nodes_agree_with_r_quantreg() {
                 name: name.into(),
                 feature_type: FeatureType::Numeric,
                 role: Role::Both,
+                flags: None,
             })
             .collect(),
         ..Default::default()
@@ -840,6 +842,7 @@ fn qr_and_irls_agree_with_r_stats() {
             name: "x".into(),
             feature_type: FeatureType::Numeric,
             role: Role::Both,
+            flags: None,
         }],
         ..Default::default()
     };

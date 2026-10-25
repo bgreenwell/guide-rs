@@ -1,0 +1,4 @@
+         1 c x x        2   "r" "s"
+         2 t NONE NONE   t
+         1 c x x        2   "r" "s"
+         3 t NONE NONE   t

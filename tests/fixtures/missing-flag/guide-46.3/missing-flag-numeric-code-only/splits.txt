@@ -1,0 +1,5 @@
+         1 s x x        1 NA
+         2 t NONE NONE   t
+         3 s x x        1 NA
+         6 t NONE NONE   t
+         7 t NONE NONE   t

@@ -95,6 +95,18 @@ def cases():
     merge_case("class-same-class-kept", 12)
     merge_case("class-same-class-cascade", 24)
     merge_case("class-same-class-costs", 24, costs=[[0.0, 1.0], [3.0, 0.0]])
+    # Categorical orientation: the side with fewer levels goes left, whatever
+    # its row count or response. Each spec lists (level, rows, low response).
+    for k, spec in enumerate([[("p", 10, 1), ("q", 10, 1), ("r", 40, 0)],
+                              [("p", 40, 1), ("q", 10, 0), ("r", 10, 0)],
+                              [("p", 20, 0), ("q", 20, 0), ("r", 20, 1)],
+                              [("p", 20, 0), ("q", 20, 1), ("r", 20, 1)]], 1):
+        rows = [[level] for level, n, _ in spec for _ in range(n)]
+        low = [flag for _, n, flag in spec for _ in range(n)]
+        add(f"ls-categorical-orientation-{k}", False, categorical, rows,
+            [0 if f else 10 for f in low], depth=1)
+        add(f"class-categorical-orientation-{k}", True, categorical, rows,
+            ["a" if f else "b" for f in low], depth=1)
     return result
 
 

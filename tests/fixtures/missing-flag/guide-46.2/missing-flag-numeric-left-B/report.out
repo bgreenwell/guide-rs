@@ -1,0 +1,120 @@
+             GGG   U   U  I  DDDD   EEEE
+            G   G  U   U  I  D   D  E
+            G      U   U  I  D   D  E
+            G  GG  U   U  I  D   D  EEE
+            G   G  U   U  I  D   D  E
+            G   G  U   U  I  D   D  E
+             GGG    UUU   I  DDDD   EEEE
+   
+ GUIDE Classification and Regression Trees and Forests
+ Version 46.2 (Build date: April 27, 2026)         
+ Compiled with NAG Fortran 7.2 on macOS Tahoe 26.4.1 for Apple ARM processors    
+ Copyright (c) 1997-2023 Wei-Yin Loh. All rights reserved.
+ This software is based upon work partially supported by the U.S. Army Research Office,
+ National Science Foundation, National Institutes of Health,
+ Bureau of Labor Statistics, USDA Economic Research Service, and Eli Lilly.
+  
+ This job was started on 10/24/26 at 22:42
+  
+ Least squares regression tree
+ No pruning
+ DSC file: data.dsc
+ Training sample file: data.txt
+ Missing value code: NA
+ Records in data file start on line 2
+ D variable is y
+ Piecewise constant model
+ Number of records in data file: 305
+ Length of longest entry in data file: 2
+ Missing values found in D variable
+ Missing values found among non-categorical variables
+  
+ Summary information for training sample of size 300 (excluding observations
+  with non-positive weight or missing values in d, e, t, r or z variables)
+ d=dependent, b=split and fit cat variable using indicator variables,
+ c=split-only categorical, i=fit-only categorical (via indicators),
+ s=split-only numerical, n=split and fit numerical, f=fit-only numerical,
+ m=missing-value flag variable, p=periodic variable, w=weight
+ Levels of M variables are for missing values in associated variables
+                                                  #Codes/           
+                                                  Levels/           
+  Column  Name            Minimum      Maximum    Periods   #Missing
+       1  x          s    1.000        49.00                   120
+       2  x_         m                                  3
+       3  y          d    0.000        10.00    
+  
+ Numbers of N, F, S, and P below exclude constant variables
+      Total  #cases w/   #missing
+     #cases    miss. D  ord. vals   #X-var   #N-var   #F-var   #S-var
+        305          5        125        0        0        0        1
+     #P-var   #M-var   #B-var   #C-var   #I-var
+          0        1        0        0        0
+ No weight variable in data file
+ Number of cases used for training: 300
+ Number of cases excluded due to 0 W or missing D variable: 5
+  
+ Nodewise interaction tests on all variables
+ Split values for N and S variables based on exhaustive search
+ Max number of interaction splits: 100
+ Maximum number of split levels: 1
+ Minimum node sample size: 2
+  
+ Structure of final tree. Each terminal node is marked with a T.
+  
+ D-mean is mean of y in the node
+ Cases fit give the number of cases used to fit node
+ MSE is residual sum of squares divided by number of cases in node
+        Node    Total    Cases Matrix    Node      Node      Split          Interacting
+        label   cases      fit  rank    D-mean     MSE       variable       variable
+           1      300      300     1  5.667E+00  2.464E+01   x 
+           2T     170      170     1  2.353E+00  1.810E+01   x 
+           3T     130      130     1  1.000E+01  0.000E+00   - 
+  
+ Number of terminal nodes of final tree: 2
+ Total number of nodes of final tree: 3
+  
+ Regression tree:
+  
+ Node 1: x <= 25.000000  or x = NA & x_ = "A", "B"
+   Node 2: y-mean = 2.3529412
+ Node 1: not (x <= 25.000000 or x = NA & x_ = "A", "B")
+   Node 3: y-mean = 10.000000
+ 
+ ***************************************************************
+ Predictor means below are means of cases with no missing values.
+  
+ WARNING: p-values below not adjusted for split search. For a bootstrap solution see:
+  
+ 1. Loh et al. (2016), "Identification of subgroups with differential treatment effects
+ for longitudinal and multiresponse variables", Statistics in Medicine, v.35, 4837-4855.
+  
+ 2. Loh et al. (2019), "Subgroups from regression trees with adjustment for prognostic
+ effects and post-selection inference", Statistics in Medicine, v.38, 545-557.
+  
+ 3. Loh and Zhou (2020), "The GUIDE approach to subgroup identification",
+ in "Design and Analysis of Subgroups with Biopharmaceutical Applications", Springer, pp.147-165.
+  
+Node 1: Intermediate node
+ A case goes into Node 2 if x <= 25.000000 or x_ = "A", "B"
+ x mean = 25.166667
+ Coefficients of least squares regression function:
+ Regressor    Coefficient  t-stat      p-value
+ Constant      5.667        19.77        0.000    
+ ----------------------------
+Node 2: Terminal node
+ Coefficients of least squares regression function:
+ Regressor    Coefficient  t-stat      p-value
+ Constant      2.353        7.211        0.000    
+ y mean = 2.35294
+ ----------------------------
+Node 3: Terminal node
+ Coefficients of least squares regression function:
+ Regressor    Coefficient  t-stat      p-value
+ Constant      10.00       0.1798+308    0.000    
+ y mean = 10.0000
+ ----------------------------
+ Proportion of variance (R-squared) explained by tree model: 0.5848
+ 
+ Observed and fitted values are stored in predictions.txt
+ Split and fit variable names are stored in splits.txt
+ Elapsed time in seconds: 0.44470E-02

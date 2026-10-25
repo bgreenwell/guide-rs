@@ -1,0 +1,128 @@
+             GGG   U   U  I  DDDD   EEEE
+            G   G  U   U  I  D   D  E
+            G      U   U  I  D   D  E
+            G  GG  U   U  I  D   D  EEE
+            G   G  U   U  I  D   D  E
+            G   G  U   U  I  D   D  E
+             GGG    UUU   I  DDDD   EEEE
+   
+ GUIDE Classification and Regression Trees and Forests
+ Version 46.3 (Build date: July 11, 2026)          
+ Compiled with NAG Fortran 7.2 on macOS Tahoe 26.4.1 for Apple ARM processors    
+ Copyright (c) 1997-2023 Wei-Yin Loh. All rights reserved.
+ This software is based upon work partially supported by the U.S. Army Research Office,
+ National Science Foundation, National Institutes of Health,
+ Bureau of Labor Statistics, USDA Economic Research Service, and Eli Lilly.
+  
+ This job was started on 10/24/26 at 22:22
+  
+ Classification tree
+ No pruning
+ DSC file: data.dsc
+ Training sample file: data.txt
+ Missing value code: NA
+ Records in data file start on line 2
+ D variable is y
+ Number of records in data file: 305
+ Length of longest entry in data file: 2
+ Missing values found in D variable
+ Missing values found among non-categorical variables
+ Number of classes: 2
+ Training sample class proportions of D variable y:
+ Class  #Cases     Proportion
+ a         170     0.56666667
+ b         130     0.43333333
+  
+ Summary information for training sample of size 300 (excluding observations
+  with non-positive weight or missing values in d, e, t, r or z variables)
+ d=dependent, b=split and fit cat variable using indicator variables,
+ c=split-only categorical, i=fit-only categorical (via indicators),
+ s=split-only numerical, n=split and fit numerical, f=fit-only numerical,
+ m=missing-value flag variable, p=periodic variable, w=weight
+ Levels of M variables are for missing values in associated variables
+                                                  #Codes/           
+                                                  Levels/           
+  Column  Name            Minimum      Maximum    Periods   #Missing
+       1  x          s    1.000        49.00                   120
+       2  x_         m                                  3
+       3  y          d                                  2
+  
+ Numbers of N, F, S, and P below exclude constant variables
+      Total  #cases w/   #missing
+     #cases    miss. D  ord. vals   #X-var   #N-var   #F-var   #S-var
+        305          5        125        0        0        0        1
+     #P-var   #M-var   #B-var   #C-var   #I-var
+          0        1        0        0        0
+ Number of cases used for training: 300
+ Number of cases excluded due to 0 W or missing D variable: 5
+  
+ Simple node models
+ Estimated priors
+ Unit misclassification costs
+ Univariate split highest priority
+ Interaction splits 2nd priority; no linear splits
+ Split values for N and S variables based on exhaustive search
+ Maximum number of interaction splits: 100
+ Maximum number of split levels: 2
+ Minimum node sample size: 2
+  
+ Structure of final tree. Each terminal node is marked with a T.
+  
+ Node cost is node misclassification cost divided by number of cases in node
+        Node    Total    Train    Predicted        Node    Split          Interacting
+       label    cases    cases    class            cost    variables      variable
+           1      300      300    a              4.262E-01 x 
+           2T     170      170    a              0.000E+00 - 
+           3T     130      130    b              0.000E+00 - 
+  
+ Number of terminal nodes of final tree: 2
+ Total number of nodes of final tree: 3
+  
+ Classification tree:
+  
+ Node 1: x <= 25.000000  or x = NA & x_ = "A", "C"
+   Node 2: a
+ Node 1: not (x <= 25.000000 or x = NA & x_ = "A", "C")
+   Node 3: b
+ 
+ ***************************************************************
+ Predictor means below are means of cases with no missing values.
+  
+Node 1: Intermediate node
+ A case goes into Node 2 if x <= 25.000000 or x_ = "A", "C"
+ x mean = 25.166667
+ Class      Number   Posterior
+ a             170  0.5667E+00
+ b             130  0.4333E+00
+ Number of training cases misclassified = 130
+ Predicted class is a
+ ----------------------------
+Node 2: Terminal node
+ Class      Number   Posterior
+ a             170  0.9986E+00
+ b               0  0.1440E-02
+ Number of training cases misclassified = 0
+ Predicted class is a
+ ----------------------------
+Node 3: Terminal node
+ Class      Number   Posterior
+ a               0  0.1883E-02
+ b             130  0.9981E+00
+ Number of training cases misclassified = 0
+ Predicted class is b
+ ----------------------------
+ 
+ Classification matrix for training sample:
+ Predicted      True class
+ class              a         b
+ a                170         0
+ b                  0       130
+ Total            170       130
+ 
+ Number of cases used for tree construction: 300
+ Number misclassified: 0
+ Resubstitution estimate of mean misclassification cost: 0.0000000
+ 
+ Observed and fitted values are stored in predictions.txt
+ Split and fit variable names are stored in splits.txt
+ Elapsed time in seconds: 0.46300E-02

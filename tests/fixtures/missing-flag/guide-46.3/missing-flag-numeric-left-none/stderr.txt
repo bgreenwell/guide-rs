@@ -1,0 +1,2 @@
+Warning: Floating invalid operation occurred
+Warning: Floating overflow occurred

@@ -45,6 +45,9 @@ pub enum Role {
     Fit,
     Both,
     Excluded,
+    /// Missing-value flag (GUIDE type M): a categorical column whose codes
+    /// give reasons for missing values in the feature named by `flags`.
+    Flag,
 }
 impl Role {
     pub fn splits(self) -> bool {
@@ -62,6 +65,9 @@ pub struct FeatureSchema {
     pub feature_type: FeatureType,
     #[serde(default)]
     pub role: Role,
+    /// For role `flag`: the feature whose missing values this column explains.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub flags: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -164,11 +170,58 @@ impl Dataset {
         }
     }
 }
+/// For each feature, the index of its missing-value flag column, if any.
+pub fn flag_columns(schema: &[FeatureSchema]) -> Vec<Option<usize>> {
+    let mut flags = vec![None; schema.len()];
+    for (k, f) in schema.iter().enumerate() {
+        if let Some(parent) = &f.flags
+            && let Some(j) = schema.iter().position(|s| &s.name == parent)
+        {
+            flags[j] = Some(k);
+        }
+    }
+    flags
+}
+/// The flag code explaining a missing value of feature `j`, if one is recorded.
+pub(crate) fn missing_code(row: &[Value], flag: Option<usize>) -> Option<&str> {
+    match flag.map(|k| &row[k]) {
+        Some(Value::Text(code)) => Some(code),
+        _ => None,
+    }
+}
 pub(crate) fn validate_schema(schema: &[FeatureSchema]) -> Result<()> {
     let mut names = BTreeSet::new();
+    let mut flagged = BTreeSet::new();
     for f in schema {
         if f.name.is_empty() || !names.insert(&f.name) {
             return Err(invalid("feature names must be nonempty and unique"));
+        }
+        match (&f.role, &f.flags) {
+            (Role::Flag, Some(parent)) => {
+                let target = schema.iter().find(|s| &s.name == parent).ok_or_else(|| {
+                    invalid(format!("flag {} names unknown feature {parent}", f.name))
+                })?;
+                if !matches!(f.feature_type, FeatureType::Categorical)
+                    || !matches!(
+                        target.feature_type,
+                        FeatureType::Numeric | FeatureType::Categorical
+                    )
+                    || !target.role.splits()
+                    || !flagged.insert(parent)
+                {
+                    return Err(invalid(format!(
+                        "flag {} must be categorical and the only flag of a numeric or categorical split feature",
+                        f.name
+                    )));
+                }
+            }
+            (Role::Flag, None) | (_, Some(_)) => {
+                return Err(invalid(format!(
+                    "feature {}: role flag and the flags field must be used together",
+                    f.name
+                )));
+            }
+            _ => {}
         }
         if let FeatureType::Periodic { period } = f.feature_type
             && (!period.is_finite() || period <= 0.0)
@@ -183,7 +236,7 @@ pub(crate) fn validate_row(schema: &[FeatureSchema], row: &[Value]) -> Result<()
         return Err(invalid("row width does not match model schema"));
     }
     for (f, x) in schema.iter().zip(row) {
-        if f.role == Role::Excluded || x.is_missing() {
+        if matches!(f.role, Role::Excluded | Role::Flag) || x.is_missing() {
             continue;
         }
         match (&f.feature_type, x) {
@@ -390,6 +443,7 @@ pub fn dataset_from_csv(input: &str, options: &CsvOptions, task: &Task) -> Resul
                     FeatureType::Categorical
                 },
                 role: Role::Split,
+                flags: None,
             });
         }
     }

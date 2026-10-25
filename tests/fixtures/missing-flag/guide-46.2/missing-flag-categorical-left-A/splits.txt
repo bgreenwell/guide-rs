@@ -1,0 +1,6 @@
+         1 c x x        2   "A" "q"
+         1 c x_ x        1   "q"
+         2 t NONE NONE   t
+         1 c x x        2   "p" "q"
+         1 c x_ x        1   "A"
+         3 t NONE NONE   t

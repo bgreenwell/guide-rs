@@ -1,0 +1,5 @@
+         1 s x x        1   0.4150000000E+02
+         2 s x x        1 NA
+         4 t NONE NONE   t
+         5 t NONE NONE   t
+         3 t NONE NONE   t

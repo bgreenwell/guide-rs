@@ -8,11 +8,13 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Missing-value flag variables (GUIDE M variables) for constant node models
 - `exposures_from_csv` reads prediction exposures with line-numbered errors
 - Per-subcommand `--help` output
 
 ### Changed
 
+- Categorical splits put the side with fewer categories on the left, matching GUIDE; unseen categories may reach a different leaf than before
 - Classification trees merge sibling leaves that predict the same class, matching GUIDE
 - `min_gain = 0` accepts zero-gain splits on the selected variable, matching GUIDE
 - CSV parse errors report the line number and column name
