@@ -171,6 +171,7 @@ version = "0.1.0"
 dependencies = [
  "guide-rs",
  "pyo3",
+ "rayon",
  "serde_json",
 ]
 

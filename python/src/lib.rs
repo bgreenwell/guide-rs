@@ -99,9 +99,29 @@ fn dataset(
     })
 }
 
+/// Runs `f` without the GIL, on `threads` threads or the global pool (all
+/// cores) when None. Results do not depend on the thread count.
+fn parallel<T: Send>(
+    py: Python<'_>,
+    threads: Option<usize>,
+    f: impl FnOnce() -> T + Send,
+) -> PyResult<T> {
+    match threads {
+        None => Ok(py.detach(f)),
+        Some(n) => {
+            let pool = rayon::ThreadPoolBuilder::new()
+                .num_threads(n)
+                .build()
+                .map_err(value_error)?;
+            Ok(py.detach(|| pool.install(f)))
+        }
+    }
+}
+
 /// Importance scores as JSON, in the format of `guide-rs importance`.
 #[pyfunction]
-#[pyo3(signature = (schema, columns, target, options, importance, weights=None))]
+#[pyo3(signature = (schema, columns, target, options, importance, weights=None, threads=None))]
+#[allow(clippy::too_many_arguments)]
 fn importance(
     py: Python<'_>,
     schema: &str,
@@ -110,13 +130,15 @@ fn importance(
     options: &str,
     importance: &str,
     weights: Option<Vec<f64>>,
+    threads: Option<usize>,
 ) -> PyResult<String> {
     let options: FitOptions = serde_json::from_str(options).map_err(value_error)?;
     let importance: ImportanceOptions = serde_json::from_str(importance).map_err(value_error)?;
     let data = dataset(schema, &columns, &target, &options, weights, None)?;
-    let result = py
-        .detach(|| guide_rs::importance(&data, &options, &importance))
-        .map_err(value_error)?;
+    let result = parallel(py, threads, || {
+        guide_rs::importance(&data, &options, &importance)
+    })?
+    .map_err(value_error)?;
     serde_json::to_string(&result).map_err(value_error)
 }
 
@@ -131,7 +153,7 @@ impl Model {
     /// Fits a model. `schema`, `options` and `ensemble` are JSON in the core
     /// crate's configuration format.
     #[staticmethod]
-    #[pyo3(signature = (schema, columns, target, options, weights=None, exposure=None, ensemble=None))]
+    #[pyo3(signature = (schema, columns, target, options, weights=None, exposure=None, ensemble=None, threads=None))]
     #[allow(clippy::too_many_arguments)]
     fn fit(
         py: Python<'_>,
@@ -142,6 +164,7 @@ impl Model {
         weights: Option<Vec<f64>>,
         exposure: Option<Vec<f64>>,
         ensemble: Option<&str>,
+        threads: Option<usize>,
     ) -> PyResult<Self> {
         let options: FitOptions = serde_json::from_str(options).map_err(value_error)?;
         let ensemble: Option<EnsembleOptions> = ensemble
@@ -149,12 +172,11 @@ impl Model {
             .transpose()
             .map_err(value_error)?;
         let data = dataset(schema, &columns, &target, &options, weights, exposure)?;
-        let inner = py
-            .detach(|| match &ensemble {
-                Some(e) => FittedModel::fit_ensemble(&data, &options, e),
-                None => FittedModel::fit(&data, &options),
-            })
-            .map_err(value_error)?;
+        let inner = parallel(py, threads, || match &ensemble {
+            Some(e) => FittedModel::fit_ensemble(&data, &options, e),
+            None => FittedModel::fit(&data, &options),
+        })?
+        .map_err(value_error)?;
         Ok(Self { inner })
     }
 

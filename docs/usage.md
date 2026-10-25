@@ -65,7 +65,7 @@ Stepwise leaves are an experimental, opt-in compatibility option with known nati
 
 All stochastic operations use the recorded seed with ChaCha8; they do not reproduce Fortran random streams.
 
-Ensemble trees and cross-validation folds are fitted in parallel on all cores. Results do not depend on the number of threads; set `RAYON_NUM_THREADS` to limit it.
+Ensemble trees, cross-validation folds and importance permutations are fitted in parallel on all cores. Results do not depend on the number of threads; `--threads` (or `RAYON_NUM_THREADS`) limits it.
 
 ## Exports
 
