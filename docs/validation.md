@@ -1,6 +1,12 @@
 # Validation record
 
-Local environment: Apple Silicon macOS, Rust 1.95.0. The runtime implementation is pure Rust; R is used only as an independent test oracle. Windows/Linux runners are configured but their results have not been observed here. R prediction-function export was excluded from product scope and future acceptance requirements by user decision on 2026-10-24. Historical export checks below remain a record of earlier work; independent R numerical/statistical validation remains in scope.
+Local environment: Apple Silicon macOS, Rust 1.99.1. The runtime implementation is pure Rust; R is used only as an independent test oracle. GitHub Actions runs the ordinary suite on Linux, macOS and Windows plus the independent R job; all passed from a clean checkout on 2026-10-25. R prediction-function export was excluded from product scope on 2026-10-24 and removed from the code on 2026-10-25. Historical export checks below remain a record of earlier work; independent R numerical/statistical validation remains in scope.
+
+## First commit and post-import fixes, 2026-10-25
+
+The repository received its first commit and CI runs. Fixes since then: bagged ensembles reject CV pruning on bootstrap samples, CSV input skips blank lines and reports line/column locations, the CLI uses clap with file-path error context, and R prediction export was removed with its two export-only R tests. No numerical behavior changed; the algorithm revision remains **`guide-rs-0.1-experimental-reference10`** and saved format remains 1.
+
+Local checks pass: **81 regular Rust tests plus the README doctest, 12 R comparisons, 2 release statistical checks and 44 Python checks**, plus formatting and Clippy 1.99.1 with warnings denied. The Python manual-provenance check skips when the ignored local manual is absent.
 
 ## Repository cleanup and standalone verification, 2026-10-24
 

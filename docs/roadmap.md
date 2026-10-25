@@ -1,4 +1,4 @@
-# GUIDE-RS Enhancement Plan
+# guide-rs roadmap
 
 Oct 23, 2026 · @Brandon
 

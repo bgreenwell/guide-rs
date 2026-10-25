@@ -1,6 +1,6 @@
 # GUIDE 46.3 coverage and remaining work
 
-Updated **2026-10-24**, through algorithm revision **`guide-rs-0.1-experimental-reference10`**. Feature development is paused for repository cleanup.
+Updated **2026-10-24**, through algorithm revision **`guide-rs-0.1-experimental-reference10`**. Repository cleanup is complete; validation work resumes with the core checklist below.
 
 **guide-rs is a working subset of GUIDE, not a full replacement.** Its strongest native validation is for constant classification/regression, multiple-linear squared-error trees, and pruning. Other implemented losses and ensembles have narrower independent checks. No complete subsystem is certified equivalent to every GUIDE option.
 
@@ -23,7 +23,7 @@ A checked box below means the stated capability exists with tests. It does **not
 - [x] Basic bagging/forest ensembles, per-node feature sampling, OOB loss and deterministic seeds.
 - [x] Constant classification/SSE importance scoring, permutation adjustment and scoped important-variable checks.
 - [x] Prediction, JSON conversion, text/DOT/LaTeX tree output, and macOS/Linux/Windows CI configuration.
-- [x] Standalone source-tree verification: all 78 ordinary Rust tests pass without local manuals, native executables or reference caches.
+- [x] Standalone source-tree verification: all ordinary Rust tests pass in CI from a clean checkout without local manuals, native executables or reference caches.
 
 ## Comparison by GUIDE family
 
@@ -62,6 +62,16 @@ These are the next priorities before expanding into the missing specialized fami
 - [ ] Audit 45.x–46.3 defaults and option combinations, including multiple-linear depth, expanded classification settings, priors/costs and weight conventions.
 - [ ] Expand fixed-seed smoke checks into prespecified acceptance studies for selection bias, interaction power and importance familywise calibration.
 
+## Remaining checklist: open audit findings
+
+Carried over from the 2026-10-23 repository review; fixed items (log-scale selection, bagging with CV, CSV/CLI diagnostics) are omitted.
+
+- [ ] Non-SSE linear and polynomial nodes (quantile, Poisson, logistic) accept children with only `terms + 1` rows, which can interpolate and win the split search; validate GUIDE's minimum node sizes for these models.
+- [ ] Selection contingency tables count rows without weights, and class priors do not enter the tests; confirm against the native binary and document in `algorithms.md`.
+- [ ] Unseen-category direction and the larger-child missing route are chosen by row count rather than weight; stepwise F tests use the unweighted n.
+- [ ] Excluded numeric columns must still parse as numbers at fit and prediction time.
+- [ ] Performance at scale: O(n²) CV fold construction, per-call `Context` rebuilds in external losses, refitting both child models for every split candidate, O(cuts²) periodic intervals, recursive leaf/risk recomputation and whole-tree clones on the weakest-link path, and full model revalidation on every `predict` call.
+
 ## Remaining checklist: missing statistical capabilities
 
 - [ ] Classification kernel and nearest-neighbor node models.
@@ -84,7 +94,7 @@ These are the next priorities before expanding into the missing specialized fami
 
 - [ ] Exercise every in-scope manual option and allowed combination under the pinned native versions.
 - [ ] Extend per-case comparisons of intermediate statistics, selected variables, coefficients, split structure, pruning paths and held-out predictions.
-- [ ] Observe passing macOS/Linux/Windows CI runs; configuration alone does not establish portability.
+- [x] Observe passing macOS/Linux/Windows CI runs (first observed 2026-10-25, PR #1).
 - [ ] Complete release/package review and verify a committed clean checkout before claiming a GUIDE replacement.
 
 ## Deferred and deliberately excluded
