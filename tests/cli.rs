@@ -67,7 +67,7 @@ fn cli_fit_predict_export_and_refuse_overwrite() {
     ));
     assert_eq!(p, "prediction\n2\n2\n8\n8\n");
     assert!(success(run(&t, &["inspect", "--model", "model.json"])).contains("2 fitted leaves"));
-    for format in ["text", "dot", "latex", "r"] {
+    for format in ["text", "dot", "latex"] {
         assert!(
             !success(run(
                 &t,
@@ -76,6 +76,8 @@ fn cli_fit_predict_export_and_refuse_overwrite() {
             .is_empty()
         );
     }
+    let removed = run(&t, &["export", "--model", "model.json", "--format", "r"]);
+    assert!(!removed.status.success());
     let fail = run(
         &t,
         &[

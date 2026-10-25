@@ -90,7 +90,7 @@ These are the next priorities before expanding into the missing specialized fami
 ## Deferred and deliberately excluded
 
 - **Deferred:** further exact stepwise selection/fallback parity, all-subsets and stepwise ANCOVA work. Stepwise remains experimental and opt-in by user decision; its existing regression evidence remains supported.
-- **Excluded:** R prediction-function export, legacy interactive menus/DSC/batch compatibility and byte-for-byte native output. Frozen upstream R output can remain evidence; independent R numerical validation remains in scope.
+- **Excluded:** R prediction-function export (removed from the CLI and API), legacy interactive menus/DSC/batch compatibility and byte-for-byte native output. Frozen upstream R output can remain evidence; independent R numerical validation remains in scope.
 - **Outside the current phase:** Python/R bindings and extra enhancement-roadmap features. They are not prerequisites for the current core implementation milestone.
 - **Intentional numerical differences:** keep correct weakest-link CV and QR optimality in independently established native counterexamples. These are documented differences, not unchecked tasks to reproduce native defects.
 

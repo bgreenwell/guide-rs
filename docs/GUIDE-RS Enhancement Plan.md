@@ -290,7 +290,7 @@ Compile to WebAssembly (`wasm-bindgen`) and ship a browser demo: upload a CSV, f
 
 ## Prioritized roadmap and open questions
 
-The agreed priority is **validate, then complete GUIDE**, before independent extensions. R prediction-function export is excluded from the product feature list and roadmap by user decision (2026-10-24); it is not an acceptance requirement for upcoming work. Independent R numerical/statistical validation and frozen upstream R output remain test evidence. Existing code already includes partial forests, importance and tree visualization exports; these need validation and completion, not reintroduction as new features.
+The agreed priority is **validate, then complete GUIDE**, before independent extensions. R prediction-function export is excluded from the product feature list and roadmap by user decision (2026-10-24) and has been removed from the code; it is not an acceptance requirement for upcoming work. Independent R numerical/statistical validation and frozen upstream R output remain test evidence. Existing code already includes partial forests, importance and tree visualization exports; these need validation and completion, not reintroduction as new features.
 
 | Phase | Deliverable and acceptance gate |
 |---|---|

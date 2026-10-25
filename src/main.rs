@@ -18,7 +18,7 @@ Commands:
   predict    --model model.json --data new.csv [--output predictions.csv]
   importance --data training.csv --config config.json [--output importance.json]
   inspect    --model model.json [--output summary.txt]
-  export     --model model.json --format text|dot|latex|r [--output file]
+  export     --model model.json --format text|dot|latex [--output file]
   convert    --data training.csv --config config.json --output dataset.json
   config     [--output config.json]   Print a complete default configuration
 
@@ -228,8 +228,7 @@ fn run() -> Result<()> {
                 "text" => model.to_text()?,
                 "dot" => model.to_dot()?,
                 "latex" => model.to_latex()?,
-                "r" => model.to_r()?,
-                _ => return Err(error("format must be text, dot, latex, or r")),
+                _ => return Err(error("format must be text, dot, or latex")),
             };
             write_output(output, &content, force)?;
         }
