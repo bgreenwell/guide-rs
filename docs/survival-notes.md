@@ -1,6 +1,6 @@
 # Proportional hazards: native probe findings
 
-Working notes from black-box probes of the pinned GUIDE 46.3 binary, 2026-10-25, in preparation for censored-response support. Nothing here is implemented yet, and no captures are frozen; treat it as a starting point for the survival milestone in [the coverage checklist](coverage.md).
+Working notes from black-box probes of the pinned GUIDE 46.3 binary, 2026-10-25, in preparation for censored-response support. Nothing here is implemented yet, and no captures are frozen; treat it as a starting point for the survival milestone in [the coverage checklist](coverage.md). By user decision (2026-10-25), survival is out of scope until a Python wrapper is in place.
 
 ## Running GUIDE
 
