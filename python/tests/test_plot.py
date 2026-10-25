@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from guide_rs import GuideClassifier, GuideForestRegressor, GuideRegressor, plot_tree
+from guide import GuideClassifier, GuideForestRegressor, GuideRegressor, plot_tree
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt

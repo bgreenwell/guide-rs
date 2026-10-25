@@ -12,8 +12,8 @@ The bindings are experimental; see the core's [coverage and remaining work](http
 - Constant, linear, polynomial and (experimental) stepwise leaves; squared-error, quantile, dual-quantile, Poisson and logistic losses; class priors and costs
 - Per-feature roles (`feature_roles`): split only, fit only, both or excluded; periodic features (`periodic_features`) and missing-value flags (`missing_flags`)
 - Pruning by cross-validation, cost complexity, leaf count or a validation sample (`fit(..., validation_data=...)`)
-- Bagged ensembles and forests with out-of-bag loss, and bias-adjusted GUIDE importance scores (`guide_rs.importance`)
-- Tree drawings with matplotlib (`guide_rs.plot_tree`), plus text, Graphviz DOT and JSON output, the JSON matching models saved by the guide-rs CLI
+- Bagged ensembles and forests with out-of-bag loss, and bias-adjusted GUIDE importance scores (`guide.importance`)
+- Tree drawings with matplotlib (`guide.plot_tree`), plus text, Graphviz DOT and JSON output, the JSON matching models saved by the guide-rs CLI
 
 ## Installation
 
@@ -24,19 +24,19 @@ cd python
 uv sync
 ```
 
-`plot_tree` needs matplotlib (the `plot` extra).
+The distribution is named `guide-rs`; the package imports as `guide`. `plot_tree` needs matplotlib (the `plot` extra).
 
 ## Quick start
 
 ```python
 from sklearn.datasets import load_iris
-from guide_rs import GuideClassifier
+from guide import GuideClassifier
 
 X, y = load_iris(return_X_y=True, as_frame=True)
 model = GuideClassifier().fit(X, y)
 print(model.predict_proba(X.head()))
 
-from guide_rs import plot_tree
+from guide import plot_tree
 plot_tree(model)
 ```
 
@@ -45,7 +45,7 @@ DataFrame columns with object, string, categorical or boolean dtypes are treated
 Importance scores refit shallow trees with the estimator's configuration:
 
 ```python
-from guide_rs import importance
+from guide import importance
 
 report = importance(GuideClassifier(), X, y)
 for score in report["scores"]:

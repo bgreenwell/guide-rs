@@ -9,13 +9,13 @@ cd python
 uv sync
 ```
 
-`plot_tree` needs matplotlib, available as the `plot` extra.
+The distribution is named `guide-rs`; the package imports as `guide`. `plot_tree` needs matplotlib, available as the `plot` extra.
 
 ## Fitting a tree
 
 ```python
 from sklearn.datasets import load_iris
-from guide_rs import GuideClassifier, plot_tree
+from guide import GuideClassifier, plot_tree
 
 X, y = load_iris(return_X_y=True, as_frame=True)
 model = GuideClassifier().fit(X, y)
@@ -39,10 +39,10 @@ Cross-validation folds, forest trees and importance permutations run in parallel
 
 ## Importance scores
 
-{func}`guide_rs.importance` computes GUIDE's bias-adjusted variable importance from shallow unpruned trees and permutations of the response:
+{func}`guide.importance` computes GUIDE's bias-adjusted variable importance from shallow unpruned trees and permutations of the response:
 
 ```python
-from guide_rs import importance
+from guide import importance
 
 report = importance(GuideClassifier(), X, y)
 for score in report["scores"]:
