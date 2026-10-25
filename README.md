@@ -8,10 +8,10 @@ A pure Rust implementation of GUIDE-style classification and regression trees, t
 
 - Separates association-based split-variable selection from split-point search, with interaction tests
 - Constant, multiple-linear, polynomial, quantile, Poisson and logistic node models
-- Numeric, categorical and periodic predictors; weights, exposures and missing values
+- Numeric, categorical and periodic predictors; weights, exposures, missing values and missing-value flag variables
 - Cost-complexity, fixed-size, validation-sample and cross-validation pruning
 - Bagged ensembles, forests and GUIDE-style importance scores
-- Seeded, deterministic fits saved as JSON; text, Graphviz DOT and LaTeX tree output
+- Seeded, deterministic fits saved as JSON, identical for any thread count; text, Graphviz DOT and LaTeX tree output
 - scikit-learn compatible Python estimators (experimental; see [python/](python/README.md))
 - No GUIDE, Fortran, BLAS or LAPACK dependency
 
@@ -56,6 +56,7 @@ let predictions = model.predict(&data.rows)?;
 - [Coverage and remaining work](docs/coverage.md)
 - [Validation record](docs/validation.md) and [upstream reference provenance](docs/reference-upstream.md)
 - [Roadmap](docs/roadmap.md)
+- Python: [package README](python/README.md) and [example notebooks](python/examples/)
 - API reference: `cargo doc --open`
 
 ## Development
@@ -67,6 +68,8 @@ Quality gate:
 ```sh
 cargo fmt --all -- --check && cargo clippy --all-targets -- -D warnings && cargo test
 ```
+
+CI also builds the API docs with warnings denied (`RUSTDOCFLAGS="-D warnings" cargo doc --no-deps`).
 
 Additional checks:
 

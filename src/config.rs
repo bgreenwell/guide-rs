@@ -116,7 +116,7 @@ pub struct FitOptions {
     pub seed: u64,
     /// Probabilities in lexicographic class-label order. None estimates priors.
     pub class_priors: Option<Vec<f64>>,
-    /// costs[true_class][predicted_class], in lexicographic label order.
+    /// `costs[true_class][predicted_class]`, in lexicographic label order.
     pub class_costs: Option<Vec<Vec<f64>>>,
     /// Features sampled at each node. None considers every splitting feature.
     pub mtry: Option<usize>,

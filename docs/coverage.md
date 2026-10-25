@@ -1,6 +1,6 @@
 # GUIDE 46.3 coverage and remaining work
 
-Updated **2026-10-24**, through algorithm revision **`guide-rs-0.1-experimental-reference12`**. Repository cleanup is complete; validation work resumes with the core checklist below.
+Updated **2026-10-25**, through algorithm revision **`guide-rs-0.1-experimental-reference12`**.
 
 **guide-rs is a working subset of GUIDE, not a full replacement.** Its strongest native validation is for constant classification/regression, multiple-linear squared-error trees, and pruning. Other implemented losses and ensembles have narrower independent checks. No complete subsystem is certified equivalent to every GUIDE option.
 
@@ -23,7 +23,8 @@ A checked box below means the stated capability exists with tests. It does **not
 - [x] Cost-complexity, fixed-size, validation-sample and cross-validation pruning; independently verified correct behavior in documented native counterexamples.
 - [x] Basic bagging/forest ensembles, per-node feature sampling, OOB loss and deterministic seeds.
 - [x] Constant classification/SSE importance scoring, permutation adjustment and scoped important-variable checks.
-- [x] Prediction, JSON conversion, text/DOT/LaTeX tree output, and macOS/Linux/Windows CI configuration.
+- [x] Prediction, JSON conversion, text/DOT/LaTeX tree output, and macOS/Linux/Windows CI.
+- [x] Parallel ensemble trees, CV folds, importance permutations and large-node search, with results independent of the thread count.
 - [x] Python bindings (`python/`): scikit-learn `GuideRegressor`, `GuideClassifier`, `GuideForestRegressor` and `GuideForestClassifier` with feature roles, periodic features, missing-value flags, every loss and leaf model of the core, prediction truncation and validation pruning, plus `importance`. They pass `sklearn.utils.estimator_checks`, reproduce the core model exactly on all 275 reference cases, and reproduce the native important sets on the importance captures.
 - [x] Standalone source-tree verification: all ordinary Rust tests pass in CI from a clean checkout without local manuals, native executables or reference caches.
 
@@ -45,7 +46,7 @@ A checked box below means the stated capability exists with tests. It does **not
 | Ensembles (20) | Basic bagging/forest/OOB implementation | Native defaults, random missing routing, broader validation and bootstrap/CV handling |
 | Pruning and other features (21) | Four pruning interfaces and modern model/tree output | Random multifold/native test-sample acceptance, broader combinations and general feature generation |
 | Least median of squares | Missing | Robust LMS fitting; ordinary median/quantile loss is a different method |
-| Portability | Pure Rust; local macOS checks and CI configuration | Observed Linux/Windows CI results and complete release acceptance |
+| Portability | Pure Rust; CI passes on macOS, Linux and Windows for the Rust crate and the Python package | Release packaging (crates, wheels) and complete release acceptance |
 
 ## Remaining checklist: core compatibility and correctness
 
