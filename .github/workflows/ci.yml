@@ -1,4 +1,4 @@
-name: Rust
+name: CI
 on:
   push:
     branches: [main]
@@ -20,6 +20,10 @@ jobs:
       - run: cargo test --locked
       - run: cargo test --locked --release --test statistical -- --ignored
       - run: cargo test --locked --release --test selection_bias -- --ignored
+      - if: runner.os == 'Linux'
+        run: cargo doc --locked --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
   python:
     strategy:
       fail-fast: false
