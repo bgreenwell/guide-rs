@@ -9,6 +9,8 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 rand = "0.8"
 rand_chacha = "0.3"
+clap = { version = "4", features = ["derive"] }
+anyhow = "1"
 
 [profile.release]
 lto = "thin"
