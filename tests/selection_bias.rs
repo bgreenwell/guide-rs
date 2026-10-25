@@ -90,6 +90,7 @@ fn dataset(config: &Config, seed: u64) -> Dataset {
                 FeatureType::Numeric
             },
             role: Role::Split,
+            flags: None,
         })
         .collect();
     if linear {
@@ -97,6 +98,7 @@ fn dataset(config: &Config, seed: u64) -> Dataset {
             name: "z".into(),
             feature_type: FeatureType::Numeric,
             role: Role::Fit,
+            flags: None,
         });
     }
     let mut rows = vec![];

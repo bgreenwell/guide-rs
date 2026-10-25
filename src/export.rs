@@ -119,24 +119,33 @@ impl FittedModel {
                 self.schema[features[1]].name,
                 if *missing_left { "yes" } else { "no" }
             ),
-            Split::Missing { .. } => format!("{f} is missing"),
+            Split::Missing {
+                missing_codes: None,
+                ..
+            } => format!("{f} is missing"),
+            Split::Missing {
+                missing_codes: Some(c),
+                ..
+            } => format!("{f} is missing with {}", self.codes_label(c)),
             Split::Numeric {
                 threshold,
                 missing_left,
+                missing_codes,
                 ..
             } => format!(
                 "{f} <= {threshold:.6}; missing -> {}",
-                if *missing_left { "yes" } else { "no" }
+                self.missing_label(*missing_left, missing_codes)
             ),
             Split::Categorical {
                 left_categories,
                 missing_left,
                 unknown_left,
+                missing_codes,
                 ..
             } => format!(
                 "{f} in {:?}; missing -> {}, unseen -> {}",
                 left_categories,
-                if *missing_left { "yes" } else { "no" },
+                self.missing_label(*missing_left, missing_codes),
                 if *unknown_left { "yes" } else { "no" }
             ),
             Split::Periodic {
@@ -149,6 +158,16 @@ impl FittedModel {
                 "{f} mod {period} in ({start:.6}, {end:.6}]; missing -> {}",
                 if *missing_left { "yes" } else { "no" }
             ),
+        }
+    }
+    fn codes_label(&self, c: &MissingCodes) -> String {
+        format!("{} in {:?}", self.schema[c.flag].name, c.left)
+    }
+    fn missing_label(&self, missing_left: bool, codes: &Option<MissingCodes>) -> String {
+        match codes {
+            Some(c) => format!("yes if {}", self.codes_label(c)),
+            None if missing_left => "yes".into(),
+            None => "no".into(),
         }
     }
     fn leaf_label(&self, l: &LeafModel) -> String {

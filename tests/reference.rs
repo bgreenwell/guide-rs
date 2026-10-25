@@ -794,6 +794,7 @@ fn guide_46x_numeric_stumps_match_structure_predictions_and_missing_direction() 
                 feature,
                 threshold,
                 missing_left,
+                ..
             } = model.trees[0].root.split.as_ref().unwrap()
             else {
                 panic!("expected numeric root")

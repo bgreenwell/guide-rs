@@ -9,16 +9,19 @@ fn null_data(rng: &mut ChaCha8Rng, n: usize, missing: bool) -> Dataset {
             name: "binary".into(),
             feature_type: FeatureType::Numeric,
             role: Role::Split,
+            flags: None,
         },
         FeatureSchema {
             name: "categorical".into(),
             feature_type: FeatureType::Categorical,
             role: Role::Split,
+            flags: None,
         },
         FeatureSchema {
             name: "continuous".into(),
             feature_type: FeatureType::Numeric,
             role: Role::Split,
+            flags: None,
         },
     ];
     let rows = (0..n)

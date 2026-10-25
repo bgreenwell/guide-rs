@@ -176,6 +176,8 @@ pub(crate) struct Context<'a> {
     pub root_weight: f64,
     pub class_priors: Vec<f64>,
     pub root_samples: usize,
+    /// Missing-value flag column of each feature, if any.
+    pub flags: Vec<Option<usize>>,
     split_cost_weights: Vec<f64>,
     class_frequencies: Vec<f64>,
     linear_min_samples: Option<usize>,
@@ -388,6 +390,7 @@ impl<'a> Context<'a> {
             root_weight,
             class_priors,
             root_samples: ids.len(),
+            flags: crate::flag_columns(&data.schema),
             split_cost_weights,
             class_frequencies,
             linear_min_samples,

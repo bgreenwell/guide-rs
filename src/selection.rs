@@ -1,5 +1,5 @@
 use crate::node::{Context, LeafModel};
-use crate::{FeatureType, SelectionDiagnostic, Value, stats};
+use crate::{FeatureType, SelectionDiagnostic, Value, missing_code, stats};
 use std::collections::BTreeMap;
 
 #[derive(Clone, Copy, PartialEq)]
@@ -31,6 +31,8 @@ fn discretize(
         .filter_map(|&i| ctx.data.rows[i][j].number())
         .collect();
     let missing = x.len() != ids.len();
+    // A flagged feature's missing values form one group per flag code.
+    let code = |i: usize| missing_code(&ctx.data.rows[i], ctx.flags[j]).unwrap_or("");
     let mut distinct = x.clone();
     distinct.sort_by(f64::total_cmp);
     distinct.dedup();
@@ -42,7 +44,7 @@ fn discretize(
             .iter()
             .map(|&i| {
                 let key = match &ctx.data.rows[i][j] {
-                    Value::Missing => (0, String::new()),
+                    Value::Missing => (0, code(i).to_owned()),
                     // label() is None only for Missing, handled above.
                     v => (1, v.label().unwrap()),
                 };
@@ -79,12 +81,18 @@ fn discretize(
             vec![m - s / 3.0_f64.sqrt(), m + s / 3.0_f64.sqrt()]
         }
     };
+    let codes: std::collections::BTreeSet<&str> = ids
+        .iter()
+        .filter(|&&i| ctx.data.rows[i][j].is_missing())
+        .map(|&i| code(i))
+        .collect();
+    let codes: Vec<&str> = codes.into_iter().collect();
     ids.iter()
         .map(|&i| {
             ctx.data.rows[i][j]
                 .number()
                 .map(|x| cuts.partition_point(|c| x > *c))
-                .unwrap_or(cuts.len() + 1)
+                .unwrap_or_else(|| cuts.len() + 1 + codes.binary_search(&code(i)).unwrap_or(0))
         })
         .collect()
 }

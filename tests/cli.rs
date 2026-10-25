@@ -201,6 +201,57 @@ fn prediction_reorders_headers_and_preserves_missing_tokens() {
     );
 }
 #[test]
+fn cli_routes_missing_values_by_flag_code() {
+    let t = Temp::new();
+    let mut csv = "x,x_reason,y\n".to_owned();
+    for i in 0..60 {
+        match i % 3 {
+            0 => csv.push_str("NA,refused,0\n"),
+            1 => csv.push_str("NA,skipped,10\n"),
+            _ => csv.push_str(&format!("{i},,10\n")),
+        }
+    }
+    fs::write(t.0.join("train.csv"), csv).unwrap();
+    fs::write(
+        t.0.join("config.json"),
+        r#"{"data":{"target":"y","features":[
+            {"name":"x","feature_type":{"kind":"numeric"}},
+            {"name":"x_reason","feature_type":{"kind":"categorical"},"role":"flag","flags":"x"}]},
+          "fit":{"max_depth":1,"pruning":{"kind":"none"}}}"#,
+    )
+    .unwrap();
+    success(run(
+        &t,
+        &[
+            "fit",
+            "--data",
+            "train.csv",
+            "--config",
+            "config.json",
+            "--model",
+            "model.json",
+        ],
+    ));
+    // Refused goes left; skipped, unseen and uncoded missing values go right.
+    fs::write(
+        t.0.join("new.csv"),
+        "x_reason,x\nrefused,NA\nskipped,NA\nunknown,NA\n,NA\n,5\n",
+    )
+    .unwrap();
+    assert_eq!(
+        success(run(
+            &t,
+            &["predict", "--data", "new.csv", "--model", "model.json"]
+        )),
+        "prediction\n0\n10\n10\n10\n10\n"
+    );
+    assert!(
+        success(run(&t, &["inspect", "--model", "model.json"]))
+            .contains("x_reason in [\"refused\"]")
+    );
+}
+
+#[test]
 fn bundled_iris_has_useful_classification_accuracy() {
     let input = include_str!("fixtures/datasets/iris.csv");
     let cfg = CsvOptions {

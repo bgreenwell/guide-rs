@@ -16,6 +16,7 @@ fn data(y: Vec<f64>) -> Dataset {
             name: "x".into(),
             feature_type: FeatureType::Numeric,
             role: Role::Both,
+            flags: None,
         }],
         rows: (0..y.len())
             .map(|i| vec![Value::Number(i as f64)])
@@ -116,6 +117,7 @@ fn large_signal_data() -> Dataset {
                 name: name.into(),
                 feature_type: FeatureType::Numeric,
                 role: Role::Split,
+                flags: None,
             })
             .collect(),
         rows: (0..6000)
@@ -151,6 +153,7 @@ fn stepwise_extreme_f_tails_select_the_stronger_feature_in_either_order() {
                 name: name.into(),
                 feature_type: FeatureType::Numeric,
                 role: Role::Fit,
+                flags: None,
             })
             .collect();
         d.rows = (0..3200)
@@ -348,6 +351,7 @@ fn interaction_importance_reaches_identical_predictor_copies() {
                 name: name.into(),
                 feature_type: FeatureType::Numeric,
                 role: Role::Split,
+                flags: None,
             })
             .collect(),
         rows: (0..80)
@@ -718,6 +722,7 @@ fn stepwise_tests_preserve_response_units() {
             name: "z".into(),
             feature_type: FeatureType::Numeric,
             role: Role::Both,
+            flags: None,
         });
         for (i, row) in d.rows.iter_mut().enumerate() {
             row.push(Value::Number(((i * 13) % 29) as f64));
