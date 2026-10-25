@@ -73,7 +73,7 @@ Carried over from the 2026-10-23 repository review; fixed items (log-scale selec
 - [ ] Selection contingency tables count rows without weights, and class priors do not enter the tests; confirm against the native binary and document in `algorithms.md`.
 - [ ] Unseen-category direction and the larger-child missing route are chosen by row count rather than weight; stepwise F tests use the unweighted n.
 - [ ] Excluded numeric columns must still parse as numbers at fit and prediction time.
-- [ ] Performance at scale: O(n²) CV fold construction, per-call `Context` rebuilds in external losses, refitting both child models for every split candidate (the classification interaction lookahead now sweeps class counts instead), O(cuts²) periodic intervals, and full model revalidation on every `predict` call.
+- [ ] Performance at scale: O(n²) CV fold construction, per-call `Context` rebuilds in external losses, refitting both child models for every split candidate (classification lookahead and squared-error constant leaves now sweep sorted rows; other losses and leaf models still refit), O(cuts²) periodic intervals, and full model revalidation on every `predict` call.
 
 ## Remaining checklist: missing statistical capabilities
 

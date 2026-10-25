@@ -24,6 +24,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 - Pruning large trees is faster: the pruning sequence no longer copies the tree per stage, and held-out rows are routed once
 - Variable selection and split search are faster and run in parallel at large nodes, with unchanged models
 - Linear, polynomial and quantile-regression leaves fit faster, with unchanged models
+- Squared-error regression trees with constant leaves fit about 2.5 times faster, with unchanged models
 - Categorical splits put the side with fewer categories on the left, matching GUIDE; unseen categories may reach a different leaf than before
 - Classification trees merge sibling leaves that predict the same class, matching GUIDE
 - `min_gain = 0` accepts zero-gain splits on the selected variable, matching GUIDE
