@@ -889,6 +889,16 @@ impl<'a> Context<'a> {
         }
     }
     pub fn risk(&self, model: &LeafModel, ids: &[usize]) -> f64 {
+        // A constant prediction without exposure does not depend on the row,
+        // so skip the per-row model evaluation; the losses are the same.
+        if let LeafModel::Constant { value } = model
+            && self.loss != Loss::Poisson
+        {
+            return ids
+                .iter()
+                .map(|&i| self.weights[i] * observation_loss(&self.loss, self.y[i], *value))
+                .sum();
+        }
         ids.iter()
             .map(|&i| self.weights[i] * self.row_loss(model, i))
             .sum()

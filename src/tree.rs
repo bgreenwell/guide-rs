@@ -5,6 +5,7 @@ use crate::{
 };
 use rand::{SeedableRng, seq::SliceRandom};
 use rand_chacha::ChaCha8Rng;
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -110,11 +111,11 @@ impl Split {
                 missing_codes,
                 ..
             } => {
-                if let Some(s) = v.label() {
-                    if !known_categories.contains(&s) {
+                if let Some(s) = v.label_str() {
+                    if !known_categories.iter().any(|c| *c == s) {
                         *unknown_left
                     } else {
-                        left_categories.contains(&s)
+                        left_categories.iter().any(|c| *c == s)
                     }
                 } else {
                     route_missing(missing_codes, *missing_left, row)
@@ -773,7 +774,6 @@ pub(crate) fn grow(
     let selection = selection::select(ctx, ids, &node.model, &features, mode);
     node.diagnostics = selection.diagnostics;
     let pair = selection.pair && mode == SelectionMode::Fit && depth + 1 < ctx.options.max_depth;
-    let mut best: Option<(Split, Vec<usize>, Vec<usize>, f64)> = None;
     let split_candidates = if let Some(p) = &selection.linear {
         let values: Vec<Option<f64>> = ids
             .iter()
@@ -819,41 +819,91 @@ pub(crate) fn grow(
             .flat_map(|&j| candidates(ctx, ids, j))
             .collect()
     };
-    let (mut left, mut right) = (vec![], vec![]);
-    for split in split_candidates {
-        let j = split.feature();
-        partition(ids, &split, ctx.data, &mut left, &mut right);
-        if !admissible(ctx, &left, &right) {
+    // Candidates are scored independently, in parallel at large nodes; the
+    // scan that keeps the best runs in candidate order, so ties resolve as
+    // in a sequential search.
+    // The classification lookahead sorts each child by the partner feature;
+    // sorting the node once and splitting that order gives the same result.
+    let presorted: Vec<Option<Vec<(f64, usize)>>> = selection
+        .features
+        .iter()
+        .map(|&f| {
+            (pair
+                && ctx.classifying()
+                && matches!(ctx.data.schema[f].feature_type, FeatureType::Numeric))
+            .then(|| {
+                let mut sorted: Vec<(f64, usize)> = ids
+                    .iter()
+                    .filter_map(|&i| ctx.data.rows[i][f].number().map(|x| (x, i)))
+                    .collect();
+                sorted.sort_by(|a, b| a.0.total_cmp(&b.0));
+                sorted
+            })
+        })
+        .collect();
+    let scores = ordered_map(
+        &split_candidates,
+        ids.len() >= PARALLEL_MIN_ROWS,
+        || (vec![], vec![]),
+        |(left, right), split| {
+            partition(ids, split, ctx.data, left, right);
+            if !admissible(ctx, left, right) {
+                return None;
+            }
+            let lm = ctx.fit_leaf(left);
+            let rm = ctx.fit_leaf(right);
+            let mut score = ctx.impurity(&lm, left) + ctx.impurity(&rm, right);
+            if pair {
+                // Pair selections hold two distinct features (a < b in selection).
+                let (k, other) = selection
+                    .features
+                    .iter()
+                    .copied()
+                    .enumerate()
+                    .find(|(_, f)| *f != split.feature())
+                    .unwrap();
+                let (sorted_left, sorted_right) = match &presorted[k] {
+                    Some(sorted) => {
+                        let (l, r): (Vec<_>, Vec<_>) = sorted
+                            .iter()
+                            .partition(|&&(_, i)| split.goes_left(&ctx.data.rows[i]));
+                        (Some(l), Some(r))
+                    }
+                    None => (None, None),
+                };
+                score = best_child_score(ctx, left, &lm, other, sorted_left)
+                    + best_child_score(ctx, right, &rm, other, sorted_right);
+            }
+            Some((score, left.len(), right.len()))
+        },
+    );
+    let mut best: Option<(usize, f64, usize, usize)> = None;
+    for (k, (split, scored)) in split_candidates.iter().zip(scores).enumerate() {
+        let Some((score, left, right)) = scored else {
             continue;
-        }
-        let lm = ctx.fit_leaf(&left);
-        let rm = ctx.fit_leaf(&right);
-        let mut score = ctx.impurity(&lm, &left) + ctx.impurity(&rm, &right);
-        if pair {
-            // Pair selections hold two distinct features (a < b in selection).
-            let other = selection
-                .features
-                .iter()
-                .copied()
-                .find(|k| *k != j)
-                .unwrap();
-            score = best_child_score(ctx, &left, &lm, other)
-                + best_child_score(ctx, &right, &rm, other);
-        }
+        };
+        let j = split.feature();
         if score.is_finite()
-            && best.as_ref().is_none_or(|b| {
-                stats::strictly_less(score, b.3)
-                    || (pair && j > b.0.feature() && stats::less_or_close(score, b.3))
+            && best.is_none_or(|b| {
+                let b_feature = split_candidates[b.0].feature();
+                stats::strictly_less(score, b.1)
+                    || (pair && j > b_feature && stats::less_or_close(score, b.1))
                     || (ctx.classifying()
-                        && j == b.0.feature()
+                        && j == b_feature
                         && matches!(split, Split::Numeric { .. })
-                        && stats::less_or_close(score, b.3)
-                        && left.len().abs_diff(right.len()) < b.1.len().abs_diff(b.2.len()))
+                        && stats::less_or_close(score, b.1)
+                        && left.abs_diff(right) < b.2.abs_diff(b.3))
             })
         {
-            best = Some((split, left.clone(), right.clone(), score));
+            best = Some((k, score, left, right));
         }
     }
+    let best = best.map(|(k, score, ..)| {
+        let split = split_candidates[k].clone();
+        let (mut left, mut right) = (vec![], vec![]);
+        partition(ids, &split, ctx.data, &mut left, &mut right);
+        (split, left, right, score)
+    });
     // GUIDE splits on the selected variable even when the best admissible
     // split leaves the loss unchanged, so `min_gain = 0` accepts zero gain
     // (up to roundoff). A positive `min_gain` remains a strict threshold.
@@ -892,6 +942,24 @@ pub(crate) fn grow(
     }
     node
 }
+/// Nodes with at least this many rows search in parallel; smaller ones are
+/// not worth the scheduling cost.
+pub(crate) const PARALLEL_MIN_ROWS: usize = 512;
+/// Maps `f` over `items`, in parallel when `parallel`, keeping their order.
+/// Each worker gets its own scratch state from `init`.
+pub(crate) fn ordered_map<T: Sync, S, R: Send>(
+    items: &[T],
+    parallel: bool,
+    init: impl Fn() -> S + Sync + Send,
+    f: impl Fn(&mut S, &T) -> R + Sync + Send,
+) -> Vec<R> {
+    if parallel {
+        items.par_iter().map_init(init, f).collect()
+    } else {
+        let mut state = init();
+        items.iter().map(|x| f(&mut state, x)).collect()
+    }
+}
 fn same_class_leaves(left: &Node, right: &Node) -> bool {
     match (&left.model, &right.model) {
         (
@@ -905,14 +973,23 @@ fn same_class_leaves(left: &Node, right: &Node) -> bool {
         _ => false,
     }
 }
-fn best_child_score(ctx: &Context<'_>, ids: &[usize], model: &LeafModel, j: usize) -> f64 {
+/// The lowest impurity of the children of `ids` after one more split on `j`.
+/// `sorted` optionally gives the rows' values of numeric `j` in order.
+fn best_child_score(
+    ctx: &Context<'_>,
+    ids: &[usize],
+    model: &LeafModel,
+    j: usize,
+    sorted: Option<Vec<(f64, usize)>>,
+) -> f64 {
     let mut best = ctx.impurity(model, ids);
     if ids.len() < 2 * ctx.options.min_samples_leaf {
         return best;
     }
     if ctx.classifying() {
-        let mut sweep = ClassSweep::new(ctx, ids, j);
-        for s in candidates(ctx, ids, j) {
+        let splits = candidates_sorted(ctx, ids, j, sorted.as_deref());
+        let mut sweep = ClassSweep::new(ctx, ids, j, sorted);
+        for s in splits {
             if let Some(score) = sweep.score(&s) {
                 best = best.min(score);
             }
@@ -1024,23 +1101,58 @@ struct ClassSweep<'a> {
     left: ClassCounts,
     right: ClassCounts,
     scratch: Vec<f64>,
+    /// For a categorical feature: the node's labels, each row's label index
+    /// (`usize::MAX` if missing), and the side of each label for a split.
+    labels: Vec<String>,
+    label_of: Vec<usize>,
+    sides: Vec<bool>,
 }
 impl<'a> ClassSweep<'a> {
-    fn new(ctx: &'a Context<'a>, ids: &'a [usize], j: usize) -> Self {
+    /// `presorted` optionally holds the rows with a number for `j`, sorted.
+    fn new(
+        ctx: &'a Context<'a>,
+        ids: &'a [usize],
+        j: usize,
+        presorted: Option<Vec<(f64, usize)>>,
+    ) -> Self {
         let mut total = ClassCounts::new(ctx);
         let mut missing = ClassCounts::new(ctx);
         let mut sorted = vec![];
+        let mut labels = vec![];
+        let mut label_of = vec![];
+        let categorical = matches!(ctx.data.schema[j].feature_type, FeatureType::Categorical);
+        let mut index = BTreeMap::new();
         for &i in ids {
             total.add(ctx, i);
-            match ctx.data.rows[i][j].number() {
+            let v = &ctx.data.rows[i][j];
+            if categorical {
+                label_of.push(v.label_str().map_or(usize::MAX, |s| {
+                    *index.entry(s).or_insert_with_key(|s| {
+                        labels.push(s.to_string());
+                        labels.len() - 1
+                    })
+                }));
+                continue;
+            }
+            match v.number() {
                 // NaN never goes left of a numeric cut, like a value above it.
-                Some(x) if !x.is_nan() => sorted.push((x, i)),
+                Some(x) if !x.is_nan() => {
+                    if presorted.is_none() {
+                        sorted.push((x, i));
+                    }
+                }
                 Some(_) => {}
                 None => missing.add(ctx, i),
             }
         }
-        sorted.sort_by(|a, b| a.0.total_cmp(&b.0));
+        match presorted {
+            Some(presorted) => sorted = presorted,
+            None => sorted.sort_by(|a, b| a.0.total_cmp(&b.0)),
+        }
         Self {
+            labels,
+            label_of,
+            sides: vec![],
             ctx,
             ids,
             below: ClassCounts::new(ctx),
@@ -1079,6 +1191,33 @@ impl<'a> ClassSweep<'a> {
                 self.left.set(&self.below);
                 if *missing_left {
                     self.left.plus(&self.missing);
+                }
+            }
+            Split::Categorical {
+                left_categories,
+                known_categories,
+                unknown_left,
+                ..
+            } if !self.label_of.is_empty() => {
+                // Decide each label once, as `goes_left` does for its rows;
+                // missing rows still follow the split's missing route.
+                self.sides.clear();
+                self.sides.extend(self.labels.iter().map(|s| {
+                    if !known_categories.contains(s) {
+                        *unknown_left
+                    } else {
+                        left_categories.contains(s)
+                    }
+                }));
+                self.left.clear();
+                for (&i, &label) in self.ids.iter().zip(&self.label_of) {
+                    let left = match self.sides.get(label) {
+                        Some(&side) => side,
+                        None => split.goes_left(&ctx.data.rows[i]),
+                    };
+                    if left {
+                        self.left.add(ctx, i);
+                    }
                 }
             }
             _ => {
@@ -1323,6 +1462,16 @@ fn orient_fewer_left(split: Split, node_missing: &[&[Value]]) -> Split {
     }
 }
 fn candidates(ctx: &Context<'_>, ids: &[usize], j: usize) -> Vec<Split> {
+    candidates_sorted(ctx, ids, j, None)
+}
+/// `candidates`, given the rows' numeric values of feature `j` in
+/// `f64::total_cmp` order when they are already sorted.
+fn candidates_sorted(
+    ctx: &Context<'_>,
+    ids: &[usize],
+    j: usize,
+    sorted: Option<&[(f64, usize)]>,
+) -> Vec<Split> {
     let mut result = vec![];
     let routes = missing_routes(ctx, ids, j);
     if routes.len() > 1 && ids.iter().any(|&i| !ctx.data.rows[i][j].is_missing()) {
@@ -1346,11 +1495,17 @@ fn candidates(ctx: &Context<'_>, ids: &[usize], j: usize) -> Vec<Split> {
         .collect();
     match ctx.data.schema[j].feature_type {
         FeatureType::Numeric => {
-            let mut values: Vec<f64> = ids
-                .iter()
-                .filter_map(|&i| ctx.data.rows[i][j].number())
-                .collect();
-            values.sort_by(f64::total_cmp);
+            let values = if let Some(sorted) = sorted {
+                sorted.iter().map(|&(x, _)| x).collect()
+            } else {
+                let mut values: Vec<f64> = ids
+                    .iter()
+                    .filter_map(|&i| ctx.data.rows[i][j].number())
+                    .collect();
+                values.sort_by(f64::total_cmp);
+                values
+            };
+            let mut values = values;
             // Native numerical rank bounds apply before routing missing rows:
             // left >= minimum observed values, right > minimum. The exclusive
             // upper endpoint is confirmed by forward/reversed boundary probes.
@@ -1616,13 +1771,31 @@ mod tests {
                 assert!(splits.len() > 3);
                 // Out-of-order thresholds restart the sweep.
                 splits.extend(candidates(&ctx, &ids, j).into_iter().rev());
-                let mut sweep = ClassSweep::new(&ctx, &ids, j);
+                let mut sweep = ClassSweep::new(&ctx, &ids, j, None);
+                // Presorted rows, in any order among equal values, give the
+                // same candidates and scores.
+                let mut presorted: Vec<(f64, usize)> = ids
+                    .iter()
+                    .rev()
+                    .filter_map(|&i| data.rows[i][j].number().map(|x| (x, i)))
+                    .collect();
+                presorted.sort_by(|a, b| a.0.total_cmp(&b.0));
+                if j == 0 {
+                    assert_eq!(
+                        format!("{:?}", candidates_sorted(&ctx, &ids, j, Some(&presorted))),
+                        format!("{:?}", candidates(&ctx, &ids, j))
+                    );
+                }
+                presorted.retain(|p| !p.0.is_nan());
+                let mut presorted_sweep =
+                    ClassSweep::new(&ctx, &ids, j, (j == 0).then_some(presorted));
                 for s in &splits {
                     partition(&ids, s, &data, &mut l, &mut r);
                     let expected = admissible(&ctx, &l, &r).then(|| {
                         ctx.impurity(&ctx.fit_leaf(&l), &l) + ctx.impurity(&ctx.fit_leaf(&r), &r)
                     });
                     assert_eq!(sweep.score(s), expected);
+                    assert_eq!(presorted_sweep.score(s), expected);
                     scored += usize::from(expected.is_some());
                 }
             }

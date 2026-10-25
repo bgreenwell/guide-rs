@@ -29,6 +29,13 @@ pub fn quantile(values: &[f64], p: f64) -> f64 {
     }
     let mut x = values.to_vec();
     x.sort_by(f64::total_cmp);
+    sorted_quantile(&x, p)
+}
+/// `quantile` of values already sorted by `f64::total_cmp`.
+pub fn sorted_quantile(x: &[f64], p: f64) -> f64 {
+    if x.is_empty() {
+        return 0.0;
+    }
     let a = p.clamp(0.0, 1.0) * (x.len() - 1) as f64;
     let i = a.floor() as usize;
     x[i] + (a - i as f64) * (x[a.ceil() as usize] - x[i])

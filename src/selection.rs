@@ -1,4 +1,5 @@
 use crate::node::{Context, LeafModel};
+use crate::tree::{PARALLEL_MIN_ROWS, ordered_map};
 use crate::{FeatureType, SelectionDiagnostic, Value, missing_code, stats};
 use std::collections::BTreeMap;
 
@@ -33,12 +34,20 @@ fn discretize(
     let missing = x.len() != ids.len();
     // A flagged feature's missing values form one group per flag code.
     let code = |i: usize| missing_code(&ctx.data.rows[i], ctx.flags[j]).unwrap_or("");
-    let mut distinct = x.clone();
-    distinct.sort_by(f64::total_cmp);
-    distinct.dedup();
-    if matches!(ctx.data.schema[j].feature_type, FeatureType::Categorical)
-        || (mode == SelectionMode::Importance && distinct.len() <= 4)
-    {
+    let categorical = matches!(ctx.data.schema[j].feature_type, FeatureType::Categorical);
+    // Quantile cuts and the importance-mode level count need sorted values.
+    let quantile_cuts = mode == SelectionMode::Importance || !ctx.classifying();
+    let mut sorted = vec![];
+    if !categorical && quantile_cuts {
+        sorted.clone_from(&x);
+        sorted.sort_by(f64::total_cmp);
+    }
+    let few_values = || {
+        let mut distinct = sorted.clone();
+        distinct.dedup();
+        distinct.len() <= 4
+    };
+    if categorical || (mode == SelectionMode::Importance && few_values()) {
         let mut levels = BTreeMap::new();
         return ids
             .iter()
@@ -56,11 +65,11 @@ fn discretize(
     if x.is_empty() {
         return vec![0; ids.len()];
     }
-    let cuts: Vec<f64> = if mode == SelectionMode::Importance || !ctx.classifying() {
+    let cuts: Vec<f64> = if quantile_cuts {
         let groups = if interaction || ids.len() < 60 { 3 } else { 4 };
         let groups = if missing { groups - 1 } else { groups };
         (1..groups)
-            .map(|k| stats::quantile(&x, k as f64 / groups as f64))
+            .map(|k| stats::sorted_quantile(&sorted, k as f64 / groups as f64))
             .collect()
     } else {
         let m = stats::mean(&x);
@@ -95,6 +104,40 @@ fn discretize(
                 .unwrap_or_else(|| cuts.len() + 1 + codes.binary_search(&code(i)).unwrap_or(0))
         })
         .collect()
+}
+/// Numbers the joint cells of two binnings in order of first appearance,
+/// which fixes the column order of the contingency table. Up to `dense_limit`
+/// cells are indexed in a flat table; more, from many-level categorical
+/// pairs, use a hash map.
+fn joint_cells(
+    a: &[usize],
+    b: &[usize],
+    dense_limit: usize,
+    index: &mut Vec<usize>,
+    joint: &mut Vec<usize>,
+) {
+    let width = b.iter().max().map_or(0, |m| m + 1);
+    let cells = a.iter().max().map_or(0, |m| m + 1) * width;
+    joint.clear();
+    if cells <= dense_limit {
+        index.clear();
+        index.resize(cells, usize::MAX);
+        let mut next = 0;
+        for (&x, &y) in a.iter().zip(b) {
+            let cell = &mut index[x * width + y];
+            if *cell == usize::MAX {
+                *cell = next;
+                next += 1;
+            }
+            joint.push(*cell);
+        }
+    } else {
+        let mut map = std::collections::HashMap::new();
+        for (&x, &y) in a.iter().zip(b) {
+            let next = map.len();
+            joint.push(*map.entry((x, y)).or_insert(next));
+        }
+    }
 }
 /// Pearson statistic, active degrees of freedom, and log upper-tail probability.
 fn test(labels: &[usize], groups: &[usize]) -> (f64, usize, f64) {
@@ -140,14 +183,22 @@ pub(crate) fn select(
         .copied()
         .collect::<std::collections::BTreeSet<_>>()
         .len();
+    let parallel = ids.len() >= PARALLEL_MIN_ROWS;
+    let tests = ordered_map(
+        features,
+        parallel,
+        || (),
+        |_, &j| {
+            let bins = discretize(ctx, ids, j, false, mode, classes);
+            (!bins.iter().all(|x| *x == bins[0])).then(|| test(&labels, &bins))
+        },
+    );
     let mut diagnostics = vec![];
     let mut eligible = vec![];
-    for &j in features {
-        let bins = discretize(ctx, ids, j, false, mode, classes);
-        if bins.iter().all(|x| *x == bins[0]) {
+    for (&j, result) in features.iter().zip(tests) {
+        let Some((stat, df, log_p)) = result else {
             continue;
-        }
-        let (stat, df, log_p) = test(&labels, &bins);
+        };
         diagnostics.push(SelectionDiagnostic {
             feature: j,
             chi_square: stat,
@@ -200,28 +251,30 @@ pub(crate) fn select(
     let log_alpha = ctx.options.significance_level.ln();
     let main_log_threshold = log_alpha - (eligible.len() as f64).ln();
     if ctx.options.interactions && eligible.len() > 1 && best_main_log_p >= main_log_threshold {
-        let bins: Vec<Vec<usize>> = eligible
-            .iter()
-            .map(|&j| discretize(ctx, ids, j, true, mode, classes))
+        let bins: Vec<Vec<usize>> = ordered_map(
+            &eligible,
+            parallel,
+            || (),
+            |_, &j| discretize(ctx, ids, j, true, mode, classes),
+        );
+        let pairs: Vec<(usize, usize)> = (0..eligible.len())
+            .flat_map(|a| (a + 1..eligible.len()).map(move |b| (a, b)))
             .collect();
+        let pair_tests = ordered_map(
+            &pairs,
+            parallel,
+            || (vec![], vec![]),
+            |(index, joint), &(a, b)| {
+                joint_cells(&bins[a], &bins[b], 16 * ids.len() + 1024, index, joint);
+                test(&labels, joint).2
+            },
+        );
         let mut best_pair = None;
         let mut best_pair_log_p = 0.0;
-        for a in 0..eligible.len() {
-            for b in a + 1..eligible.len() {
-                let mut map = BTreeMap::new();
-                let joint: Vec<usize> = bins[a]
-                    .iter()
-                    .zip(&bins[b])
-                    .map(|(&x, &y)| {
-                        let n = map.len();
-                        *map.entry((x, y)).or_insert(n)
-                    })
-                    .collect();
-                let (_, _, log_p) = test(&labels, &joint);
-                if log_p < best_pair_log_p {
-                    best_pair_log_p = log_p;
-                    best_pair = Some((eligible[a], eligible[b]));
-                }
+        for (&(a, b), log_p) in pairs.iter().zip(pair_tests) {
+            if log_p < best_pair_log_p {
+                best_pair_log_p = log_p;
+                best_pair = Some((eligible[a], eligible[b]));
             }
         }
         let pair_log_threshold = log_alpha + std::f64::consts::LN_2
@@ -453,4 +506,29 @@ fn discriminant(
         },
         p,
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn joint_cells_number_by_first_appearance() {
+        let a: Vec<usize> = (0..200).map(|i| (i * 7) % 5).collect();
+        let b: Vec<usize> = (0..200).map(|i| (i * 3 + i / 11) % 9).collect();
+        let (mut index, mut dense, mut sparse) = (vec![], vec![], vec![]);
+        joint_cells(&a, &b, usize::MAX, &mut index, &mut dense);
+        joint_cells(&a, &b, 0, &mut index, &mut sparse);
+        assert_eq!(dense, sparse);
+        let mut seen = BTreeMap::new();
+        let expected: Vec<usize> = a
+            .iter()
+            .zip(&b)
+            .map(|cell| {
+                let next = seen.len();
+                *seen.entry(cell).or_insert(next)
+            })
+            .collect();
+        assert_eq!(dense, expected);
+    }
 }
