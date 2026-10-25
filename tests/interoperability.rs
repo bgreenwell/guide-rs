@@ -1,4 +1,4 @@
-//! Optional independent validation against R's stats package and generated R code.
+//! Optional independent validation against R's stats, quantreg and rpart packages.
 use guide_rs::*;
 use std::{
     fs,
@@ -661,7 +661,7 @@ fn extreme_chi_square_tails_and_inverse_tails_agree_with_r_log_probabilities() {
 
 #[test]
 #[ignore = "requires Rscript; run cargo test --test interoperability -- --ignored"]
-fn weighted_poisson_with_exposure_agrees_with_r_and_export() {
+fn weighted_poisson_with_exposure_agrees_with_r_glm() {
     let t = Temp::new();
     let cfg = CsvOptions {
         target: "y".into(),
@@ -705,12 +705,6 @@ fn weighted_poisson_with_exposure_agrees_with_r_and_export() {
         let actual = numeric(m.predict_with_offsets(&d.rows, Some(&d.offsets)).unwrap());
         near(&actual, &expected, 1e-7);
         assert!(m.report.warnings.is_empty(), "{:?}", m.report.warnings);
-        fs::write(t.0.join("model.R"), m.to_r().unwrap()).unwrap();
-        let exported = r(
-            &t,
-            "source('model.R');d <- read.csv('data.csv');cat(format(predict_guide(d,exposure=d$e),digits=17))",
-        );
-        near(&actual, &exported, 1e-12);
     }
 }
 
@@ -761,7 +755,7 @@ fn one_predictor_cost_complexity_pruning_agrees_with_rpart() {
 
 #[test]
 #[ignore = "requires Rscript and quantreg; run cargo test --test interoperability -- --ignored"]
-fn quantile_nodes_agree_with_r_quantreg_and_export() {
+fn quantile_nodes_agree_with_r_quantreg() {
     let t = Temp::new();
     let mut csv = "x,z,y,w\n".to_owned();
     for i in 0..101 {
@@ -819,12 +813,6 @@ fn quantile_nodes_agree_with_r_quantreg_and_export() {
             );
             let actual = numeric(m.predict(&d.rows).unwrap());
             near(&actual, &expected, 2e-6);
-            fs::write(t.0.join("model.R"), m.to_r().unwrap()).unwrap();
-            let exported = r(
-                &t,
-                "source('model.R'); d <- read.csv('data.csv'); cat(format(predict_guide(d),digits=17))",
-            );
-            near(&actual, &exported, 1e-12);
             let restored = FittedModel::from_json(&m.to_json().unwrap()).unwrap();
             assert_eq!(
                 m.predict(&d.rows).unwrap(),
@@ -891,174 +879,4 @@ fn qr_and_irls_agree_with_r_stats() {
         "d <- read.csv('data.csv'); fit <- glm(y ~ x, data=d, family=binomial()); cat(format(predict(fit,d,type='response'),digits=17))",
     );
     near(&numeric(m.predict(&d.rows).unwrap()), &expected, 1e-7);
-}
-
-#[test]
-#[ignore = "requires Rscript; run cargo test --test interoperability -- --ignored"]
-fn exported_r_matches_rust_for_missing_values_categories_and_ensembles() {
-    let t = Temp::new();
-    let csv = "x,color,y\n1,red,0\n2,red,0\n3,blue,10\n4,blue,10\nNA,green,20\nNA,green,20\n";
-    fs::write(t.0.join("data.csv"), csv).unwrap();
-    let cfg = CsvOptions {
-        target: "y".into(),
-        ..Default::default()
-    };
-    let d = dataset_from_csv(csv, &cfg, &Task::default()).unwrap();
-    let opts = FitOptions {
-        pruning: Pruning::None,
-        ..Default::default()
-    };
-    let m = FittedModel::fit_ensemble(
-        &d,
-        &opts,
-        &EnsembleOptions {
-            trees: 10,
-            ..Default::default()
-        },
-    )
-    .unwrap();
-    fs::write(t.0.join("model.R"), m.to_r().unwrap()).unwrap();
-    let expected = r(
-        &t,
-        "source('model.R'); d <- read.csv('data.csv'); cat(format(predict_guide(d),digits=17))",
-    );
-    near(&numeric(m.predict(&d.rows).unwrap()), &expected, 1e-12);
-    let mut classification = opts;
-    classification.task = Task::Classification;
-    let d = dataset_from_csv(csv, &cfg, &classification.task).unwrap();
-    let m = FittedModel::fit(&d, &classification).unwrap();
-    fs::write(t.0.join("model.R"), m.to_r().unwrap()).unwrap();
-    let expected = r(
-        &t,
-        "source('model.R'); d <- read.csv('data.csv'); cat(format(as.vector(t(predict_guide(d,type='probability'))),digits=17))",
-    );
-    let probabilities: Vec<f64> = m
-        .predict(&d.rows)
-        .unwrap()
-        .into_iter()
-        .flat_map(|p| {
-            if let Prediction::Classification { probabilities, .. } = p {
-                probabilities
-                    .into_iter()
-                    .map(|(_, p)| p)
-                    .collect::<Vec<_>>()
-            } else {
-                panic!()
-            }
-        })
-        .collect();
-    near(&probabilities, &expected, 1e-12);
-
-    // The zero-posterior correction must not change the stored class decision.
-    // With a sufficiently large false-negative cost, recomputing it from the
-    // corrected probabilities would incorrectly change a pure leaf's label.
-    let csv = "x,y\n0,0\n0,0\n1,1\n1,1\n";
-    fs::write(t.0.join("data.csv"), csv).unwrap();
-    let d = dataset_from_csv(csv, &cfg, &classification.task).unwrap();
-    // Isolate posterior/decision export from the native numerical rank bound.
-    classification.min_samples_leaf = 1;
-    classification.class_costs = Some(vec![vec![0.0, 1.0], vec![1000.0, 0.0]]);
-    let m = FittedModel::fit(&d, &classification).unwrap();
-    fs::write(t.0.join("model.R"), m.to_r().unwrap()).unwrap();
-    let exported = r(
-        &t,
-        "source('model.R'); d <- read.csv('data.csv'); cat(as.numeric(predict_guide(d)))",
-    );
-    assert_eq!(exported, vec![0.0, 0.0, 1.0, 1.0]);
-    let actual: Vec<f64> = m
-        .predict(&d.rows)
-        .unwrap()
-        .into_iter()
-        .map(|p| {
-            if let Prediction::Classification { label, .. } = p {
-                label.parse().unwrap()
-            } else {
-                panic!()
-            }
-        })
-        .collect();
-    assert_eq!(actual, exported);
-}
-
-#[test]
-#[ignore = "requires Rscript; run cargo test --test interoperability -- --ignored"]
-fn exported_quantiles_and_linear_splits_match_rust() {
-    let t = Temp::new();
-    let csv = "x,y\n0,1\n0,2\n0,3\n0,4\n1,20\n1,30\n1,40\n1,50\n";
-    fs::write(t.0.join("data.csv"), csv).unwrap();
-    let cfg = CsvOptions {
-        target: "y".into(),
-        ..Default::default()
-    };
-    let options = FitOptions {
-        pruning: Pruning::None,
-        task: Task::Regression {
-            loss: Loss::DualQuantile {
-                lower: 0.25,
-                upper: 0.75,
-            },
-        },
-        ..Default::default()
-    };
-    let d = dataset_from_csv(csv, &cfg, &options.task).unwrap();
-    let m = FittedModel::fit(&d, &options).unwrap();
-    fs::write(t.0.join("model.R"), m.to_r().unwrap()).unwrap();
-    let expected = r(
-        &t,
-        "source('model.R'); d <- read.csv('data.csv'); cat(format(as.vector(t(predict_guide(d))),digits=17))",
-    );
-    let actual: Vec<f64> = m
-        .predict(&d.rows)
-        .unwrap()
-        .into_iter()
-        .flat_map(|p| {
-            if let Prediction::Quantiles { lower, upper } = p {
-                vec![lower, upper]
-            } else {
-                panic!()
-            }
-        })
-        .collect();
-    near(&actual, &expected, 1e-12);
-    let mut csv = "x,z,y\n".to_owned();
-    for i in 0..60 {
-        for class in 0..2 {
-            csv.push_str(&format!(
-                "{i},{},{}\n",
-                i as f64 + if class == 0 { -0.05 } else { 0.05 },
-                class
-            ));
-        }
-    }
-    fs::write(t.0.join("data.csv"), &csv).unwrap();
-    let options = FitOptions {
-        task: Task::Classification,
-        linear_splits: true,
-        interactions: false,
-        max_split_candidates: 1000,
-        pruning: Pruning::None,
-        max_depth: 1,
-        ..Default::default()
-    };
-    let d = dataset_from_csv(&csv, &cfg, &options.task).unwrap();
-    let m = FittedModel::fit(&d, &options).unwrap();
-    assert!(matches!(m.trees[0].root.split, Some(Split::Linear { .. })));
-    fs::write(t.0.join("model.R"), m.to_r().unwrap()).unwrap();
-    let expected = r(
-        &t,
-        "source('model.R'); d <- read.csv('data.csv'); cat(as.numeric(predict_guide(d)))",
-    );
-    let actual: Vec<f64> = m
-        .predict(&d.rows)
-        .unwrap()
-        .into_iter()
-        .map(|p| {
-            if let Prediction::Classification { label, .. } = p {
-                label.parse().unwrap()
-            } else {
-                panic!()
-            }
-        })
-        .collect();
-    near(&actual, &expected, 1e-12);
 }

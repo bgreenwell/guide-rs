@@ -26,7 +26,7 @@ Objective comparisons and pruning ties use a relative roundoff tolerance of 64 m
 
 Numerical threshold candidates use observed split-value ranks before assigning missing rows: left count must be at least `min_samples_leaf`, right count strictly greater. This asymmetric upper endpoint is observed in both pinned native versions. Repeated observations count separately; routed missing rows do not satisfy these rank constraints. Total child counts must still meet the configured minimum. Missingness-only splits are candidates. With observed missing cases, both missing directions are evaluated. Without observed missing cases, numerical and categorical splits send future missing observations right. Unseen categorical levels go right, as stated in native reports. Binary classification orders category groups by decreasing class-index mean; regression uses increasing response means/rates. Linear and periodic splits retain the larger-child default (left on ties), pending differential checks. Split choices and directions are persisted in the model; loading older models preserves their saved routes and probabilities. Associated missing flags, missing-type aggregation, and forest random routing remain outstanding.
 
-R prediction-function generation is outside the supported feature scope. Independent R comparisons validate the numerical fitting and pruning routines.
+guide-rs does not generate R prediction functions; the legacy exporter was removed. Independent R comparisons validate the numerical fitting and pruning routines.
 
 ## Node fitting
 

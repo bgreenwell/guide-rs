@@ -132,7 +132,37 @@ fn linear_discriminant_split_separates_parallel_classes() {
             .predict(&d.rows)
             .unwrap()
     );
-    assert!(m.to_r().unwrap().contains(" * "));
+}
+#[test]
+fn zero_posterior_correction_keeps_cost_based_class_decision() {
+    // With a large false-negative cost, recomputing the decision from the
+    // corrected (nonzero) posteriors would change a pure leaf's label.
+    let d = dataset_from_csv(
+        "x,y\n0,0\n0,0\n1,1\n1,1\n",
+        &CsvOptions {
+            target: "y".into(),
+            ..Default::default()
+        },
+        &Task::Classification,
+    )
+    .unwrap();
+    let o = FitOptions {
+        task: Task::Classification,
+        min_samples_leaf: 1,
+        class_costs: Some(vec![vec![0.0, 1.0], vec![1000.0, 0.0]]),
+        ..options()
+    };
+    let m = FittedModel::fit(&d, &o).unwrap();
+    let labels: Vec<String> = m
+        .predict(&d.rows)
+        .unwrap()
+        .into_iter()
+        .map(|p| match p {
+            Prediction::Classification { label, .. } => label,
+            other => panic!("{other:?}"),
+        })
+        .collect();
+    assert_eq!(labels, ["0", "0", "1", "1"]);
 }
 #[test]
 fn missingness_can_be_the_predictor() {
