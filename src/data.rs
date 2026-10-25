@@ -24,6 +24,14 @@ impl Value {
             Self::Missing => None,
         }
     }
+    /// `label`, borrowing text instead of copying it.
+    pub(crate) fn label_str(&self) -> Option<std::borrow::Cow<'_, str>> {
+        match self {
+            Self::Number(x) => Some(x.to_string().into()),
+            Self::Text(s) => Some(s.as_str().into()),
+            Self::Missing => None,
+        }
+    }
     pub fn is_missing(&self) -> bool {
         matches!(self, Self::Missing)
     }
