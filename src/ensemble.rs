@@ -6,6 +6,7 @@ use crate::{
 };
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -93,42 +94,63 @@ impl FittedModel {
             excluded_rows: data.rows.len() - ids.len(),
             ..FitReport::default()
         };
-        for t in 0..ensemble.trees {
-            let sampled: Vec<usize> = (0..size)
-                .map(|_| ids[rng.gen_range(0..ids.len())])
+        // Bootstrap samples and tree seeds are drawn in order, a batch at a
+        // time, and each batch is fitted in parallel. The trees are the same
+        // for any number of threads, and only one batch of samples is held.
+        let batch = 4 * rayon::current_num_threads();
+        let mut t = 0;
+        while t < ensemble.trees {
+            let draws: Vec<(Vec<usize>, u64)> = (t..ensemble.trees.min(t + batch))
+                .map(|_| {
+                    let sampled = (0..size)
+                        .map(|_| ids[rng.gen_range(0..ids.len())])
+                        .collect();
+                    (sampled, rng.r#gen())
+                })
                 .collect();
-            let mut in_bag = vec![false; data.rows.len()];
-            for &i in &sampled {
-                in_bag[i] = true;
-            }
-            let bootstrap = data.subset(&sampled);
-            let bi: Vec<usize> = (0..size).collect();
-            let mut tree_options = opts.clone();
-            tree_options.seed = rng.r#gen();
-            let ctx = Context::new(&bootstrap, &tree_options, &bi, Some(&global.classes))?;
-            let mut next = 0;
-            let mut tree_rng = ChaCha8Rng::seed_from_u64(tree_options.seed);
-            let full = Tree {
-                root: grow(&ctx, &bi, 0, &mut next, &mut tree_rng, SelectionMode::Fit),
-            };
-            crate::tree::validate_node(
-                &full.root,
-                &data.schema,
-                global.classes.len(),
-                &tree_options,
-                0,
-            )?;
-            report.unpruned_leaves += full.root.leaves();
-            let mut tree_report = FitReport::default();
-            let mut tree = crate::pruning::prune(full, &ctx, None, &mut tree_report)?;
-            ctx.finalize_probabilities(&mut tree.root);
-            report.fitted_leaves += tree.root.leaves();
-            crate::tree::collect_warnings(&tree.root, &mut report.warnings);
-            trees.push(tree);
-            for &i in &ids {
-                if !in_bag[i] {
-                    oob[i].push(t);
+            let fitted: Vec<Result<(Tree, usize)>> = draws
+                .par_iter()
+                .map(|(sampled, seed)| {
+                    let bootstrap = data.subset(sampled);
+                    let bi: Vec<usize> = (0..size).collect();
+                    let mut tree_options = opts.clone();
+                    tree_options.seed = *seed;
+                    let ctx = Context::new(&bootstrap, &tree_options, &bi, Some(&global.classes))?;
+                    let mut next = 0;
+                    let mut tree_rng = ChaCha8Rng::seed_from_u64(*seed);
+                    let full = Tree {
+                        root: grow(&ctx, &bi, 0, &mut next, &mut tree_rng, SelectionMode::Fit),
+                    };
+                    crate::tree::validate_node(
+                        &full.root,
+                        &data.schema,
+                        global.classes.len(),
+                        &tree_options,
+                        0,
+                    )?;
+                    let unpruned = full.root.leaves();
+                    let mut tree_report = FitReport::default();
+                    let mut tree = crate::pruning::prune(full, &ctx, None, &mut tree_report)?;
+                    ctx.finalize_probabilities(&mut tree.root);
+                    Ok((tree, unpruned))
+                })
+                .collect();
+            for (result, (sampled, _)) in fitted.into_iter().zip(&draws) {
+                let (tree, unpruned) = result?;
+                report.unpruned_leaves += unpruned;
+                report.fitted_leaves += tree.root.leaves();
+                crate::tree::collect_warnings(&tree.root, &mut report.warnings);
+                trees.push(tree);
+                let mut in_bag = vec![false; data.rows.len()];
+                for &i in sampled {
+                    in_bag[i] = true;
                 }
+                for &i in &ids {
+                    if !in_bag[i] {
+                        oob[i].push(t);
+                    }
+                }
+                t += 1;
             }
         }
         let mut total_loss = 0.0;

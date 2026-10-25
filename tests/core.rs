@@ -716,6 +716,48 @@ fn ensemble_is_repeatable_and_has_oob_predictions() {
     assert!(a.report.out_of_bag_loss.unwrap() < 2.0);
 }
 #[test]
+fn parallel_fits_do_not_depend_on_thread_count() {
+    let d = data(
+        (0..80)
+            .map(|i| vec![(i * 37 % 80) as f64, (i * 11 % 7) as f64, (i % 5) as f64])
+            .collect(),
+        (0..80)
+            .map(|i| f64::from(i * 37 % 80 > 40) * 3.0 + (i % 5) as f64)
+            .collect(),
+    );
+    let cv = FitOptions {
+        pruning: Pruning::CrossValidation {
+            folds: 10,
+            standard_errors: 0.5,
+        },
+        ..options()
+    };
+    // Two threads draw forest samples in batches of 8, so 30 trees span four.
+    let forest = EnsembleOptions {
+        trees: 30,
+        kind: EnsembleKind::Forest,
+        ..Default::default()
+    };
+    let fit = |threads| {
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(threads)
+            .build()
+            .unwrap()
+            .install(|| {
+                (
+                    FittedModel::fit(&d, &cv).unwrap().to_json().unwrap(),
+                    FittedModel::fit_ensemble(&d, &options(), &forest)
+                        .unwrap()
+                        .to_json()
+                        .unwrap(),
+                )
+            })
+    };
+    let one = fit(1);
+    assert_eq!(fit(2), one);
+    assert_eq!(fit(5), one);
+}
+#[test]
 fn importance_orders_signal_before_constant_and_is_repeatable() {
     let d = data(
         (0..40).map(|i| vec![i as f64, 1.0]).collect(),
