@@ -57,7 +57,7 @@ Cross-validation pruning, forests and importance permutations run in parallel, w
 ## Documentation
 
 - Example notebooks comparing GUIDE with scikit-learn's CART trees on its bundled datasets: [classification](examples/classification.ipynb), [regression](examples/regression.ipynb), and [selection bias and importance](examples/selection_bias.ipynb)
-- Estimator parameters: `help(GuideRegressor)`, `help(GuideClassifier)`
+- API reference and user guide: a Sphinx site in `docs/`; build it with the command under Development, or download the `python-docs` artifact from a CI run
 - [Usage and configuration of the core](https://github.com/bgreenwell/guide-rs/blob/main/docs/usage.md)
 
 ## Development
@@ -66,6 +66,7 @@ Cross-validation pruning, forests and importance permutations run in parallel, w
 uv sync                                  # build the extension in editable mode
 uv run ruff check . && uv run pytest     # quality gate
 uv run --group examples python examples/execute.py   # re-run the notebooks
+uv run --group docs sphinx-build -W -b html docs docs/_build/html   # build the docs
 ```
 
 Branch and commit conventions are in the repository's [AGENTS.md](https://github.com/bgreenwell/guide-rs/blob/main/AGENTS.md).

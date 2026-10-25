@@ -10,3 +10,6 @@ __pycache__/
 *.so
 *.pyd
 /.vscode/
+/python/docs/_build/
+/python/docs/generated/
+/python/docs/examples/

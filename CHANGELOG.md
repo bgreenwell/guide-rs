@@ -13,6 +13,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 - Python estimators accept periodic features, missing-value flags, logistic and dual-quantile losses, stepwise leaves, prediction truncation and validation pruning
 - `guide_rs.plot_tree` draws fitted trees with matplotlib
 - Example notebooks comparing GUIDE with scikit-learn decision trees on its bundled datasets
+- Sphinx documentation for the Python package: user guide, API reference and the example notebooks
 - Multiclass trees split categorical predictors with more than 11 levels instead of rejecting them
 - Missing-value flag variables (GUIDE M variables) for constant node models
 - `exposures_from_csv` reads prediction exposures with line-numbered errors
