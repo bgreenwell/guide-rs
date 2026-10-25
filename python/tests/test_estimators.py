@@ -39,12 +39,7 @@ def estimator_for(options, schema):
     """The estimator equivalent to a core configuration, or None if the
     estimator cannot express it."""
     task, node = options["task"], options["node_model"]
-    if (
-        options.get("mtry") is not None
-        or options.get("prediction_truncation", "none") != "none"
-        or options["pruning"]["kind"] not in PRUNING
-        or any(f["feature_type"]["kind"] == "periodic" or f["role"] == "flag" for f in schema)
-    ):
+    if options.get("mtry") is not None or options["pruning"]["kind"] not in PRUNING:
         return None
     params = {
         "max_depth": options["max_depth"],
@@ -54,7 +49,10 @@ def estimator_for(options, schema):
         "significance_level": options["significance_level"],
         "max_split_candidates": options["max_split_candidates"],
         "random_state": options["seed"],
-        "feature_roles": {f["name"]: f["role"] for f in schema},
+        "feature_roles": {f["name"]: f["role"] for f in schema if f["role"] != "flag"},
+        "periodic_features": {f["name"]: f["feature_type"]["period"] for f in schema
+                              if f["feature_type"]["kind"] == "periodic"},
+        "missing_flags": {f["name"]: f["flags"] for f in schema if f["role"] == "flag"},
         **PRUNING[options["pruning"]["kind"]](options["pruning"]),
     }
     if task["kind"] == "classification":
@@ -65,17 +63,18 @@ def estimator_for(options, schema):
             **params,
         )
     loss = task["loss"]
-    if (
-        options["linear_splits"]
-        or loss["kind"] not in ("squared_error", "quantile", "poisson")
-        or node["kind"] not in ("constant", "linear", "polynomial")
-    ):
+    if options["linear_splits"]:
         return None
     return GuideRegressor(
         loss=loss["kind"],
         quantile=loss.get("probability", 0.5),
+        quantiles=(loss.get("lower", 0.25), loss.get("upper", 0.75)),
         node_model=node["kind"],
         degree=node.get("degree", 2),
+        stepwise_alpha=node.get("alpha", 0.05),
+        max_variables=node.get("max_variables") or None,
+        backward=node.get("backward", True),
+        prediction_truncation=options.get("prediction_truncation", "none"),
         **params,
     )
 
@@ -92,7 +91,7 @@ CASES = list(reference_cases())
 
 
 def test_reference_corpus_is_covered():
-    assert len(CASES) >= 230
+    assert len(CASES) >= 275
 
 
 def column(values, categorical):

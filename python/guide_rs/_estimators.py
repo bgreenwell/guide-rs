@@ -1,6 +1,7 @@
 """scikit-learn estimators backed by the guide-rs core."""
 
 import json
+import math
 import numbers
 import os
 import warnings
@@ -20,7 +21,7 @@ from sklearn.utils.validation import (
 from . import _core
 from ._core import Model
 
-_PRUNING = ("cv", "cost_complexity", "max_leaves", "none")
+_PRUNING = ("cv", "cost_complexity", "max_leaves", "validation", "none")
 _ROLES = ("split", "fit", "both", "excluded")
 
 
@@ -113,14 +114,41 @@ class _Guide(BaseEstimator):
             mask[self._feature_index(s, names, "categorical feature")] = True
         return mask
 
-    def _roles(self, mask):
+    def _periods(self):
+        """Period of each periodic feature, by index."""
+        names = getattr(self, "feature_names_in_", None)
+        periods = {}
+        for key, period in (self.periodic_features or {}).items():
+            if (not isinstance(period, numbers.Real) or isinstance(period, bool)
+                    or not math.isfinite(period) or period <= 0):
+                raise ValueError(f"period of {key!r} must be positive and finite, got {period!r}")
+            periods[self._feature_index(key, names, "periodic feature")] = float(period)
+        return periods
+
+    def _flags(self):
+        """Parent feature of each missing-value flag column, by index."""
+        names = getattr(self, "feature_names_in_", None)
+        flags = {}
+        for flag, parent in (self.missing_flags or {}).items():
+            f = self._feature_index(flag, names, "missing flag")
+            flags[f] = self._feature_index(parent, names, "flagged feature")
+            if flags[f] == f:
+                raise ValueError(f"missing flag {flag!r} cannot flag itself")
+        return flags
+
+    def _roles(self, mask, periods, flags):
         default = "both" if self._fits_features() else "split"
-        roles = ["split" if cat else default for cat in mask]
+        roles = ["split" if cat or j in periods else default for j, cat in enumerate(mask)]
         names = getattr(self, "feature_names_in_", None)
         for key, role in (self.feature_roles or {}).items():
             if role not in _ROLES:
                 raise ValueError(f"feature role must be one of {_ROLES}, got {role!r}")
-            roles[self._feature_index(key, names, "feature")] = role
+            j = self._feature_index(key, names, "feature")
+            if j in flags:
+                raise ValueError(f"missing flag {key!r} cannot also have a feature role")
+            roles[j] = role
+        for f in flags:
+            roles[f] = "flag"
         return roles
 
     def _fits_features(self):
@@ -146,8 +174,8 @@ class _Guide(BaseEstimator):
                 )
             get = X.iloc.__getitem__
         else:
-            object_input = self.categorical_features is not None and len(
-                list(self.categorical_features)
+            object_input = bool(self.missing_flags) or (
+                self.categorical_features is not None and len(list(self.categorical_features))
             )
             params = {
                 "reset": reset,
@@ -165,20 +193,26 @@ class _Guide(BaseEstimator):
 
         if reset:
             mask = self._categorical_mask(X)
+            periods, flags = self._periods(), self._flags()
+            for f in flags:
+                mask[f] = True
             names = getattr(self, "feature_names_in_", None)
             names = [str(n) for n in names] if names is not None else [
                 f"x{j}" for j in range(self.n_features_in_)
             ]
             if len(set(names)) != len(names):
                 raise ValueError("feature names must be unique")
-            self._schema = [
-                {
-                    "name": name,
-                    "feature_type": {"kind": "categorical" if cat else "numeric"},
-                    "role": role,
-                }
-                for name, cat, role in zip(names, mask, self._roles(mask))
-            ]
+            for j in periods:
+                if mask[j]:
+                    raise ValueError(f"periodic feature {names[j]!r} must be numeric")
+            self._schema = []
+            for j, (name, cat, role) in enumerate(zip(names, mask, self._roles(mask, periods, flags))):
+                kind = ({"kind": "periodic", "period": periods[j]} if j in periods
+                        else {"kind": "categorical" if cat else "numeric"})
+                feature = {"name": name, "feature_type": kind, "role": role}
+                if j in flags:
+                    feature["flags"] = names[flags[j]]
+                self._schema.append(feature)
         columns = []
         for j, feature in enumerate(self._schema):
             column = get((slice(None), j))
@@ -204,6 +238,8 @@ class _Guide(BaseEstimator):
             if self.max_leaves is None:
                 raise ValueError("pruning='max_leaves' requires max_leaves")
             return {"kind": "fixed_leaves", "max_leaves": self.max_leaves}
+        if self.pruning == "validation":
+            return {"kind": "validation"}
         if self.pruning == "none":
             return {"kind": "none"}
         raise ValueError(f"pruning must be one of {_PRUNING}, got {self.pruning!r}")
@@ -225,7 +261,25 @@ class _Guide(BaseEstimator):
     def _ensemble(self, options):
         """Ensemble options for the core, or None for a single tree."""
 
-    def _fit_model(self, columns, target, options, weights, exposure=None):
+    def _validation(self, validation_data):
+        """Core input for validation pruning from ``(X, y[, sample_weight[, exposure]])``."""
+        if validation_data is None:
+            if self.pruning == "validation":
+                raise ValueError("pruning='validation' requires validation_data")
+            return None
+        if self.pruning != "validation":
+            raise ValueError("validation_data requires pruning='validation'")
+        if not 2 <= len(validation_data) <= 4:
+            raise ValueError("validation_data must be (X, y), (X, y, sample_weight) or "
+                             "(X, y, sample_weight, exposure)")
+        X, y, *rest = validation_data
+        rest += [None] * (2 - len(rest))
+        columns, _ = self._columns(X, reset=False)
+        y = column_or_1d(y)
+        check_consistent_length(columns[0] if columns else [], y)
+        return columns, self._target(y), _weights(rest[0], len(y)), _floats(rest[1])
+
+    def _fit_model(self, columns, target, options, weights, exposure=None, validation=None):
         ensemble = self._ensemble(options)
         self._model = Model.fit(
             json.dumps(self._schema),
@@ -236,6 +290,7 @@ class _Guide(BaseEstimator):
             exposure=exposure,
             ensemble=None if ensemble is None else json.dumps(ensemble),
             threads=_threads(self.n_jobs),
+            validation=validation,
         )
         self.fit_report_ = json.loads(self._model.report)
         for message in self.fit_report_["warnings"]:
@@ -329,10 +384,16 @@ class _Regression(_Guide):
             return {"kind": "squared_error"}
         if self.loss == "quantile":
             return {"kind": "quantile", "probability": self.quantile}
+        if self.loss == "dual_quantile":
+            lower, upper = self.quantiles
+            return {"kind": "dual_quantile", "lower": lower, "upper": upper}
         if self.loss == "poisson":
             return {"kind": "poisson"}
+        if self.loss == "logistic":
+            return {"kind": "logistic"}
         raise ValueError(
-            f"loss must be 'squared_error', 'quantile' or 'poisson', got {self.loss!r}"
+            "loss must be 'squared_error', 'quantile', 'dual_quantile', 'poisson' or "
+            f"'logistic', got {self.loss!r}"
         )
 
     def _node_model(self):
@@ -340,25 +401,41 @@ class _Regression(_Guide):
             return {"kind": self.node_model}
         if self.node_model == "polynomial":
             return {"kind": "polynomial", "degree": self.degree}
+        if self.node_model == "stepwise":
+            return {"kind": "stepwise", "alpha": self.stepwise_alpha,
+                    "max_variables": self.max_variables or 0, "backward": self.backward}
         raise ValueError(
-            f"node_model must be 'constant', 'linear' or 'polynomial', got {self.node_model!r}"
+            "node_model must be 'constant', 'linear', 'polynomial' or 'stepwise', "
+            f"got {self.node_model!r}"
         )
+
+    def _target(self, y):
+        return check_array(y, ensure_2d=False, dtype=np.float64).tolist()
 
     def _prepare(self, X, y, sample_weight):
         columns, y = self._columns(X, y, reset=True)
-        y = check_array(y, ensure_2d=False, dtype=np.float64)
+        target = self._target(y)
         options = self._options({"kind": "regression", "loss": self._loss()}, self._node_model())
-        return columns, y.tolist(), options, _weights(sample_weight, len(y))
+        if self.prediction_truncation != "none":
+            options["prediction_truncation"] = self.prediction_truncation
+        return columns, target, options, _weights(sample_weight, len(target))
 
-    def fit(self, X, y, sample_weight=None, exposure=None):
-        """Fit the model. ``exposure`` is the Poisson exposure (not its log)."""
+    def fit(self, X, y, sample_weight=None, exposure=None, validation_data=None):
+        """Fit the model. ``exposure`` is the Poisson exposure (not its log);
+        ``validation_data`` is ``(X, y[, sample_weight[, exposure]])`` for
+        ``pruning="validation"``."""
         columns, target, options, weights = self._prepare(X, y, sample_weight)
-        return self._fit_model(columns, target, options, weights, _floats(exposure))
+        return self._fit_model(columns, target, options, weights, _floats(exposure),
+                               self._validation(validation_data))
 
     def predict(self, X, exposure=None):
-        """Predicted response; Poisson models fitted with exposure need it here too."""
+        """Predicted response; Poisson models fitted with exposure need it here too.
+        Dual-quantile models return the lower and upper quantiles, shape (n, 2);
+        logistic models return probabilities."""
         check_is_fitted(self)
         columns, _ = self._columns(X, reset=False)
+        if self.loss == "dual_quantile":
+            return np.asarray(self._model.predict_intervals(columns), dtype=float).reshape(-1, 2)
         return np.asarray(self._model.predict_values(columns, _floats(exposure)), dtype=float)
 
 
@@ -387,11 +464,17 @@ class _Classification(_Guide):
             if costs.shape != (len(names), len(names)):
                 raise ValueError("class_costs must be a square matrix over classes")
             options["class_costs"] = costs[np.ix_(index, index)].tolist()
-        return columns, [str(v) for v in y], options, weights
+        return columns, self._target(y), options, weights
 
-    def fit(self, X, y, sample_weight=None):
-        """Fit the model. Positive sample weights count as 1, following GUIDE."""
-        return self._fit_model(*self._prepare(X, y, sample_weight))
+    def _target(self, y):
+        return [str(v) for v in y]
+
+    def fit(self, X, y, sample_weight=None, validation_data=None):
+        """Fit the model. Positive sample weights count as 1, following GUIDE;
+        ``validation_data`` is ``(X, y[, sample_weight])`` for
+        ``pruning="validation"``."""
+        return self._fit_model(*self._prepare(X, y, sample_weight),
+                               validation=self._validation(validation_data))
 
     def predict_proba(self, X):
         """Class probabilities in the order of ``classes_``."""
@@ -419,16 +502,34 @@ class GuideRegressor(RegressorMixin, _SingleTree, _Regression):
 
     Parameters
     ----------
-    loss : {"squared_error", "quantile", "poisson"}, default="squared_error"
+    loss : {"squared_error", "quantile", "dual_quantile", "poisson", "logistic"}, \
+default="squared_error"
         Node loss. Poisson accepts an ``exposure`` in ``fit`` and ``predict``.
+        Logistic fits a 0/1 response and predicts probabilities.
+        ``"dual_quantile"`` fits two quantiles at once and ``predict``
+        returns them as an array of shape (n_samples, 2).
     quantile : float, default=0.5
         Quantile probability for ``loss="quantile"``.
-    node_model : {"constant", "linear", "polynomial"}, default="constant"
-        Leaf model. Unless ``feature_roles`` says otherwise, linear and
-        polynomial leaves regress on every numeric feature, and categorical
-        features are used only for splitting.
+    quantiles : (float, float), default=(0.25, 0.75)
+        Lower and upper probabilities for ``loss="dual_quantile"``.
+    node_model : {"constant", "linear", "polynomial", "stepwise"}, default="constant"
+        Leaf model. Unless ``feature_roles`` says otherwise, these leaves
+        regress on every numeric feature, and categorical features are used
+        only for splitting. ``"stepwise"`` is experimental: its variable
+        selection does not fully match GUIDE.
     degree : int, default=2
         Polynomial degree for ``node_model="polynomial"``.
+    stepwise_alpha : float, default=0.05
+        Entry and removal significance level for ``node_model="stepwise"``.
+    max_variables : int, default=None
+        Most variables a stepwise leaf may use; None means no limit.
+    backward : bool, default=True
+        Run backward elimination after forward selection in stepwise leaves.
+    prediction_truncation : {"none", "node_range", "node_range_expanded", \
+"global_range"}, default="none"
+        Limits on predictions of linear least-squares leaves: the leaf's
+        training response range, that range widened by 10% at each end, or
+        the whole training range (GUIDE's default).
     max_depth : int, default=10
     min_samples_leaf : int, default=2
     min_gain : float, default=1e-12
@@ -438,7 +539,8 @@ class GuideRegressor(RegressorMixin, _SingleTree, _Regression):
     significance_level : float, default=0.1
     max_split_candidates : int, default=100
         Cutpoints evaluated per numeric split; 0 evaluates all.
-    pruning : {"cv", "cost_complexity", "max_leaves", "none"}, default="cv"
+    pruning : {"cv", "cost_complexity", "max_leaves", "validation", "none"}, default="cv"
+        ``"validation"`` prunes on the ``validation_data`` passed to ``fit``.
     cv_folds : int, default=10
     cv_standard_errors : float, default=0.25
         Standard-error rule for cross-validation pruning.
@@ -453,6 +555,15 @@ class GuideRegressor(RegressorMixin, _SingleTree, _Regression):
         Maps column names or indices to ``"split"`` (splitting only),
         ``"fit"`` (leaf regressor only), ``"both"`` or ``"excluded"``,
         overriding the defaults described under ``node_model``.
+    periodic_features : dict, default=None
+        Maps numeric column names or indices to their period, such as 24
+        for hour of day. Periodic features split into intervals that may
+        wrap around and are used only for splitting.
+    missing_flags : dict, default=None
+        Maps a categorical flag column to the column whose missing values it
+        explains (GUIDE's M variables), for example
+        ``{"income_reason": "income"}``. Splits can then route each missing
+        code separately. Requires constant leaves.
     n_jobs : int, default=None
         Threads for cross-validation pruning, forest trees and importance
         permutations. Unlike most scikit-learn estimators, None uses all
@@ -467,8 +578,13 @@ class GuideRegressor(RegressorMixin, _SingleTree, _Regression):
         *,
         loss="squared_error",
         quantile=0.5,
+        quantiles=(0.25, 0.75),
         node_model="constant",
         degree=2,
+        stepwise_alpha=0.05,
+        max_variables=None,
+        backward=True,
+        prediction_truncation="none",
         max_depth=10,
         min_samples_leaf=2,
         min_gain=1e-12,
@@ -482,13 +598,20 @@ class GuideRegressor(RegressorMixin, _SingleTree, _Regression):
         max_leaves=None,
         categorical_features=None,
         feature_roles=None,
+        periodic_features=None,
+        missing_flags=None,
         n_jobs=None,
         random_state=0,
     ):
         self.loss = loss
         self.quantile = quantile
+        self.quantiles = quantiles
         self.node_model = node_model
         self.degree = degree
+        self.stepwise_alpha = stepwise_alpha
+        self.max_variables = max_variables
+        self.backward = backward
+        self.prediction_truncation = prediction_truncation
         self.max_depth = max_depth
         self.min_samples_leaf = min_samples_leaf
         self.min_gain = min_gain
@@ -502,6 +625,8 @@ class GuideRegressor(RegressorMixin, _SingleTree, _Regression):
         self.max_leaves = max_leaves
         self.categorical_features = categorical_features
         self.feature_roles = feature_roles
+        self.periodic_features = periodic_features
+        self.missing_flags = missing_flags
         self.n_jobs = n_jobs
         self.random_state = random_state
 
@@ -545,6 +670,8 @@ class GuideClassifier(ClassifierMixin, _SingleTree, _Classification):
         class_costs=None,
         categorical_features=None,
         feature_roles=None,
+        periodic_features=None,
+        missing_flags=None,
         n_jobs=None,
         random_state=0,
     ):
@@ -564,6 +691,8 @@ class GuideClassifier(ClassifierMixin, _SingleTree, _Classification):
         self.class_costs = class_costs
         self.categorical_features = categorical_features
         self.feature_roles = feature_roles
+        self.periodic_features = periodic_features
+        self.missing_flags = missing_flags
         self.n_jobs = n_jobs
         self.random_state = random_state
 
@@ -600,8 +729,13 @@ class GuideForestRegressor(RegressorMixin, _Forest, _Regression):
         max_features=None,
         loss="squared_error",
         quantile=0.5,
+        quantiles=(0.25, 0.75),
         node_model="constant",
         degree=2,
+        stepwise_alpha=0.05,
+        max_variables=None,
+        backward=True,
+        prediction_truncation="none",
         max_depth=10,
         min_samples_leaf=2,
         min_gain=1e-12,
@@ -615,6 +749,8 @@ class GuideForestRegressor(RegressorMixin, _Forest, _Regression):
         max_leaves=None,
         categorical_features=None,
         feature_roles=None,
+        periodic_features=None,
+        missing_flags=None,
         n_jobs=None,
         random_state=0,
     ):
@@ -624,8 +760,13 @@ class GuideForestRegressor(RegressorMixin, _Forest, _Regression):
         self.max_features = max_features
         self.loss = loss
         self.quantile = quantile
+        self.quantiles = quantiles
         self.node_model = node_model
         self.degree = degree
+        self.stepwise_alpha = stepwise_alpha
+        self.max_variables = max_variables
+        self.backward = backward
+        self.prediction_truncation = prediction_truncation
         self.max_depth = max_depth
         self.min_samples_leaf = min_samples_leaf
         self.min_gain = min_gain
@@ -639,6 +780,8 @@ class GuideForestRegressor(RegressorMixin, _Forest, _Regression):
         self.max_leaves = max_leaves
         self.categorical_features = categorical_features
         self.feature_roles = feature_roles
+        self.periodic_features = periodic_features
+        self.missing_flags = missing_flags
         self.n_jobs = n_jobs
         self.random_state = random_state
 
@@ -675,6 +818,8 @@ class GuideForestClassifier(ClassifierMixin, _Forest, _Classification):
         class_costs=None,
         categorical_features=None,
         feature_roles=None,
+        periodic_features=None,
+        missing_flags=None,
         n_jobs=None,
         random_state=0,
     ):
@@ -698,6 +843,8 @@ class GuideForestClassifier(ClassifierMixin, _Forest, _Classification):
         self.class_costs = class_costs
         self.categorical_features = categorical_features
         self.feature_roles = feature_roles
+        self.periodic_features = periodic_features
+        self.missing_flags = missing_flags
         self.n_jobs = n_jobs
         self.random_state = random_state
 
