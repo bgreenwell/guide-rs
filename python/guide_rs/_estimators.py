@@ -2,6 +2,7 @@
 
 import json
 import numbers
+import os
 import warnings
 
 import numpy as np
@@ -48,6 +49,17 @@ def _seed(random_state):
     if isinstance(random_state, numbers.Integral):
         return int(random_state)
     return int(check_random_state(random_state).randint(np.iinfo(np.int32).max))
+
+
+def _threads(n_jobs):
+    """Thread count for the core, or None for all cores."""
+    if n_jobs is None or n_jobs == -1:
+        return None
+    if not isinstance(n_jobs, numbers.Integral) or isinstance(n_jobs, bool) or n_jobs == 0:
+        raise ValueError(f"n_jobs must be None or a nonzero int, got {n_jobs!r}")
+    if n_jobs > 0:
+        return int(n_jobs)
+    return max(1, (os.cpu_count() or 1) + 1 + int(n_jobs))
 
 
 def _weights(sample_weight, n):
@@ -223,6 +235,7 @@ class _Guide(BaseEstimator):
             weights=weights,
             exposure=exposure,
             ensemble=None if ensemble is None else json.dumps(ensemble),
+            threads=_threads(self.n_jobs),
         )
         self.fit_report_ = json.loads(self._model.report)
         for message in self.fit_report_["warnings"]:
@@ -440,6 +453,11 @@ class GuideRegressor(RegressorMixin, _SingleTree, _Regression):
         Maps column names or indices to ``"split"`` (splitting only),
         ``"fit"`` (leaf regressor only), ``"both"`` or ``"excluded"``,
         overriding the defaults described under ``node_model``.
+    n_jobs : int, default=None
+        Threads for cross-validation pruning, forest trees and importance
+        permutations. Unlike most scikit-learn estimators, None uses all
+        cores, as does -1; -2 uses all but one, and so on. Results do not
+        depend on it.
     random_state : int, RandomState instance or None, default=0
         Seed for cross-validation folds. Fits are deterministic by default.
     """
@@ -464,6 +482,7 @@ class GuideRegressor(RegressorMixin, _SingleTree, _Regression):
         max_leaves=None,
         categorical_features=None,
         feature_roles=None,
+        n_jobs=None,
         random_state=0,
     ):
         self.loss = loss
@@ -483,6 +502,7 @@ class GuideRegressor(RegressorMixin, _SingleTree, _Regression):
         self.max_leaves = max_leaves
         self.categorical_features = categorical_features
         self.feature_roles = feature_roles
+        self.n_jobs = n_jobs
         self.random_state = random_state
 
 
@@ -525,6 +545,7 @@ class GuideClassifier(ClassifierMixin, _SingleTree, _Classification):
         class_costs=None,
         categorical_features=None,
         feature_roles=None,
+        n_jobs=None,
         random_state=0,
     ):
         self.max_depth = max_depth
@@ -543,6 +564,7 @@ class GuideClassifier(ClassifierMixin, _SingleTree, _Classification):
         self.class_costs = class_costs
         self.categorical_features = categorical_features
         self.feature_roles = feature_roles
+        self.n_jobs = n_jobs
         self.random_state = random_state
 
 
@@ -593,6 +615,7 @@ class GuideForestRegressor(RegressorMixin, _Forest, _Regression):
         max_leaves=None,
         categorical_features=None,
         feature_roles=None,
+        n_jobs=None,
         random_state=0,
     ):
         self.kind = kind
@@ -616,6 +639,7 @@ class GuideForestRegressor(RegressorMixin, _Forest, _Regression):
         self.max_leaves = max_leaves
         self.categorical_features = categorical_features
         self.feature_roles = feature_roles
+        self.n_jobs = n_jobs
         self.random_state = random_state
 
 
@@ -651,6 +675,7 @@ class GuideForestClassifier(ClassifierMixin, _Forest, _Classification):
         class_costs=None,
         categorical_features=None,
         feature_roles=None,
+        n_jobs=None,
         random_state=0,
     ):
         self.kind = kind
@@ -673,6 +698,7 @@ class GuideForestClassifier(ClassifierMixin, _Forest, _Classification):
         self.class_costs = class_costs
         self.categorical_features = categorical_features
         self.feature_roles = feature_roles
+        self.n_jobs = n_jobs
         self.random_state = random_state
 
 
@@ -685,7 +711,8 @@ def importance(estimator, X, y, *, sample_weight=None, permutations=300, max_dep
     :class:`GuideRegressor` (constant leaves, squared-error loss) or
     :class:`GuideClassifier` (default priors and costs). The estimator itself
     is not modified. ``permutations`` response permutations estimate each
-    score's null mean for the bias adjustment.
+    score's null mean for the bias adjustment; they run on ``estimator.n_jobs``
+    threads.
 
     Returns
     -------
@@ -710,6 +737,7 @@ def importance(estimator, X, y, *, sample_weight=None, permutations=300, max_dep
                  "seed": _seed(random_state)}
             ),
             weights=weights,
+            threads=_threads(estimator.n_jobs),
         )
     )
     for message in result["warnings"]:

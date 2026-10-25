@@ -32,6 +32,10 @@ struct Cli {
     /// Overwrite existing output files
     #[arg(long, global = true)]
     force: bool,
+    /// Threads for ensemble trees, CV folds and importance permutations
+    /// [default: all cores]. Results do not depend on it.
+    #[arg(long, global = true, value_parser = clap::value_parser!(u16).range(1..))]
+    threads: Option<u16>,
     #[command(subcommand)]
     command: Command,
 }
@@ -149,6 +153,12 @@ fn read_dataset(path: &Path, options: &CsvOptions, task: &Task) -> Result<Datase
 
 fn run(cli: Cli) -> Result<()> {
     let force = cli.force;
+    if let Some(threads) = cli.threads {
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(threads.into())
+            .build_global()
+            .context("could not start the thread pool")?;
+    }
     let target = match &cli.command {
         Command::Fit { model, .. } => Some(model),
         Command::Convert { output, .. } => Some(output),

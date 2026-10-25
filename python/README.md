@@ -51,7 +51,7 @@ for score in report["scores"]:
     print(score["feature"], score["adjusted_score"], score["group"])
 ```
 
-Forests and cross-validation pruning fit trees in parallel on all cores, with the same results for any thread count. Set `RAYON_NUM_THREADS` before importing `guide_rs` to limit the threads, for example when `GridSearchCV` also runs jobs in parallel.
+Cross-validation pruning, forests and importance permutations run in parallel, with the same results for any thread count. `n_jobs` sets the threads; unlike most scikit-learn estimators, its default (None) uses all cores. Lower it when `GridSearchCV` also runs jobs in parallel.
 
 ## Documentation
 

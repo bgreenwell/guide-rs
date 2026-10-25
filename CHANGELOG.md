@@ -8,6 +8,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `--threads` CLI option and `n_jobs` estimator parameter set the threads used for parallel fits
 - Python package with scikit-learn tree and forest estimators, feature roles and importance scores
 - `guide_rs.plot_tree` draws fitted trees with matplotlib
 - Example notebooks comparing GUIDE with scikit-learn decision trees on its bundled datasets
@@ -19,7 +20,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - Classification trees and forests that look ahead on interactions fit 3 to 7 times faster, with unchanged models
-- Ensemble trees and cross-validation folds are fitted in parallel, with results independent of the thread count
+- Ensemble trees, cross-validation folds and importance permutations are fitted in parallel, with results independent of the thread count
 - Categorical splits put the side with fewer categories on the left, matching GUIDE; unseen categories may reach a different leaf than before
 - Classification trees merge sibling leaves that predict the same class, matching GUIDE
 - `min_gain = 0` accepts zero-gain splits on the selected variable, matching GUIDE

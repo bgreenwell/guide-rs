@@ -270,3 +270,51 @@ fn bundled_iris_has_useful_classification_accuracy() {
     assert!(correct >= 140, "correct={correct}");
     assert!(m.trees[0].root.leaves() > 1);
 }
+#[test]
+fn cli_thread_count_does_not_change_results() {
+    let t = Temp::new();
+    let rows: String = (0..60)
+        .map(|i| {
+            format!(
+                "{},{},{}\n",
+                i * 7 % 60,
+                i % 4,
+                f64::from(i * 7 % 60 > 25) * 4.0
+            )
+        })
+        .collect();
+    fs::write(t.0.join("train.csv"), format!("x,z,y\n{rows}")).unwrap();
+    fs::write(
+        t.0.join("config.json"),
+        r#"{"data":{"target":"y"},"fit":{"pruning":{"kind":"none"}},
+            "ensemble":{"kind":"bagging","trees":12},
+            "importance":{"permutations":20}}"#,
+    )
+    .unwrap();
+    for threads in ["1", "3"] {
+        for (command, output) in [("fit", "--model"), ("importance", "--output")] {
+            success(run(
+                &t,
+                &[
+                    command,
+                    "--threads",
+                    threads,
+                    "--data",
+                    "train.csv",
+                    "--config",
+                    "config.json",
+                    output,
+                    &format!("{command}-{threads}.json"),
+                ],
+            ));
+        }
+    }
+    for command in ["fit", "importance"] {
+        assert_eq!(
+            fs::read(t.0.join(format!("{command}-1.json"))).unwrap(),
+            fs::read(t.0.join(format!("{command}-3.json"))).unwrap()
+        );
+    }
+    let out = run(&t, &["--threads", "0", "config"]);
+    assert!(!out.status.success());
+}

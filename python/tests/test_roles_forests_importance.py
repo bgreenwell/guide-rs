@@ -133,3 +133,17 @@ def test_importance_requires_a_supported_single_tree(iris):
     result = importance(estimator, X, y, permutations=20)
     assert {s["feature"] for s in result["scores"]} == set(X.columns)
     assert not hasattr(estimator, "_model")
+
+
+def test_n_jobs_does_not_change_results(iris):
+    X, y = iris
+    fits = [GuideForestClassifier(n_estimators=30, n_jobs=n).fit(X, y).to_json()
+            for n in (None, 1, 3, -2)]
+    assert len(set(fits)) == 1
+    trees = [GuideClassifier(cv_folds=5, n_jobs=n).fit(X, y).to_json() for n in (1, 4)]
+    assert trees[0] == trees[1]
+    scores = [importance(GuideClassifier(n_jobs=n), X, y, permutations=10) for n in (1, 3)]
+    assert scores[0] == scores[1]
+    for bad in (0, 1.5, "all", True):
+        with pytest.raises(ValueError, match="n_jobs must be"):
+            GuideClassifier(n_jobs=bad).fit(X, y)
