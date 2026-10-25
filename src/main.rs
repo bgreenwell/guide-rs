@@ -174,20 +174,7 @@ fn run() -> Result<()> {
                 let name = options.offset.as_ref().ok_or_else(|| {
                     error("saved model has no CSV exposure column; use the Rust API")
                 })?;
-                let csv = parse_csv(&input, options.delimiter)?;
-                let j = csv[0]
-                    .iter()
-                    .position(|h| h == name)
-                    .ok_or_else(|| error(format!("missing exposure column {name}")))?;
-                Some(
-                    csv[1..]
-                        .iter()
-                        .map(|r| {
-                            r[j].parse::<f64>()
-                                .map_err(|_| error("invalid prediction exposure"))
-                        })
-                        .collect::<Result<Vec<_>>>()?,
-                )
+                Some(exposures_from_csv(&input, name, options.delimiter)?)
             } else {
                 None
             };

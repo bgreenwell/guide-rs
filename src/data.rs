@@ -1,4 +1,4 @@
-use crate::{Loss, Result, Task, invalid};
+use crate::{Error, Loss, Result, Task, invalid};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -224,7 +224,16 @@ impl Default for CsvOptions {
 }
 
 /// Strict CSV parser supporting quoted delimiters, escaped quotes, and multiline fields.
+///
+/// Blank lines are skipped, as in R's `read.csv`.
 pub fn parse_csv(input: &str, delimiter: char) -> Result<Vec<Vec<String>>> {
+    Ok(parse_csv_lines(input, delimiter)?
+        .into_iter()
+        .map(|(_, r)| r)
+        .collect())
+}
+/// Parses CSV records paired with the 1-based line on which each record starts.
+fn parse_csv_lines(input: &str, delimiter: char) -> Result<Vec<(usize, Vec<String>)>> {
     if matches!(delimiter, '"' | '\r' | '\n') {
         return Err(invalid("invalid CSV delimiter"));
     }
@@ -236,8 +245,16 @@ pub fn parse_csv(input: &str, delimiter: char) -> Result<Vec<Vec<String>>> {
     let mut quoted = false;
     let mut after_quote = false;
     let mut pending = false;
+    let mut line = 1;
+    let mut start = 1;
     while let Some(c) = chars.next() {
+        if !pending {
+            start = line;
+        }
         pending = true;
+        if c == '\n' || (c == '\r' && chars.peek() != Some(&'\n')) {
+            line += 1;
+        }
         if quoted {
             if c == '"' {
                 if chars.peek() == Some(&'"') {
@@ -256,16 +273,25 @@ pub fn parse_csv(input: &str, delimiter: char) -> Result<Vec<Vec<String>>> {
         } else if c == '\n' || c == '\r' {
             if c == '\r' && chars.peek() == Some(&'\n') {
                 chars.next();
+                line += 1;
+            }
+            if row.is_empty() && field.is_empty() && !after_quote {
+                pending = false;
+                continue;
             }
             row.push(std::mem::take(&mut field));
-            records.push(std::mem::take(&mut row));
+            records.push((start, std::mem::take(&mut row)));
             after_quote = false;
             pending = false;
         } else if after_quote {
-            return Err(invalid("unexpected character after closing CSV quote"));
+            return Err(invalid(format!(
+                "CSV line {line}: unexpected character after closing quote"
+            )));
         } else if c == '"' {
             if !field.is_empty() {
-                return Err(invalid("quote inside unquoted CSV field"));
+                return Err(invalid(format!(
+                    "CSV line {line}: quote inside unquoted field"
+                )));
             }
             quoted = true;
         } else {
@@ -273,22 +299,23 @@ pub fn parse_csv(input: &str, delimiter: char) -> Result<Vec<Vec<String>>> {
         }
     }
     if quoted {
-        return Err(invalid("unterminated quoted CSV field"));
+        return Err(invalid(format!(
+            "CSV line {start}: unterminated quoted field"
+        )));
     }
     if pending {
         row.push(field);
-        records.push(row);
+        records.push((start, row));
     }
-    if let Some(header) = records.first() {
+    if let Some((_, header)) = records.first() {
         let mut seen = BTreeSet::new();
         if header.iter().any(|s| s.is_empty() || !seen.insert(s)) {
             return Err(invalid("CSV header names must be nonempty and unique"));
         }
-        for (i, r) in records.iter().enumerate().skip(1) {
+        for (line, r) in records.iter().skip(1) {
             if r.len() != header.len() {
                 return Err(invalid(format!(
-                    "CSV record {} has {} fields; expected {}",
-                    i + 1,
+                    "CSV line {line} has {} fields; expected {}",
                     r.len(),
                     header.len()
                 )));
@@ -296,6 +323,9 @@ pub fn parse_csv(input: &str, delimiter: char) -> Result<Vec<Vec<String>>> {
         }
     }
     Ok(records)
+}
+fn located(line: usize, column: &str, e: Error) -> Error {
+    invalid(format!("CSV line {line}, column {column:?}: {}", e.0))
 }
 pub fn csv_field(s: &str) -> String {
     if s.contains([',', '"', '\r', '\n']) {
@@ -321,8 +351,9 @@ fn cell(s: &str, numeric: bool, missing: &[String]) -> Result<Value> {
     }
 }
 pub fn dataset_from_csv(input: &str, options: &CsvOptions, task: &Task) -> Result<Dataset> {
-    let records = parse_csv(input, options.delimiter)?;
-    let headers = records.first().ok_or_else(|| invalid("empty CSV"))?;
+    let lines = parse_csv_lines(input, options.delimiter)?;
+    let headers = &lines.first().ok_or_else(|| invalid("empty CSV"))?.1;
+    let records = &lines[1..];
     let index: BTreeMap<&str, usize> = headers
         .iter()
         .enumerate()
@@ -348,9 +379,9 @@ pub fn dataset_from_csv(input: &str, options: &CsvOptions, task: &Task) -> Resul
             if j == target || Some(j) == weight || Some(j) == offset {
                 continue;
             }
-            let numeric = records[1..]
-                .iter()
-                .all(|r| options.missing_values.contains(&r[j]) || r[j].parse::<f64>().is_ok());
+            let numeric = records.iter().all(|(_, r)| {
+                options.missing_values.contains(&r[j]) || r[j].parse::<f64>().is_ok()
+            });
             schema.push(FeatureSchema {
                 name: h.clone(),
                 feature_type: if numeric {
@@ -378,37 +409,27 @@ pub fn dataset_from_csv(input: &str, options: &CsvOptions, task: &Task) -> Resul
         weights: vec![],
         offsets: vec![],
     };
-    for r in &records[1..] {
+    for &(line, ref r) in records {
+        let at = |j: usize, numeric: bool| {
+            cell(&r[j], numeric, &options.missing_values).map_err(|e| located(line, &headers[j], e))
+        };
         let row = data
             .schema
             .iter()
             .zip(&columns)
-            .map(|(s, &j)| {
-                cell(
-                    &r[j],
-                    !matches!(s.feature_type, FeatureType::Categorical),
-                    &options.missing_values,
-                )
-            })
+            .map(|(s, &j)| at(j, !matches!(s.feature_type, FeatureType::Categorical)))
             .collect::<Result<_>>()?;
         data.rows.push(row);
-        data.targets.push(cell(
-            &r[target],
-            !matches!(task, Task::Classification),
-            &options.missing_values,
-        )?);
+        data.targets
+            .push(at(target, !matches!(task, Task::Classification))?);
         if let Some(j) = weight {
-            data.weights.push(
-                cell(&r[j], true, &options.missing_values)?
-                    .number()
-                    .unwrap_or(0.0),
-            );
+            data.weights.push(at(j, true)?.number().unwrap_or(0.0));
         }
         if let Some(j) = offset {
             data.offsets.push(
-                cell(&r[j], true, &options.missing_values)?
+                at(j, true)?
                     .number()
-                    .ok_or_else(|| invalid("missing exposure"))?,
+                    .ok_or_else(|| located(line, &headers[j], invalid("missing exposure")))?,
             );
         }
     }
@@ -421,8 +442,8 @@ pub fn prediction_rows_from_csv(
     missing: &[String],
     delimiter: char,
 ) -> Result<Vec<Vec<Value>>> {
-    let records = parse_csv(input, delimiter)?;
-    let headers = records.first().ok_or_else(|| invalid("empty CSV"))?;
+    let lines = parse_csv_lines(input, delimiter)?;
+    let headers = &lines.first().ok_or_else(|| invalid("empty CSV"))?.1;
     let positions: Vec<usize> = schema
         .iter()
         .map(|s| {
@@ -432,9 +453,9 @@ pub fn prediction_rows_from_csv(
                 .ok_or_else(|| invalid(format!("missing feature {}", s.name)))
         })
         .collect::<Result<_>>()?;
-    records[1..]
+    lines[1..]
         .iter()
-        .map(|r| {
+        .map(|(line, r)| {
             schema
                 .iter()
                 .zip(&positions)
@@ -444,8 +465,28 @@ pub fn prediction_rows_from_csv(
                         !matches!(s.feature_type, FeatureType::Categorical),
                         missing,
                     )
+                    .map_err(|e| located(*line, &headers[j], e))
                 })
                 .collect()
+        })
+        .collect()
+}
+/// Reads positive prediction exposures from the named CSV column.
+pub fn exposures_from_csv(input: &str, column: &str, delimiter: char) -> Result<Vec<f64>> {
+    let lines = parse_csv_lines(input, delimiter)?;
+    let headers = &lines.first().ok_or_else(|| invalid("empty CSV"))?.1;
+    let j = headers
+        .iter()
+        .position(|h| h == column)
+        .ok_or_else(|| invalid(format!("missing exposure column {column:?}")))?;
+    lines[1..]
+        .iter()
+        .map(|(line, r)| {
+            cell(&r[j], true, &[])?
+                .number()
+                .filter(|e| *e > 0.0)
+                .ok_or_else(|| invalid("exposure must be positive and finite"))
+                .map_err(|e| located(*line, column, e))
         })
         .collect()
 }
