@@ -841,11 +841,20 @@ pub(crate) fn grow(
             })
         })
         .collect();
+    let exact = if pair {
+        None
+    } else {
+        exact_candidates(ctx, ids, &split_candidates, impurity)
+    };
+    let indexed: Vec<(usize, &Split)> = split_candidates.iter().enumerate().collect();
     let scores = ordered_map(
-        &split_candidates,
+        &indexed,
         ids.len() >= PARALLEL_MIN_ROWS,
         || (vec![], vec![]),
-        |(left, right), split| {
+        |(left, right), &(k, split)| {
+            if exact.as_ref().is_some_and(|e| !e[k]) {
+                return None;
+            }
             partition(ids, split, ctx.data, left, right);
             if !admissible(ctx, left, right) {
                 return None;
@@ -996,15 +1005,179 @@ fn best_child_score(
         }
         return best;
     }
+    let splits = candidates(ctx, ids, j);
+    let exact = exact_candidates(ctx, ids, &splits, best);
     let (mut l, mut r) = (vec![], vec![]);
-    for s in candidates(ctx, ids, j) {
-        partition(ids, &s, ctx.data, &mut l, &mut r);
+    for (k, s) in splits.iter().enumerate() {
+        if exact.as_ref().is_some_and(|e| !e[k]) {
+            continue;
+        }
+        partition(ids, s, ctx.data, &mut l, &mut r);
         if admissible(ctx, &l, &r) {
             best =
                 best.min(ctx.impurity(&ctx.fit_leaf(&l), &l) + ctx.impurity(&ctx.fit_leaf(&r), &r));
         }
     }
     best
+}
+/// For squared-error constant leaves, which of `splits` to score exactly.
+/// Numeric cuts are first scored approximately by `RegressionSweep`. A cut
+/// whose approximate loss exceeds the lowest by more than a margin can
+/// neither be the minimum nor win the candidate scan, whose ties are within
+/// 64 ulps, so only the others are rescored exactly and results are
+/// unchanged. The margin is 1e-6 of `scale` (the node's loss), covering the
+/// sweep's rounding, plus a bound on the exact two-pass loss's own error:
+/// its mean is off by at most about (n + 2) eps max|y|, which adds up to
+/// W times that squared. Inadmissible cuts are skipped, as the exact path
+/// skips them; other split kinds are always scored exactly. None when the
+/// sweep does not apply.
+fn exact_candidates(
+    ctx: &Context<'_>,
+    ids: &[usize],
+    splits: &[Split],
+    scale: f64,
+) -> Option<Vec<bool>> {
+    if ctx.classifying()
+        || ctx.options.node_model != NodeModel::Constant
+        || ctx.loss != Loss::SquaredError
+    {
+        return None;
+    }
+    let mut sweeps: BTreeMap<usize, RegressionSweep> = BTreeMap::new();
+    let approximate: Vec<Option<Option<f64>>> = splits
+        .iter()
+        .map(|s| match s {
+            Split::Numeric {
+                feature,
+                threshold,
+                missing_left,
+                missing_codes: None,
+            } => Some(
+                sweeps
+                    .entry(*feature)
+                    .or_insert_with(|| RegressionSweep::new(ctx, ids, *feature))
+                    .score(ctx, *threshold, *missing_left),
+            ),
+            _ => None,
+        })
+        .collect();
+    let lowest = approximate
+        .iter()
+        .flatten()
+        .flatten()
+        .copied()
+        .filter(|a| a.is_finite())
+        .fold(f64::INFINITY, f64::min);
+    let weight: f64 = ids.iter().map(|&i| ctx.weights[i]).sum();
+    let largest = ids.iter().map(|&i| ctx.y[i].abs()).fold(0.0, f64::max);
+    let mean_error = (ids.len() + 2) as f64 * f64::EPSILON * largest;
+    let margin = 1e-6 * scale.abs().max(lowest.abs()) + 4.0 * weight * mean_error * mean_error;
+    Some(
+        approximate
+            .iter()
+            .map(|a| match a {
+                None => true,
+                Some(None) => false,
+                Some(Some(a)) => !a.is_finite() || *a <= lowest + margin,
+            })
+            .collect(),
+    )
+}
+/// Weighted response moments of a set of rows (Welford, merged by Chan et
+/// al.'s formula), with the counts that decide admissibility.
+#[derive(Clone, Copy, Default)]
+struct Moments {
+    weight: f64,
+    mean: f64,
+    m2: f64,
+    rows: usize,
+    weighted: usize,
+}
+impl Moments {
+    fn add(&mut self, y: f64, w: f64) {
+        self.rows += 1;
+        if w > 0.0 {
+            self.weighted += 1;
+            self.weight += w;
+            let d = y - self.mean;
+            self.mean += d * w / self.weight;
+            self.m2 += w * d * (y - self.mean);
+        }
+    }
+    fn merge(self, other: Self) -> Self {
+        let weight = self.weight + other.weight;
+        let (mean, m2) = if weight > 0.0 {
+            let d = other.mean - self.mean;
+            (
+                self.mean + d * other.weight / weight,
+                self.m2 + other.m2 + d * d * self.weight * other.weight / weight,
+            )
+        } else {
+            (0.0, 0.0)
+        };
+        Self {
+            weight,
+            mean,
+            m2,
+            rows: self.rows + other.rows,
+            weighted: self.weighted + other.weighted,
+        }
+    }
+    fn admissible(&self, ctx: &Context<'_>) -> bool {
+        self.rows >= ctx.options.min_samples_leaf && self.weighted > 0
+    }
+}
+/// Approximate squared-error child losses of the numeric cuts of one feature,
+/// from prefix and suffix moments of the rows sorted once.
+struct RegressionSweep {
+    values: Vec<f64>,
+    prefix: Vec<Moments>,
+    suffix: Vec<Moments>,
+    missing: Moments,
+}
+impl RegressionSweep {
+    fn new(ctx: &Context<'_>, ids: &[usize], j: usize) -> Self {
+        // Moments of y - shift: the loss is unchanged, and rounding then scales
+        // with the deviations rather than with the mean.
+        let shift = ids.first().map_or(0.0, |&i| ctx.y[i]);
+        let mut sorted = vec![];
+        let mut missing = Moments::default();
+        for &i in ids {
+            let y = ctx.y[i] - shift;
+            match ctx.data.rows[i][j].number() {
+                Some(x) => sorted.push((x, y, ctx.weights[i])),
+                None => missing.add(y, ctx.weights[i]),
+            }
+        }
+        sorted.sort_by(|a, b| a.0.total_cmp(&b.0));
+        let mut prefix = vec![Moments::default(); sorted.len() + 1];
+        for (k, &(_, y, w)) in sorted.iter().enumerate() {
+            prefix[k + 1] = prefix[k];
+            prefix[k + 1].add(y, w);
+        }
+        let mut suffix = vec![Moments::default(); sorted.len() + 1];
+        for (k, &(_, y, w)) in sorted.iter().enumerate().rev() {
+            suffix[k] = suffix[k + 1];
+            suffix[k].add(y, w);
+        }
+        Self {
+            values: sorted.iter().map(|p| p.0).collect(),
+            prefix,
+            suffix,
+            missing,
+        }
+    }
+    /// The approximate summed child loss of a cut, if both children are admissible.
+    fn score(&self, ctx: &Context<'_>, threshold: f64, missing_left: bool) -> Option<f64> {
+        let k = self.values.partition_point(|&x| x <= threshold);
+        let (mut left, mut right) = (self.prefix[k], self.suffix[k]);
+        if missing_left {
+            left = left.merge(self.missing);
+        } else {
+            right = right.merge(self.missing);
+        }
+        (left.admissible(ctx) && right.admissible(ctx)).then_some(left.m2 + right.m2)
+    }
 }
 fn admissible(ctx: &Context<'_>, l: &[usize], r: &[usize]) -> bool {
     l.len() >= ctx.options.min_samples_leaf
@@ -1801,5 +1974,77 @@ mod tests {
             }
         }
         assert!(scored > 40);
+    }
+
+    #[test]
+    fn regression_contenders_keep_the_exact_scan_result() {
+        let x = |i: usize, j: usize| ((i * (7 + 6 * j) + j * 13) % 97) as f64;
+        for offset in [0.0, 1e4, 1e9] {
+            let rows: Vec<Vec<Value>> = (0..300)
+                .map(|i| {
+                    let a = if i % 17 == 3 {
+                        Value::Missing
+                    } else {
+                        Value::Number(x(i, 0))
+                    };
+                    vec![a, Value::Number(x(i, 1))]
+                })
+                .collect();
+            let data = Dataset {
+                schema: (0..2)
+                    .map(|j| FeatureSchema {
+                        name: format!("x{j}"),
+                        feature_type: FeatureType::Numeric,
+                        role: Role::Split,
+                        flags: None,
+                    })
+                    .collect(),
+                targets: (0..300)
+                    .map(|i| {
+                        let signal = if x(i, 0) < 40.0 { 1.0 } else { 3.0 } + x(i, 1) / 50.0;
+                        Value::Number(offset + signal + ((i * 31) % 11) as f64 * 0.05)
+                    })
+                    .collect(),
+                weights: (0..300).map(|i| [1.0, 0.0, 2.0][i % 3]).collect(),
+                offsets: vec![],
+                rows,
+            };
+            let options = FitOptions::default();
+            let all: Vec<usize> = (0..300).collect();
+            let ctx = Context::new(&data, &options, &all, None).unwrap();
+            let scale = ctx.impurity(&ctx.fit_leaf(&all), &all);
+            let (mut l, mut r) = (vec![], vec![]);
+            for ids in [
+                all.clone(),
+                all.iter().copied().filter(|i| i % 5 != 0).collect(),
+            ] {
+                let splits: Vec<Split> = (0..2).flat_map(|j| candidates(&ctx, &ids, j)).collect();
+                let exact = exact_candidates(&ctx, &ids, &splits, scale).unwrap();
+                let scores: Vec<Option<f64>> = splits
+                    .iter()
+                    .map(|s| {
+                        partition(&ids, s, &data, &mut l, &mut r);
+                        admissible(&ctx, &l, &r).then(|| {
+                            ctx.impurity(&ctx.fit_leaf(&l), &l)
+                                + ctx.impurity(&ctx.fit_leaf(&r), &r)
+                        })
+                    })
+                    .collect();
+                let scan = |keep: &dyn Fn(usize) -> bool| {
+                    let mut best: Option<(usize, f64)> = None;
+                    for (k, score) in scores.iter().enumerate() {
+                        if let Some(score) = *score
+                            && keep(k)
+                            && best.is_none_or(|b| stats::strictly_less(score, b.1))
+                        {
+                            best = Some((k, score));
+                        }
+                    }
+                    best
+                };
+                assert!(exact.iter().filter(|e| !**e).count() > splits.len() / 2);
+                assert_eq!(scan(&|k| exact[k]), scan(&|_| true), "offset {offset}");
+            }
+        }
     }
 }
