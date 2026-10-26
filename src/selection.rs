@@ -178,6 +178,17 @@ pub(crate) fn select(
             }
         })
         .collect();
+    select_with_labels(ctx, ids, &labels, features, mode)
+}
+/// Variable selection from precomputed response groups, one per row of
+/// `ids`: class indices, residual signs or, for boosting, gradient signs.
+pub(crate) fn select_with_labels(
+    ctx: &Context<'_>,
+    ids: &[usize],
+    labels: &[usize],
+    features: &[usize],
+    mode: SelectionMode,
+) -> Selection {
     let classes = labels
         .iter()
         .copied()
@@ -190,7 +201,7 @@ pub(crate) fn select(
         || (),
         |_, &j| {
             let bins = discretize(ctx, ids, j, false, mode, classes);
-            (!bins.iter().all(|x| *x == bins[0])).then(|| test(&labels, &bins))
+            (!bins.iter().all(|x| *x == bins[0])).then(|| test(labels, &bins))
         },
     );
     let mut diagnostics = vec![];
@@ -266,7 +277,7 @@ pub(crate) fn select(
             || (vec![], vec![]),
             |(index, joint), &(a, b)| {
                 joint_cells(&bins[a], &bins[b], 16 * ids.len() + 1024, index, joint);
-                test(&labels, joint).2
+                test(labels, joint).2
             },
         );
         let mut best_pair = None;
@@ -331,7 +342,7 @@ pub(crate) fn select(
             for a in 0..numeric.len() {
                 for b in a + 1..numeric.len() {
                     if let Some((projection, p)) =
-                        discriminant(ctx, ids, &labels, [numeric[a], numeric[b]])
+                        discriminant(ctx, ids, labels, [numeric[a], numeric[b]])
                         && p < best_p
                     {
                         best_p = p;

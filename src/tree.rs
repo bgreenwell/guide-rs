@@ -225,6 +225,9 @@ pub struct FittedModel {
     pub input: Option<CsvOptions>,
     pub requires_exposure: bool,
     pub ensemble: Option<EnsembleOptions>,
+    /// Present for boosted models, whose trees add up on the link scale.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub boosting: Option<crate::BoostedModel>,
     pub trees: Vec<Tree>,
     pub report: FitReport,
 }
@@ -273,6 +276,7 @@ impl FittedModel {
             input: None,
             requires_exposure: !data.offsets.is_empty(),
             ensemble: None,
+            boosting: None,
             trees: vec![tree],
             report,
         };
@@ -332,6 +336,9 @@ impl FittedModel {
             .collect()
     }
     pub(crate) fn predict_one(&self, row: &[Value], offset: f64, loss: &Loss) -> Prediction {
+        if let Some(boosted) = &self.boosting {
+            return self.boosted_prediction(boosted, row, offset);
+        }
         if matches!(loss, Loss::DualQuantile { .. }) {
             let mut lower = 0.0;
             let mut upper = 0.0;
@@ -415,7 +422,36 @@ impl FittedModel {
         if self.trees.is_empty() {
             return Err(invalid("model has no trees"));
         }
-        if let Some(e) = &self.ensemble {
+        let score_leaves = self.trees.iter().all(|t| {
+            all_leaves(
+                &t.root,
+                &|m| matches!(m, LeafModel::Score { value } if value.is_finite()),
+            )
+        });
+        let any_score = self
+            .trees
+            .iter()
+            .any(|t| !all_leaves(&t.root, &|m| !matches!(m, LeafModel::Score { .. })));
+        if let Some(b) = &self.boosting {
+            let outputs = if self.classes.len() > 2 {
+                self.classes.len()
+            } else {
+                1
+            };
+            b.options.validate()?;
+            if self.ensemble.is_some()
+                || b.rounds == 0
+                || b.rounds > b.options.rounds
+                || b.base_scores.len() != outputs
+                || b.base_scores.iter().any(|s| !s.is_finite())
+                || self.trees.len() != b.rounds * outputs
+                || !score_leaves
+            {
+                return Err(invalid("saved boosting configuration is inconsistent"));
+            }
+        } else if any_score {
+            return Err(invalid("score leaves require boosting metadata"));
+        } else if let Some(e) = &self.ensemble {
             if e.trees != self.trees.len()
                 || !e.sample_fraction.is_finite()
                 || e.sample_fraction <= 0.0
@@ -483,6 +519,13 @@ impl FittedModel {
             )?;
         }
         Ok(())
+    }
+}
+/// Whether every leaf model under `n` satisfies `f`.
+fn all_leaves(n: &Node, f: &dyn Fn(&LeafModel) -> bool) -> bool {
+    match (&n.left, &n.right) {
+        (Some(l), Some(r)) => all_leaves(l, f) && all_leaves(r, f),
+        _ => f(&n.model),
     }
 }
 pub(crate) fn collect_warnings(n: &Node, w: &mut Vec<String>) {
@@ -579,6 +622,11 @@ pub(crate) fn validate_node(
                 || (probabilities.iter().sum::<f64>() - 1.0).abs() > 1e-8
             {
                 return Err(invalid("invalid class probabilities"));
+            }
+        }
+        LeafModel::Score { value } => {
+            if !value.is_finite() {
+                return Err(invalid("invalid boosted leaf score"));
             }
         }
         LeafModel::Constant { value } => {
@@ -1202,7 +1250,7 @@ fn native_cut_grid(ctx: &Context<'_>) -> bool {
     matches!(ctx.loss, Loss::Poisson | Loss::Quantile { .. })
 }
 /// Splits `ids` into `left` and `right`, keeping their order.
-fn partition(
+pub(crate) fn partition(
     ids: &[usize],
     split: &Split,
     data: &Dataset,
@@ -1650,7 +1698,7 @@ fn orient_fewer_left(split: Split, node_missing: &[&[Value]]) -> Split {
         missing_codes: flipped_codes,
     }
 }
-fn candidates(ctx: &Context<'_>, ids: &[usize], j: usize) -> Vec<Split> {
+pub(crate) fn candidates(ctx: &Context<'_>, ids: &[usize], j: usize) -> Vec<Split> {
     candidates_sorted(ctx, ids, j, None)
 }
 /// `candidates`, given the rows' numeric values of feature `j` in

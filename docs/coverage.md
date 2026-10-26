@@ -22,6 +22,7 @@ A checked box below means the stated capability exists with tests. It does **not
 - [x] Missing-value flag (M) variables for constant node models, with per-code selection groups and code-subset split routing.
 - [x] Cost-complexity, fixed-size, validation-sample and cross-validation pruning; independently verified correct behavior in documented native counterexamples.
 - [x] Extension: classification pruning and out-of-bag loss by log loss or Brier score (`pruning_loss`) instead of misclassification cost.
+- [x] Extension: gradient boosting with GUIDE variable selection on gradient signs (squared error, Poisson, logistic, binary and multiclass classification), subsampling, per-node feature sampling and early stopping.
 - [x] Basic bagging/forest ensembles, per-node feature sampling, OOB loss and deterministic seeds.
 - [x] Constant classification/SSE importance scoring, permutation adjustment and scoped important-variable checks.
 - [x] Prediction, JSON conversion, text/DOT/LaTeX tree output, and macOS/Linux/Windows CI.

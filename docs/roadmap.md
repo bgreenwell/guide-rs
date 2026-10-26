@@ -80,6 +80,8 @@ The resulting plot is the README's headline figure. This design follows the simu
 
 ## Boosting mode
 
+**Status (2026-10-25):** a first version is implemented (`FittedModel::fit_boosting`, `GuideBoostingRegressor`, `GuideBoostingClassifier`): GUIDE tests on gradient signs, second-order gain, Newton leaves, subsampling, per-node feature sampling and early stopping, for squared error, Poisson, logistic and multiclass. Not yet: Hessian-weighted tables, histogram binning, gradient-sorted categorical search, linear leaves, monotone constraints and the blackboost benchmark.
+
 GUIDE trees plug naturally into gradient boosting, because GUIDE's split tests already operate on residual signs, and boosting fits each tree to pseudo-residuals (negative gradients). The hybrid design: GUIDE's tests choose the split variable; second-order boosting gain chooses the threshold.
 
 ### Why it fits
