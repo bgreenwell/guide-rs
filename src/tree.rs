@@ -800,9 +800,17 @@ pub(crate) fn grow(
         right: None,
     };
     *next_id += 1;
+    // A regression node whose responses (and exposures) are all equal is
+    // terminal, as in GUIDE. Its Poisson deviance can round above zero and
+    // pass the gain check.
+    let constant_response = !ctx.classifying()
+        && ids
+            .windows(2)
+            .all(|w| ctx.y[w[0]] == ctx.y[w[1]] && ctx.data.offset(w[0]) == ctx.data.offset(w[1]));
     if depth >= ctx.options.max_depth
         || ids.len() < 2 * ctx.options.min_samples_leaf
         || impurity / ctx.root_weight <= ctx.options.min_gain
+        || constant_response
     {
         return node;
     }

@@ -2,6 +2,18 @@
 
 Local environment: Apple Silicon macOS, Rust 1.99.1. The runtime implementation is pure Rust; R is used only as an independent test oracle. GitHub Actions runs the ordinary suite on Linux, macOS and Windows plus the independent R job; all passed from a clean checkout on 2026-10-25. R prediction-function export was excluded from product scope on 2026-10-24 and removed from the code on 2026-10-25. Historical export checks below remain a record of earlier work; independent R numerical/statistical validation remains in scope.
 
+## Poisson and quantile residual groups, 2026-10-26
+
+New fits record **`guide-rs-0.1-experimental-reference18`**; saved format remains 1. GUIDE's published history (`history.txt`) records two selection rules Rust lacked: version 34.2 groups Poisson rows by Anscombe residuals above or below their mean, and version 28.1 puts zero quantile residuals in the smaller of the positive and negative groups. Probes also showed native leaves a Poisson node with constant response unsplit, where Rust split at a roundoff-level gain. With all three, on fresh random two-predictor designs (seeds 1000 and 2000, no gain threshold, as in native):
+
+| Native 46.3 | Old whole trees | New | Old nodes | New |
+|---|---:|---:|---:|---:|
+| Poisson (120 designs) | 71 | 78 | 353 | 360 of 427 |
+| Quantile (120) | 75 | 84 | 359 | 378 of 456 |
+| Quantile, integer responses (80) | 37 | 42 | 193 | 257 of 337 |
+
+Anscombe residuals against their mean did better than against zero (353) or Pearson residuals (355); zeros join the positive group when the groups are equal in size (253 against 246 nodes on integer data). Earlier probes fitted Rust with its default `min_gain = 1e-12`, which under-counted quantile agreement because native keeps zero-gain splits. Eight captures (`poisson-constant-response`, `poisson-anscombe-groups`, `quantile-zero-residuals`, `quantile-zero-residuals-integer`, both versions) bring the corpus to **588 captures across 294 cases**; all fail under reference17.
+
 ## Interaction pairs at every depth, 2026-10-26
 
 New fits record **`guide-rs-0.1-experimental-reference17`**; saved format remains 1. In constant-leaf trees, selected interaction pairs now use the two-level search at the last level too, with parent cuts on GUIDE's fixed grid. Identical predictions on fresh pair designs rose from 0 to 64 of 126 (regression, depth 1), 76 to 87 (regression, depth 2), 33 to 116 (classification, depth 1) and 82 to 110 (classification, depth 2). Eight new captures bring the corpus to 580 across 290 cases. Details and the remaining gap are in the [selection validation](selection-validation.md#interaction-pairs-2026-10-26).
