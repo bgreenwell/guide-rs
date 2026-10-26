@@ -1,10 +1,10 @@
 # GUIDE 46.3 coverage and remaining work
 
-Updated **2026-10-25**, through algorithm revision **`guide-rs-0.1-experimental-reference18`**.
+Updated **2026-10-25**, through algorithm revision **`guide-rs-0.1-experimental-reference19`**.
 
 **guide-rs is a working subset of GUIDE, not a full replacement.** Its strongest native validation is for constant classification/regression, multiple-linear squared-error trees, and pruning. Other implemented losses and ensembles have narrower independent checks. No complete subsystem is certified equivalent to every GUIDE option.
 
-The primary oracle is the pinned GUIDE **46.3** build of July 11, 2026; **46.2** is a secondary regression reference. Documentation comes from the **46.1** manual and history through 46.2. The fixed acceptance corpus contains **588 native captures across 294 distinct cases**, plus separately recorded diagnostics. See [reference provenance](reference-upstream.md) and [validation results](validation.md).
+The primary oracle is the pinned GUIDE **46.3** build of July 11, 2026; **46.2** is a secondary regression reference. Documentation comes from the **46.1** manual and history through 46.2. The fixed acceptance corpus contains **596 native captures across 298 distinct cases**, plus separately recorded diagnostics. See [reference provenance](reference-upstream.md) and [validation results](validation.md).
 
 A checked box below means the stated capability exists with tests. It does **not** certify full native parity. Unchecked boxes identify remaining work, including validation of existing implementations.
 
@@ -72,7 +72,7 @@ These are the next priorities before expanding into the missing specialized fami
 
 Carried over from the 2026-10-23 repository review; fixed items (log-scale selection, bagging with CV, CSV/CLI diagnostics) are omitted.
 
-- [ ] Minimum rows for non-least-squares linear leaves: quantile leaves now follow native's `p + 4` rule for complete numeric regressors; categorical or incomplete regressors, polynomial leaves, and Poisson and logistic leaves (native has no size rule and fits rank-deficient models in two-row nodes, Rust requires `terms + 1`) remain unmatched.
+- [ ] Minimum rows for linear leaves outside complete numeric least squares: least-squares trees with numeric regressors now follow native's three thresholds (`p+7` training rows, `p+3` for leaves, `p+5` for split children; reference19), and quantile leaves `p+4`. Categorical or flagged least-squares designs, polynomial leaves, Poisson split-child scoring and logistic leaves (which drop terms on separation) remain unmatched.
 - [ ] Unseen-category direction and the larger-child missing route are chosen by row count rather than weight; stepwise F tests use the unweighted n.
 - [ ] Excluded numeric columns must still parse as numbers at fit and prediction time.
 - [ ] Performance at scale: split search refits both child models for every candidate except in the classification lookahead and for squared-error constant leaves, which sweep sorted rows; periodic splits try O(cuts²) intervals; growth of a single tree is sequential below 512 rows per node; `predict` revalidates the model on every call (about 0.1 ms for a 100-tree forest).

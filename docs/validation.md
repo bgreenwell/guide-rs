@@ -2,6 +2,16 @@
 
 Local environment: Apple Silicon macOS, Rust 1.99.1. The runtime implementation is pure Rust; R is used only as an independent test oracle. GitHub Actions runs the ordinary suite on Linux, macOS and Windows plus the independent R job; all passed from a clean checkout on 2026-10-25. R prediction-function export was excluded from product scope on 2026-10-24 and removed from the code on 2026-10-25. Historical export checks below remain a record of earlier work; independent R numerical/statistical validation remains in scope.
 
+## Linear least-squares small children, 2026-10-26
+
+New fits record **`guide-rs-0.1-experimental-reference19`**; saved format remains 1. The `p+7` minimum for multiple-linear least squares came from single-node captures, and the validated tree captures used minimum node sizes of 10 or 12, so small children were untested. Probes with minimum node size 2, 48 rows and a slope change in about seven rows (46.3) show three separate native rules for complete numeric regressors:
+
+- **Split search** scores a candidate child as linear from `p+5` rows and as a constant below: thresholds `t` of 6, 7 and 8 for p = 1, 2, 3 reproduce 55 of 58, 55 of 56 and 58 of 58 native root cuts, and 67 of 73, 69 of 75 and 71 of 77 cuts one level down, more than any other `t`. Skipping such cuts instead does worse (54 and 51).
+- **Leaves** are linear from `p+3` rows; smaller leaves report every slope as aliased and predict the node mean.
+- **The training sample** below `p+7` rows gives constants throughout (the earlier single-node result).
+
+Because parent and children are scored under different rules, native keeps the best admissible split even when it scores worse than the parent's linear fit. On 40 fresh designs per setting, identical predictions rose from 18, 16 and 15 to 37, 39 and 38 at depth 1 (p = 1, 2, 3), and from 0 to 13, 18 and 9 at depth 3. History 17.2 and 16.2 (automatic switch to constant models with too few complete cases) match the training-sample rule. Eight captures (`linear-small-children-p{1,2}-depth{2,3}`, both versions) bring the corpus to **596 captures across 298 cases**; all fail under reference18. The corpus comparison now reads native's zero slopes for aliased leaves as a constant fit.
+
 ## Poisson and quantile residual groups, 2026-10-26
 
 New fits record **`guide-rs-0.1-experimental-reference18`**; saved format remains 1. GUIDE's published history (`history.txt`) records two selection rules Rust lacked: version 34.2 groups Poisson rows by Anscombe residuals above or below their mean, and version 28.1 puts zero quantile residuals in the smaller of the positive and negative groups. Probes also showed native leaves a Poisson node with constant response unsplit, where Rust split at a roundoff-level gain. With all three, on fresh random two-predictor designs (seeds 1000 and 2000, no gain threshold, as in native):

@@ -193,7 +193,10 @@ pub(crate) struct Context<'a> {
     pub flags: Vec<Option<usize>>,
     split_cost_weights: Vec<f64>,
     class_frequencies: Vec<f64>,
+    /// Fewest rows for a linear node or leaf model.
     linear_min_samples: Option<usize>,
+    /// Fewest rows for a linear model when scoring a candidate child.
+    linear_split_min_samples: Option<usize>,
     linear_category_levels: Vec<Vec<Option<String>>>,
     global_prediction_bounds: Option<PredictionBounds>,
 }
@@ -324,7 +327,8 @@ impl<'a> Context<'a> {
         // dummies, not effective rank. Only numeric missing flags change the
         // threshold formula; categorical missingness is an ordinary level.
         let quantile = matches!(loss, Loss::Quantile { .. });
-        let linear_min_samples = if options.node_model == NodeModel::Linear
+        let (linear_min_samples, linear_split_min_samples) = if options.node_model
+            == NodeModel::Linear
             && (loss == Loss::SquaredError || quantile)
             && fitting.iter().all(|(_, f)| {
                 matches!(
@@ -352,21 +356,34 @@ impl<'a> Context<'a> {
             let numeric = fitting
                 .iter()
                 .all(|(_, f)| matches!(f.feature_type, FeatureType::Numeric));
-            if !quantile {
-                Some(if flags == 0 {
+            if !quantile && flags == 0 && numeric {
+                // Native least-squares trees with complete numeric regressors
+                // fit constants throughout when the training sample has fewer
+                // than p + 7 rows. Otherwise nodes and leaves are linear from
+                // p + 3 rows, while split search scores a child as linear only
+                // from p + 5 rows.
+                if ids.len() < p.saturating_add(7) {
+                    (Some(usize::MAX), Some(usize::MAX))
+                } else {
+                    (Some(p.saturating_add(3)), Some(p.saturating_add(5)))
+                }
+            } else if !quantile {
+                let minimum = Some(if flags == 0 {
                     p.saturating_add(7)
                 } else {
                     p.saturating_add(flags).saturating_add(3)
-                })
+                });
+                (minimum, minimum)
             } else if flags == 0 && numeric {
                 // Native quantile leaves fit a linear model from p + 4 rows,
                 // probed with complete numeric regressors only.
-                Some(p.saturating_add(4))
+                let minimum = Some(p.saturating_add(4));
+                (minimum, minimum)
             } else {
-                None
+                (None, None)
             }
         } else {
-            None
+            (None, None)
         };
         let global_prediction_bounds = (!options.prediction_truncation.is_none()).then(|| {
             // GUIDE fixes global bounds from the full active training dataset,
@@ -419,6 +436,7 @@ impl<'a> Context<'a> {
             split_cost_weights,
             class_frequencies,
             linear_min_samples,
+            linear_split_min_samples,
             linear_category_levels,
             global_prediction_bounds,
         })
@@ -426,7 +444,15 @@ impl<'a> Context<'a> {
     pub fn classifying(&self) -> bool {
         !self.classes.is_empty()
     }
+    /// The node or leaf model of rows `ids`.
     pub fn fit_leaf(&self, ids: &[usize]) -> LeafModel {
+        self.fit_model(ids, self.linear_min_samples)
+    }
+    /// The model of a candidate child when scoring a split.
+    pub fn fit_child(&self, ids: &[usize]) -> LeafModel {
+        self.fit_model(ids, self.linear_split_min_samples)
+    }
+    fn fit_model(&self, ids: &[usize], linear_min_samples: Option<usize>) -> LeafModel {
         if self.classifying() {
             let mut counts = vec![0.0; self.classes.len()];
             for &i in ids {
@@ -469,10 +495,7 @@ impl<'a> Context<'a> {
         match self.options.node_model {
             NodeModel::Constant => constant,
             NodeModel::Linear => {
-                if self
-                    .linear_min_samples
-                    .is_some_and(|minimum| ids.len() < minimum)
-                {
+                if linear_min_samples.is_some_and(|minimum| ids.len() < minimum) {
                     constant
                 } else {
                     self.linear(ids, self.terms(ids, None, 1), &constant)

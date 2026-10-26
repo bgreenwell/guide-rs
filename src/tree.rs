@@ -924,8 +924,8 @@ pub(crate) fn grow(
             if !admissible(ctx, left, right) {
                 return None;
             }
-            let lm = ctx.fit_leaf(left);
-            let rm = ctx.fit_leaf(right);
+            let lm = ctx.fit_child(left);
+            let rm = ctx.fit_child(right);
             let mut score = ctx.impurity(&lm, left) + ctx.impurity(&rm, right);
             if pair {
                 // Pair selections hold two distinct features (a < b in selection).
@@ -987,7 +987,9 @@ pub(crate) fn grow(
     if let Some((mut split, left, right, score)) = best
         && (impurity - score > ctx.options.min_gain * ctx.root_weight
             || ((ctx.options.min_gain == 0.0 || mode == SelectionMode::Importance)
-                && (ctx.classifying() || stats::less_or_close(score, impurity))))
+                && (ctx.classifying()
+                    || ctx.options.node_model == NodeModel::Linear
+                    || stats::less_or_close(score, impurity))))
     {
         // Numeric cuts default to the right when missingness was not observed,
         // as confirmed by GUIDE 46.2/46.3 reference fixtures. Categorical cuts
@@ -1082,8 +1084,8 @@ fn best_child_score(
         }
         partition(ids, s, ctx.data, &mut l, &mut r);
         if admissible(ctx, &l, &r) {
-            best =
-                best.min(ctx.impurity(&ctx.fit_leaf(&l), &l) + ctx.impurity(&ctx.fit_leaf(&r), &r));
+            best = best
+                .min(ctx.impurity(&ctx.fit_child(&l), &l) + ctx.impurity(&ctx.fit_child(&r), &r));
         }
     }
     best
