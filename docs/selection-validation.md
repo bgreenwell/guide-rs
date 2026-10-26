@@ -65,6 +65,27 @@ Black-box probes with both pinned executables (multiple-linear SSE with a fit-on
 
 The constant-node findings are frozen as twelve captures in the core corpus (see [reference provenance](reference-upstream.md#zero-gain-splits-and-same-class-leaf-merging-2026-10-25)). A depth-2 classification design with priors 0.3/0.7 kept three native leaves but two Rust leaves; the [follow-up below](#classification-splits-that-raise-impurity-2026-10-25) resolves it.
 
+## Interaction pairs, 2026-10-26
+
+New fits record **`guide-rs-0.1-experimental-reference17`**. The earlier audit found that Rust's choice of variable from a selected interaction pair at the last level agreed with native in 22 of 51 probes. Probes on 164 two-predictor XOR designs (160 rows, random main effects, 46.3) showed the problem was broader and had three parts:
+
+- **Native runs the two-level search at every depth.** Its choice is the same at depth 1 as at depth 2 or 3; Rust's best-single-split rule at the last level agreed in 76 of 164, the two-level search in 95. The rule in Loh (2002, Algorithm 2), splitting at each variable's sample mean, agreed in 78.
+- **Native's parent cuts lie on its fixed 102-position grid** (`s - 1 + floor(j (m - 1) / 101)` rows on the left, as for Poisson and quantile trees) in 160 of 164 designs, against 24 of 36 single-variable splits in the same designs, which are exhaustive. Restricting the parent cuts to the grid raises agreement on the root variable from 96 to 106.
+- **Most remaining differences are exact ties.** In 120 of the 164 designs both variables reach the same two-level loss with the same four cells, so the trees predict identically and differ only in which variable is printed first. Native's choice is deterministic (unchanged by swapping or renaming columns and reversing rows, 51 of 51 each), but no rule tried explains it: column order, main-effect p-values on several binnings, single-split, mean- or median-split loss, cut position, or rounding in float32 or float64 sums.
+
+Given native's variable, its parent cut matches the grid's best two-level loss in 39 of 49 designs; mean or median child splits, coarser child grids, a shared child cut and larger minimum child sizes all do worse. On 150 fresh designs per task (seed 11), whole-tree agreement with native changed as follows:
+
+| Pair cases, native 46.3 | Old root variable | New | Old root variable and cut | New | Old identical predictions | New |
+|---|---:|---:|---:|---:|---:|---:|
+| Regression, depth 1 (126) | 68 | 69 | 0 | 64 | 0 | 64 |
+| Regression, depth 2 (126) | 69 | 69 | 46 | 64 | 76 | 87 |
+| Classification, depth 1 (133) | 51 | 118 | 0 | 30 | 33 | 116 |
+| Classification, depth 2 (133) | 101 | 113 | 69 | 107 | 82 | 110 |
+
+These probes all use constant leaves. With linear leaves the two-level loss is close to zero for many cuts on either variable, and one probe (a slope in `a` that changes sign with `b`) shows native splitting `b` near zero at depths 1 and 2, as a single split would, where the grid two-level search splits `a`. The change is therefore limited to constant leaves; other node models keep the previous rule.
+
+Eight captures (`ls-pair-last-level`, `ls-pair-depth-2`, `class-pair-last-level`, `class-pair-depth-2`, both versions) bring the corpus to **580 captures across 290 cases**. The first three fail under reference16; all pre-existing interaction captures are unchanged.
+
 ## Weights and priors in selection tests, 2026-10-25
 
 The audit asked whether native contingency tables count rows or weights, and whether class priors enter them. Rust counts rows, uses weights only through the fitted node model (and so the residual signs), and leaves priors out.
