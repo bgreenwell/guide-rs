@@ -63,4 +63,10 @@ Black-box probes with both pinned executables (multiple-linear SSE with a fit-on
 
   No standard heapsort, Shell sort or insertion sort variant reproduces this sequence. Rust keeps its documented lowest-index tie-break. Exact ties of this kind need constructed data and are not expected in practice; this table is an unfrozen probe observation, not an acceptance fixture.
 
-The constant-node findings are frozen as twelve captures in the core corpus (see [reference provenance](reference-upstream.md#zero-gain-splits-and-same-class-leaf-merging-2026-10-25)). A depth-2 classification design with priors 0.3/0.7 keeps three native leaves but two Rust leaves; that difference predates this change and is tracked separately in the coverage checklist.
+The constant-node findings are frozen as twelve captures in the core corpus (see [reference provenance](reference-upstream.md#zero-gain-splits-and-same-class-leaf-merging-2026-10-25)). A depth-2 classification design with priors 0.3/0.7 kept three native leaves but two Rust leaves; the [follow-up below](#classification-splits-that-raise-impurity-2026-10-25) resolves it.
+
+## Classification splits that raise impurity, 2026-10-25
+
+In that design, the node A > 0.5 holds 62 rows of class a and 18 of class b. Its best split on B gives children with prior-adjusted posteriors (0.508, 0.492) and (0.075, 0.925), which predict different classes, but their count-weighted Gini (25.56) exceeds the parent's (21.24). Rust rejected the split for raising impurity; native keeps it. Native classification with no gain threshold therefore splits the selected variable whenever an admissible split exists, and same-class merging alone decides what survives. Without priors or costs, count-weighted Gini cannot rise, so only prior- and cost-adjusted trees change.
+
+Across 60 random two-predictor depth-2 designs with priors 0.3/0.7, 0.6/0.4, 0.15/0.85 or costs (1, 3), the previous rule matched native leaf counts in 58; the new rule matches all 60. Three of the designs are frozen as six captures (`class-impurity-increase-*`), all of which fail on the previous revision.
