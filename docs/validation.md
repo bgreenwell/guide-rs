@@ -2,6 +2,10 @@
 
 Local environment: Apple Silicon macOS, Rust 1.99.1. The runtime implementation is pure Rust; R is used only as an independent test oracle. GitHub Actions runs the ordinary suite on Linux, macOS and Windows plus the independent R job; all passed from a clean checkout on 2026-10-25. R prediction-function export was excluded from product scope on 2026-10-24 and removed from the code on 2026-10-25. Historical export checks below remain a record of earlier work; independent R numerical/statistical validation remains in scope.
 
+## Classification splits that raise impurity, 2026-10-25
+
+New fits record **`guide-rs-0.1-experimental-reference13`**; saved format remains 1. With `min_gain = 0`, classification no longer rejects a split of the selected variable whose count-weighted Gini rises, which priors or costs can cause; this resolves the depth-2 priors difference. Six new captures bring the corpus to **562 captures across 281 cases**; see [selection validation](selection-validation.md#classification-splits-that-raise-impurity-2026-10-25).
+
 ## High-cardinality multiclass categorical splits, 2026-10-25
 
 Multiclass trees no longer reject categorical predictors with more than 11 levels. They search cuts on the first two discriminant coordinates, as GUIDE does; fits that were previously accepted are unchanged, so the algorithm revision stays `reference12`. Twelve new captures bring the corpus to **556 captures across 278 cases**; see [reference provenance](reference-upstream.md#high-cardinality-multiclass-categorical-splits-2026-10-25). The prespecified selection bias study now passes all seven configurations and runs in CI.

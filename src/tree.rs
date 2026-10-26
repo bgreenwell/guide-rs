@@ -915,11 +915,14 @@ pub(crate) fn grow(
     });
     // GUIDE splits on the selected variable even when the best admissible
     // split leaves the loss unchanged, so `min_gain = 0` accepts zero gain
-    // (up to roundoff). A positive `min_gain` remains a strict threshold.
+    // (up to roundoff). For classification it does not check the gain at all:
+    // with priors or costs, count-weighted Gini can rise at a split whose
+    // children predict different classes, and GUIDE keeps it; same-class
+    // merging decides what survives. A positive `min_gain` remains strict.
     if let Some((mut split, left, right, score)) = best
         && (impurity - score > ctx.options.min_gain * ctx.root_weight
             || ((ctx.options.min_gain == 0.0 || mode == SelectionMode::Importance)
-                && stats::less_or_close(score, impurity)))
+                && (ctx.classifying() || stats::less_or_close(score, impurity))))
     {
         // Numeric cuts default to the right when missingness was not observed,
         // as confirmed by GUIDE 46.2/46.3 reference fixtures. Categorical cuts

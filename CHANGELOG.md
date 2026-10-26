@@ -32,6 +32,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 - Categorical splits put the side with fewer categories on the left, matching GUIDE; unseen categories may reach a different leaf than before
 - Classification trees merge sibling leaves that predict the same class, matching GUIDE
 - `min_gain = 0` accepts zero-gain splits on the selected variable, matching GUIDE
+- With `min_gain = 0`, classification keeps splits that raise prior- or cost-adjusted impurity, matching GUIDE
 - CSV parse errors report the line number and column name
 - File I/O errors name the file that could not be read or written
 
