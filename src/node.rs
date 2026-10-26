@@ -318,8 +318,9 @@ impl<'a> Context<'a> {
         // Thresholds count declared numeric columns and global categorical
         // dummies, not effective rank. Only numeric missing flags change the
         // threshold formula; categorical missingness is an ordinary level.
+        let quantile = matches!(loss, Loss::Quantile { .. });
         let linear_min_samples = if options.node_model == NodeModel::Linear
-            && loss == Loss::SquaredError
+            && (loss == Loss::SquaredError || quantile)
             && fitting.iter().all(|(_, f)| {
                 matches!(
                     f.feature_type,
@@ -343,11 +344,22 @@ impl<'a> Context<'a> {
                         && data.rows.iter().any(|r| r[*j].is_missing())
                 })
                 .count();
-            Some(if flags == 0 {
-                p.saturating_add(7)
+            let numeric = fitting
+                .iter()
+                .all(|(_, f)| matches!(f.feature_type, FeatureType::Numeric));
+            if !quantile {
+                Some(if flags == 0 {
+                    p.saturating_add(7)
+                } else {
+                    p.saturating_add(flags).saturating_add(3)
+                })
+            } else if flags == 0 && numeric {
+                // Native quantile leaves fit a linear model from p + 4 rows,
+                // probed with complete numeric regressors only.
+                Some(p.saturating_add(4))
             } else {
-                p.saturating_add(flags).saturating_add(3)
-            })
+                None
+            }
         } else {
             None
         };

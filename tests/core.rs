@@ -833,9 +833,13 @@ fn rejects_inconsistent_saved_roles_domains_and_node_ids() {
 
 #[test]
 fn quantile_numerical_fallback_is_reported() {
-    let mut d = data(vec![vec![0.0], vec![1.0], vec![2.0]], vec![2.0, 4.0, 8.0]);
+    // Five rows: quantile leaves fit linear models from p + 4 rows.
+    let mut d = data(
+        (0..5).map(|i| vec![f64::from(i)]).collect(),
+        vec![2.0, 4.0, 8.0, 16.0, 32.0],
+    );
     d.schema[0].role = Role::Both;
-    d.weights = vec![1.0, 1e-310, 1e-310];
+    d.weights = vec![1.0, 1e-310, 1e-310, 1e-310, 1e-310];
     let o = FitOptions {
         task: Task::Regression {
             loss: Loss::Quantile { probability: 0.5 },
@@ -860,7 +864,7 @@ fn quantile_numerical_fallback_is_reported() {
             .count(),
         1
     );
-    assert_eq!(values(m.predict(&d.rows).unwrap()), vec![2.0; 3]);
+    assert_eq!(values(m.predict(&d.rows).unwrap()), vec![2.0; 5]);
 }
 #[test]
 fn all_missing_and_constant_predictors_give_valid_root() {
@@ -1018,4 +1022,36 @@ fn pruning_loss_is_validated() {
     };
     let error = FittedModel::fit(&labels, &costs).unwrap_err().to_string();
     assert!(error.contains("ignore class costs"), "{error}");
+}
+#[test]
+fn quantile_linear_leaves_need_p_plus_four_rows() {
+    // GUIDE 46.3 fits a linear quantile leaf from p + 4 rows (complete
+    // numeric regressors) and a constant below that.
+    for p in 1..=2 {
+        for n in [p + 3, p + 4] {
+            let x: Vec<Vec<f64>> = (0..n)
+                .map(|i| {
+                    (0..p)
+                        .map(|k| ((i * (k + 3)) % 7) as f64 + i as f64)
+                        .collect()
+                })
+                .collect();
+            let y = (0..n).map(|i| 1.0 + 2.0 * i as f64).collect();
+            let mut d = data(x, y);
+            for f in &mut d.schema {
+                f.role = Role::Both;
+            }
+            let o = FitOptions {
+                task: Task::Regression {
+                    loss: Loss::Quantile { probability: 0.5 },
+                },
+                node_model: NodeModel::Linear,
+                max_depth: 0,
+                ..options()
+            };
+            let m = FittedModel::fit(&d, &o).unwrap();
+            let linear = matches!(m.trees[0].root.model, LeafModel::Linear { .. });
+            assert_eq!(linear, n == p + 4, "p = {p}, n = {n}");
+        }
+    }
 }
