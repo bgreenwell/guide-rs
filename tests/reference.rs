@@ -56,6 +56,11 @@ fn compare_node(
         match &node.model {
             LeafModel::Constant { value } => {
                 actual.insert("Constant".to_owned(), *value);
+                // GUIDE reports the slopes of a leaf too small for a linear
+                // fit as aliased, written as zero in the coefficient file.
+                for name in expected.keys().filter(|name| *name != "Constant") {
+                    actual.insert(name.clone(), 0.0);
+                }
             }
             LeafModel::Linear {
                 intercept,
@@ -683,6 +688,33 @@ fn guide_46x_multilevel_multiple_linear_growth_and_pruning() {
         }
     }
     assert!(differences.is_empty(), "{}", differences.join("\n"));
+}
+
+#[test]
+fn guide_46x_multiple_linear_small_children() {
+    // Minimum node size 2: split search scores a child as linear from p + 5
+    // rows, leaves are linear from p + 3, and linear trees keep the best
+    // admissible split whatever its gain.
+    let base = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/linear-tree");
+    for version in ["46.3", "46.2"] {
+        let paths: Vec<_> = fs::read_dir(base.join(format!("guide-{version}")))
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+            .filter(|path| {
+                path.file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .starts_with("linear-small-children-")
+            })
+            .collect();
+        assert_eq!(paths.len(), 4);
+        for path in paths {
+            if let Err(error) = compare_core_case(&path) {
+                panic!("{}: {error}", path.display());
+            }
+        }
+    }
 }
 
 #[test]
