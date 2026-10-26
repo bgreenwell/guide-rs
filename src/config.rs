@@ -76,6 +76,38 @@ pub enum NodeModel {
     },
 }
 
+/// Held-out loss of classification trees: it chooses the cross-validation or
+/// validation subtree and measures forests' out-of-bag loss. GUIDE uses
+/// misclassification cost; the proper scoring rules are guide-rs extensions.
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum PruningLoss {
+    #[default]
+    Misclassification,
+    /// Negative log probability of the observed class.
+    LogLoss,
+    /// Squared error of the class probability vector, summed over classes.
+    Brier,
+}
+impl PruningLoss {
+    pub fn is_default(&self) -> bool {
+        *self == Self::Misclassification
+    }
+    /// The loss of predicting `probabilities` for an observation of class
+    /// `y`, given the misclassification `cost` of the predicted class.
+    pub fn loss(&self, probabilities: &[f64], y: usize, cost: f64) -> f64 {
+        match self {
+            Self::Misclassification => cost,
+            Self::LogLoss => -probabilities[y].ln(),
+            Self::Brier => probabilities
+                .iter()
+                .enumerate()
+                .map(|(k, p)| (p - f64::from(u8::from(k == y))).powi(2))
+                .sum(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Pruning {
@@ -113,6 +145,9 @@ pub struct FitOptions {
     /// Zero evaluates all candidate cutpoints; otherwise at least two.
     pub max_split_candidates: usize,
     pub pruning: Pruning,
+    /// Held-out loss for classification pruning and out-of-bag loss.
+    #[serde(default, skip_serializing_if = "PruningLoss::is_default")]
+    pub pruning_loss: PruningLoss,
     pub seed: u64,
     /// Probabilities in lexicographic class-label order. None estimates priors.
     pub class_priors: Option<Vec<f64>>,
@@ -135,6 +170,7 @@ impl Default for FitOptions {
             significance_level: 0.10,
             max_split_candidates: 100,
             pruning: Pruning::default(),
+            pruning_loss: PruningLoss::Misclassification,
             seed: 0,
             class_priors: None,
             class_costs: None,
@@ -175,6 +211,16 @@ impl FitOptions {
             return Err(invalid(
                 "class costs must be finite, nonnegative, square, and have zero diagonal",
             ));
+        }
+        if !self.pruning_loss.is_default() {
+            if self.task != Task::Classification {
+                return Err(invalid("pruning_loss applies only to classification"));
+            }
+            if self.class_costs.is_some() {
+                return Err(invalid(
+                    "pruning_loss log_loss and brier ignore class costs; use misclassification",
+                ));
+            }
         }
         if self.max_depth > 64 {
             return Err(invalid("max_depth must be at most 64"));

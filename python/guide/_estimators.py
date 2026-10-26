@@ -364,7 +364,8 @@ class _Forest(_Guide):
 
     @property
     def oob_loss_(self):
-        """Mean out-of-bag loss (cost for classifiers), or None if no row is out of bag."""
+        """Mean out-of-bag loss, or None if no row is out of bag. For classifiers it
+        is the ``pruning_loss`` (misclassification cost by default)."""
         check_is_fitted(self)
         return self.fit_report_["out_of_bag_loss"]
 
@@ -449,6 +450,8 @@ class _Classification(_Guide):
             raise ValueError("class labels must have distinct string forms")
         options = self._options({"kind": "classification"}, {"kind": "constant"})
         options["linear_splits"] = self.linear_splits
+        if self.pruning_loss != "misclassification":
+            options["pruning_loss"] = self.pruning_loss
         weights = _weights(sample_weight, len(y))
         # The core orders classes by label string and drops classes with no
         # positive-weight sample; priors and costs follow that order.
@@ -644,6 +647,14 @@ class GuideClassifier(ClassifierMixin, _SingleTree, _Classification):
     class_costs : array-like of shape (n_classes, n_classes), default=None
         ``class_costs[i][j]`` is the cost of predicting class ``j`` for a
         sample of class ``i``, in the order of ``classes_``.
+    pruning_loss : {"misclassification", "log_loss", "brier"}, default="misclassification"
+        Held-out loss that chooses the tree size in cross-validation and
+        validation pruning (along GUIDE's cost-complexity sequence), and
+        that forests report as ``oob_loss_``. GUIDE uses misclassification
+        cost; log loss and the Brier score are proper scoring rules that
+        judge the predicted probabilities and are usually the better choice.
+        They are guide-rs extensions and cannot be combined with
+        ``class_costs``.
 
     The remaining parameters are those of :class:`GuideRegressor` that apply
     to classification; ``feature_roles`` accepts ``"split"`` and
@@ -668,6 +679,7 @@ class GuideClassifier(ClassifierMixin, _SingleTree, _Classification):
         max_leaves=None,
         class_priors=None,
         class_costs=None,
+        pruning_loss="misclassification",
         categorical_features=None,
         feature_roles=None,
         periodic_features=None,
@@ -689,6 +701,7 @@ class GuideClassifier(ClassifierMixin, _SingleTree, _Classification):
         self.max_leaves = max_leaves
         self.class_priors = class_priors
         self.class_costs = class_costs
+        self.pruning_loss = pruning_loss
         self.categorical_features = categorical_features
         self.feature_roles = feature_roles
         self.periodic_features = periodic_features
@@ -816,6 +829,7 @@ class GuideForestClassifier(ClassifierMixin, _Forest, _Classification):
         max_leaves=None,
         class_priors=None,
         class_costs=None,
+        pruning_loss="misclassification",
         categorical_features=None,
         feature_roles=None,
         periodic_features=None,
@@ -841,6 +855,7 @@ class GuideForestClassifier(ClassifierMixin, _Forest, _Classification):
         self.max_leaves = max_leaves
         self.class_priors = class_priors
         self.class_costs = class_costs
+        self.pruning_loss = pruning_loss
         self.categorical_features = categorical_features
         self.feature_roles = feature_roles
         self.periodic_features = periodic_features

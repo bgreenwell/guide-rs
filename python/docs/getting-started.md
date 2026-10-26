@@ -35,6 +35,8 @@ The estimators follow the scikit-learn API, so they work in pipelines, `clone`, 
 
 Single trees are pruned by 10-fold cross-validation by default. `pruning` also accepts cost complexity, a fixed leaf count, a validation sample passed to `fit` as `validation_data`, or none.
 
+Like GUIDE, classifiers choose the tree size by held-out misclassification cost. `pruning_loss="log_loss"` or `"brier"` uses a proper scoring rule instead, which judges the predicted probabilities rather than only the predicted class; forests then report that loss as `oob_loss_`.
+
 Cross-validation folds, forest trees and importance permutations run in parallel. `n_jobs` sets the number of threads; unlike most scikit-learn estimators, its default of None uses all cores. Results are the same for any thread count.
 
 ## Importance scores
