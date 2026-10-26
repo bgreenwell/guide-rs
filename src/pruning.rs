@@ -418,7 +418,8 @@ fn row_loss(ctx: &Context<'_>, leaf: &LeafModel, data: &Dataset, i: usize) -> Re
     // Callers pass only active rows, whose responses are observed and typed
     // by the validated task, so the response accessors below cannot fail.
     let loss = if let LeafModel::Classification {
-        predicted_class, ..
+        predicted_class,
+        probabilities,
     } = leaf
     {
         let label = data.targets[i].label().unwrap();
@@ -426,7 +427,16 @@ fn row_loss(ctx: &Context<'_>, leaf: &LeafModel, data: &Dataset, i: usize) -> Re
             .classes
             .binary_search(&label)
             .map_err(|_| invalid(format!("unknown validation class {label}")))?;
-        ctx.costs[y][*predicted_class]
+        let cost = ctx.costs[y][*predicted_class];
+        if ctx.options.pruning_loss.is_default() {
+            cost
+        } else {
+            // Leaves of trees still being pruned hold raw probabilities;
+            // score the corrected ones a fitted tree would predict.
+            let mut probabilities = probabilities.clone();
+            ctx.correct_zero_posteriors(&mut probabilities);
+            ctx.options.pruning_loss.loss(&probabilities, y, cost)
+        }
     } else {
         leaf.regression_loss(
             &data.rows[i],

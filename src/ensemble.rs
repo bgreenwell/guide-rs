@@ -183,7 +183,8 @@ impl FittedModel {
                         cost(a).total_cmp(&cost(b)).then(a.cmp(&b))
                     })
                     .unwrap();
-                global.costs[global.y[i] as usize][best]
+                let y = global.y[i] as usize;
+                opts.pruning_loss.loss(&p, y, global.costs[y][best])
             } else if let Loss::DualQuantile { lower, upper } = global.loss {
                 let mut lo = 0.0;
                 let mut hi = 0.0;

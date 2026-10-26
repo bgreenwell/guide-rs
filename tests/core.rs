@@ -911,3 +911,111 @@ fn csv_quotes_multiline_and_schema_roundtrip() {
         1
     );
 }
+
+fn classes(x: Vec<Vec<f64>>, labels: Vec<&str>) -> Dataset {
+    let mut d = data(x, vec![0.0; labels.len()]);
+    d.targets = labels.into_iter().map(|l| Value::Text(l.into())).collect();
+    d
+}
+#[test]
+fn proper_scoring_rules_choose_pruned_classification_trees() {
+    let n = 240;
+    // A noisy two-class signal on x0 with a weaker interaction on x1.
+    let x: Vec<Vec<f64>> = (0..n)
+        .map(|i| vec![(i * 37 % n) as f64, (i * 11 % 13) as f64])
+        .collect();
+    let labels: Vec<&str> = x
+        .iter()
+        .enumerate()
+        .map(|(i, r)| {
+            let signal = r[0] > 120.0 || (r[1] > 8.0 && r[0] > 60.0);
+            if signal != (i % 7 == 0) { "a" } else { "b" }
+        })
+        .collect();
+    let d = classes(x, labels);
+    let fit = |loss| {
+        FittedModel::fit(
+            &d,
+            &FitOptions {
+                task: Task::Classification,
+                pruning: Pruning::CrossValidation {
+                    folds: 5,
+                    standard_errors: 0.0,
+                },
+                pruning_loss: loss,
+                ..Default::default()
+            },
+        )
+        .unwrap()
+    };
+    let cost = fit(PruningLoss::Misclassification);
+    let log = fit(PruningLoss::LogLoss);
+    let brier = fit(PruningLoss::Brier);
+    // The default is not serialized, so existing saved models are unchanged.
+    assert!(!cost.to_json().unwrap().contains("pruning_loss"));
+    assert!(
+        log.to_json()
+            .unwrap()
+            .contains("\"pruning_loss\": \"log_loss\"")
+    );
+    for model in [&cost, &log, &brier] {
+        let scores = &model.report.pruning_scores;
+        assert!(scores.len() > 2 && scores.iter().all(|s| s.mean_loss.is_finite()));
+    }
+    // Each criterion reports its own held-out loss on the same pruning sequence.
+    let alphas = |m: &FittedModel| {
+        m.report
+            .pruning_scores
+            .iter()
+            .map(|s| s.alpha)
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(alphas(&cost), alphas(&log));
+    let first = |m: &FittedModel| m.report.pruning_scores[0].mean_loss;
+    assert!(first(&cost) < 1.0 && first(&brier) < 2.0 && first(&log) > first(&brier) / 2.0);
+    let restored = FittedModel::from_json(&log.to_json().unwrap()).unwrap();
+    assert_eq!(restored.options.pruning_loss, PruningLoss::LogLoss);
+    // Forests report out-of-bag log loss.
+    let forest = FittedModel::fit_ensemble(
+        &d,
+        &FitOptions {
+            task: Task::Classification,
+            pruning: Pruning::None,
+            pruning_loss: PruningLoss::LogLoss,
+            ..Default::default()
+        },
+        &EnsembleOptions {
+            trees: 20,
+            kind: EnsembleKind::Forest,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let oob = forest.report.out_of_bag_loss.unwrap();
+    assert!(oob.is_finite() && oob > 0.0 && oob < 2.0_f64.ln() + 0.2);
+}
+#[test]
+fn pruning_loss_is_validated() {
+    let d = data(
+        (0..20).map(|i| vec![i as f64]).collect(),
+        (0..20).map(f64::from).collect(),
+    );
+    let regression = FitOptions {
+        pruning_loss: PruningLoss::Brier,
+        ..options()
+    };
+    let error = FittedModel::fit(&d, &regression).unwrap_err().to_string();
+    assert!(error.contains("only to classification"), "{error}");
+    let labels = classes(
+        (0..20).map(|i| vec![i as f64]).collect(),
+        (0..20).map(|i| if i < 10 { "a" } else { "b" }).collect(),
+    );
+    let costs = FitOptions {
+        task: Task::Classification,
+        class_costs: Some(vec![vec![0.0, 1.0], vec![2.0, 0.0]]),
+        pruning_loss: PruningLoss::LogLoss,
+        ..options()
+    };
+    let error = FittedModel::fit(&labels, &costs).unwrap_err().to_string();
+    assert!(error.contains("ignore class costs"), "{error}");
+}

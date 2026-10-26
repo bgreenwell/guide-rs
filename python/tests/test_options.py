@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from guide import GuideClassifier, GuideForestRegressor, GuideRegressor
+from guide import GuideClassifier, GuideForestClassifier, GuideForestRegressor, GuideRegressor
 from guide._core import Model
 
 
@@ -126,3 +126,25 @@ def test_prediction_truncation_bounds_linear_leaves():
     assert bounded.predict(far)[0] == pytest.approx(y.max())
     with pytest.raises(ValueError, match="prediction_truncation|unknown variant"):
         GuideRegressor(node_model="linear", prediction_truncation="clip").fit(X, y)
+
+
+def test_pruning_loss_uses_proper_scoring_rules():
+    rng = np.random.default_rng(5)
+    X = pd.DataFrame({"a": rng.uniform(0, 1, 400), "b": rng.uniform(0, 1, 400)})
+    y = np.where(rng.random(400) < np.where(X["a"] > 0.5, 0.85, 0.25), "yes", "no")
+    for loss in ("log_loss", "brier"):
+        model = GuideClassifier(pruning_loss=loss).fit(X, y)
+        saved = json.loads(model.to_json())
+        assert saved["options"]["pruning_loss"] == loss
+        assert all(np.isfinite(s["mean_loss"]) for s in model.fit_report_["pruning_scores"])
+        core = core_fit(saved["schema"], [X[c].tolist() for c in X.columns], y.tolist(),
+                        saved["options"])
+        assert core == saved
+    default = json.loads(GuideClassifier().fit(X, y).to_json())
+    assert "pruning_loss" not in default["options"]
+    forest = GuideForestClassifier(n_estimators=20, pruning_loss="log_loss").fit(X, y)
+    assert 0 < forest.oob_loss_ < 1
+    with pytest.raises(ValueError, match="ignore class costs"):
+        GuideClassifier(pruning_loss="brier", class_costs=[[0, 1], [2, 0]]).fit(X, y)
+    with pytest.raises(ValueError, match="unknown variant"):
+        GuideClassifier(pruning_loss="hinge").fit(X, y)

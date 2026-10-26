@@ -969,19 +969,24 @@ impl<'a> Context<'a> {
     /// Apply GUIDE's zero-posterior correction after growth and pruning.
     /// Keeping raw probabilities during search preserves pure-node stopping.
     pub fn finalize_probabilities(&self, node: &mut crate::Node) {
-        if let LeafModel::Classification { probabilities, .. } = &mut node.model
-            && probabilities.contains(&0.0)
-        {
-            let n = self.root_samples as f64;
-            for (p, prior) in probabilities.iter_mut().zip(&self.class_priors) {
-                *p = (n * *p + prior) / (n + 1.0);
-            }
+        if let LeafModel::Classification { probabilities, .. } = &mut node.model {
+            self.correct_zero_posteriors(probabilities);
         }
         if let Some(left) = &mut node.left {
             self.finalize_probabilities(left);
         }
         if let Some(right) = &mut node.right {
             self.finalize_probabilities(right);
+        }
+    }
+    /// GUIDE's zero-posterior correction: if any class has probability 0,
+    /// shrink all probabilities toward the priors by one pseudo-observation.
+    pub fn correct_zero_posteriors(&self, probabilities: &mut [f64]) {
+        if probabilities.contains(&0.0) {
+            let n = self.root_samples as f64;
+            for (p, prior) in probabilities.iter_mut().zip(&self.class_priors) {
+                *p = (n * *p + prior) / (n + 1.0);
+            }
         }
     }
 }

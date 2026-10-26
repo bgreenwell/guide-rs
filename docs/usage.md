@@ -55,6 +55,7 @@ Stepwise leaves are an experimental, opt-in compatibility option with known nati
 
 - **Poisson:** `data.offset` names a positive exposure, not its logarithm. Models fitted with exposures require them again at prediction time.
 - **Classification:** positive observation weights are treated as 1, as GUIDE does; priors and misclassification costs are separate options. Cost matrices are indexed `[true_class][predicted_class]`, in sorted class-label order.
+- **Pruning loss:** cross-validation and validation pruning of classification trees choose the subtree on the cost-complexity sequence by held-out misclassification cost, as GUIDE does. `fit.pruning_loss` can instead be `"log_loss"` or `"brier"` (summed over classes), proper scoring rules that judge the predicted probabilities; forests then report the same loss out of bag. These are guide-rs extensions and cannot be combined with class costs. Held-out probabilities include GUIDE's zero-posterior correction, so log loss stays finite.
 - **Quantile regression:** supports constant, linear and simple polynomial node models. Set `fit.task.loss` to `{"kind": "quantile", "probability": 0.5}` for conditional medians and `fit.node_model` to `{"kind": "linear"}` for linear nodes; see [the median-regression example](../examples/mtcars-quantile.json). The optimizer records convergence status in the model's report warnings. Simultaneous lower/upper quantiles support constant nodes only.
 
 ## Ensembles and importance
