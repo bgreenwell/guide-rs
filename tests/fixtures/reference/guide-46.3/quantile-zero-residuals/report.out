@@ -1,0 +1,167 @@
+             GGG   U   U  I  DDDD   EEEE
+            G   G  U   U  I  D   D  E
+            G      U   U  I  D   D  E
+            G  GG  U   U  I  D   D  EEE
+            G   G  U   U  I  D   D  E
+            G   G  U   U  I  D   D  E
+             GGG    UUU   I  DDDD   EEEE
+   
+ GUIDE Classification and Regression Trees and Forests
+ Version 46.3 (Build date: July 11, 2026)          
+ Compiled with NAG Fortran 7.2 on macOS Tahoe 26.4.1 for Apple ARM processors    
+ Copyright (c) 1997-2023 Wei-Yin Loh. All rights reserved.
+ This software is based upon work partially supported by the U.S. Army Research Office,
+ National Science Foundation, National Institutes of Health,
+ Bureau of Labor Statistics, USDA Economic Research Service, and Eli Lilly.
+  
+ This job was started on 10/26/26 at 12:50
+  
+ Quantile regression tree with quantile probability 0.5000
+ No pruning
+ DSC file: data.dsc
+ Training sample file: data.txt
+ Missing value code: NA
+ Records in data file start on line 2
+ D variable is y
+ Piecewise constant model
+ Number of records in data file: 120
+ Length of longest entry in data file: 7
+  
+ Summary information for training sample of size 120
+ d=dependent, b=split and fit cat variable using indicator variables,
+ c=split-only categorical, i=fit-only categorical (via indicators),
+ s=split-only numerical, n=split and fit numerical, f=fit-only numerical,
+ m=missing-value flag variable, p=periodic variable, w=weight
+                                                  #Codes/           
+                                                  Levels/           
+  Column  Name            Minimum      Maximum    Periods   #Missing
+       1  a          s   0.4700E-02   0.9879    
+       2  b          s   0.1900E-02   0.9934    
+       3  y          d   -5.412        6.485    
+  
+ Numbers of N, F, S, and P below exclude constant variables
+      Total  #cases w/   #missing
+     #cases    miss. D  ord. vals   #X-var   #N-var   #F-var   #S-var
+        120          0          0        0        0        0        2
+     #P-var   #M-var   #B-var   #C-var   #I-var
+          0        0        0        0        0
+ Number of cases used for training: 120
+  
+ Nodewise interaction tests on all variables
+ Split values for N and S variables based on exhaustive search
+ Maximum number of interaction splits: 100
+ Maximum number of split levels: 3
+ Minimum node sample size: 2
+ Ranks of variables and their 1-df chi-squared values at root node
+      1  0.1366E+02   a
+      2  0.1273E+00   b
+
+  
+ Structure of final tree. Each terminal node is marked with a T.
+  
+ D-quant is quantile of y in the node
+ Cases fit give the number of cases used to fit node
+        Node    Total    Cases Matrix    Node    Split          Other
+        label   cases      fit  rank    D-quant  variable       variables
+           1      120      120     1  1.834E+00  a 
+           2       53       53     1  3.250E-01  a 
+           4T       3        3     1 -1.796E+00  - 
+           5       50       50     1  4.567E-01  a 
+          10T      44       44     1  3.075E-01  b 
+          11T       6        6     1  1.316E+00  a 
+           3       67       67     1  2.330E+00  a 
+           6       37       37     1  2.682E+00  a 
+          12T      23       23     1  2.487E+00  b 
+          13T      14       14     1  3.670E+00  a 
+           7       30       30     1  1.881E+00  a 
+          14T      24       24     1  1.852E+00  b :a
+          15T       6        6     1  3.682E+00  a 
+  
+ Number of terminal nodes of final tree: 7
+ Total number of nodes of final tree: 13
+ Second best split variable (based on curvature test) at root node is b
+  
+ Regression tree:
+  
+ Node 1: a <= 0.48490000
+   Node 2: a <= 0.20500000E-01
+     Node 4: y sample quantile = -1.7957000
+   Node 2: a > 0.20500000E-01 or NA
+     Node 5: a <= 0.45315000
+       Node 10: y sample quantile = 0.30755000
+     Node 5: a > 0.45315000 or NA
+       Node 11: y sample quantile = 1.3157500
+ Node 1: a > 0.48490000 or NA
+   Node 3: a <= 0.78790000
+     Node 6: a <= 0.66005000
+       Node 12: y sample quantile = 2.4871000
+     Node 6: a > 0.66005000 or NA
+       Node 13: y sample quantile = 3.6697000
+   Node 3: a > 0.78790000 or NA
+     Node 7: a <= 0.94320000
+       Node 14: y sample quantile = 1.8515500
+     Node 7: a > 0.94320000 or NA
+       Node 15: y sample quantile = 3.6820000
+ 
+ ***************************************************************
+  
+ WARNING: p-values below not adjusted for split search. For a bootstrap solution see:
+  
+ 1. Loh et al. (2016), "Identification of subgroups with differential treatment effects
+ for longitudinal and multiresponse variables", Statistics in Medicine, v.35, 4837-4855.
+  
+ 2. Loh et al. (2019), "Subgroups from regression trees with adjustment for prognostic
+ effects and post-selection inference", Statistics in Medicine, v.38, 545-557.
+  
+ 3. Loh and Zhou (2020), "The GUIDE approach to subgroup identification",
+ in "Design and Analysis of Subgroups with Biopharmaceutical Applications", Springer, pp.147-165.
+  
+Node 1: Intermediate node
+ A case goes into Node 2 if a <= 0.48490000
+ a mean = 0.53178833
+ Predicted quantile = 1.83360
+ ----------------------------
+Node 2: Intermediate node
+ A case goes into Node 4 if a <= 0.20500000E-01
+ a mean = 0.25765283
+ ----------------------------
+Node 4: Terminal node
+ Predicted quantile = -1.79570
+ ----------------------------
+Node 5: Intermediate node
+ A case goes into Node 10 if a <= 0.45315000
+ a mean = 0.27250800
+ ----------------------------
+Node 10: Terminal node
+ Predicted quantile = 0.307550
+ ----------------------------
+Node 11: Terminal node
+ Predicted quantile = 1.31575
+ ----------------------------
+Node 3: Intermediate node
+ A case goes into Node 6 if a <= 0.78790000
+ a mean = 0.74864179
+ ----------------------------
+Node 6: Intermediate node
+ A case goes into Node 12 if a <= 0.66005000
+ a mean = 0.62169459
+ ----------------------------
+Node 12: Terminal node
+ Predicted quantile = 2.48710
+ ----------------------------
+Node 13: Terminal node
+ Predicted quantile = 3.66970
+ ----------------------------
+Node 7: Intermediate node
+ A case goes into Node 14 if a <= 0.94320000
+ a mean = 0.90521000
+ ----------------------------
+Node 14: Terminal node
+ Predicted quantile = 1.85155
+ ----------------------------
+Node 15: Terminal node
+ Predicted quantile = 3.68200
+ ----------------------------
+ Observed and fitted values are stored in predictions.txt
+ Split and fit variable names are stored in splits.txt
+ Elapsed time in seconds: 0.35900E-02

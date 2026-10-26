@@ -52,7 +52,7 @@ With native Poisson split points matched, the four baseline schedules (Nelson-Aa
 
 ## Next steps
 
-1. Identify the residuals PH selection tests use, from root chi-square values (one node, no schedule involved).
+1. Identify the residuals PH selection tests use, from root chi-square values (one node, no schedule involved). Native Poisson trees already group Anscombe residuals around their mean (history 34.2, matched in reference18), and the 22.9 against 25.0 comparison was native PH against native Poisson, so PH uses something else: martingale or deviance residuals, or Anscombe residuals of the PH fit itself, are the remaining candidates.
 2. Then determine the growth-time baseline schedule with designs where per-split and per-level updates disagree.
 3. Implement constant-node PH trees on the existing Poisson-with-exposure machinery: exposure `Λ0(t)`, response δ, then the joint re-estimation.
 4. Freeze captures that compare root chi-square ranks, splits, node constants and fit-file columns, with declared tolerances for the documented non-convergence.

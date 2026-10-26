@@ -1,10 +1,10 @@
 # GUIDE 46.3 coverage and remaining work
 
-Updated **2026-10-25**, through algorithm revision **`guide-rs-0.1-experimental-reference17`**.
+Updated **2026-10-25**, through algorithm revision **`guide-rs-0.1-experimental-reference18`**.
 
 **guide-rs is a working subset of GUIDE, not a full replacement.** Its strongest native validation is for constant classification/regression, multiple-linear squared-error trees, and pruning. Other implemented losses and ensembles have narrower independent checks. No complete subsystem is certified equivalent to every GUIDE option.
 
-The primary oracle is the pinned GUIDE **46.3** build of July 11, 2026; **46.2** is a secondary regression reference. Documentation comes from the **46.1** manual and history through 46.2. The fixed acceptance corpus contains **580 native captures across 290 distinct cases**, plus separately recorded diagnostics. See [reference provenance](reference-upstream.md) and [validation results](validation.md).
+The primary oracle is the pinned GUIDE **46.3** build of July 11, 2026; **46.2** is a secondary regression reference. Documentation comes from the **46.1** manual and history through 46.2. The fixed acceptance corpus contains **588 native captures across 294 distinct cases**, plus separately recorded diagnostics. See [reference provenance](reference-upstream.md) and [validation results](validation.md).
 
 A checked box below means the stated capability exists with tests. It does **not** certify full native parity. Unchecked boxes identify remaining work, including validation of existing implementations.
 
@@ -60,7 +60,7 @@ These are the next priorities before expanding into the missing specialized fami
 - [ ] Finish importance calibration/normalization, zero-null fallback conventions, 50% thresholds and missing-flag aggregation.
 - [ ] Missing-value flags (M variables) with linear/polynomial/stepwise node models via the documented M-to-B conversion, and on periodic parents. Constant-node flags for numeric and categorical parents are implemented and validated ([flag validation](missing-flag-validation.md)).
 - [ ] Validate GUIDE's polynomial degree selection, missing handling and model-specific fallback rules.
-- [ ] Validate native quantile/Poisson/logistic split selection, residual grouping, model selection and fitting-policy combinations. Poisson and quantile cut grids, Poisson positive-count children and the quantile definition now match native (reference15); deeper Poisson/quantile nodes still differ in some designs (110 of 139 and 125 of 153 nodes agree in random depth-1 and depth-3 probes at reference17). Native quantile cuts lie on the fixed grid with s = 2 at 152 of 153 nodes and minimize the summed check loss at 144; the other nodes are not explained by a larger minimum child size, a different grid, or interaction pairs (most differing nodes selected a single variable), and about half differ in the cut rather than the variable.
+- [ ] Validate native quantile/Poisson/logistic split selection, residual grouping, model selection and fitting-policy combinations. Poisson and quantile cut grids, Poisson positive-count children and the quantile definition now match native (reference15); Poisson Anscombe residual groups, quantile zero-residual groups and constant-response leaves now match GUIDE's history and probes (reference18); on 120 fresh random designs per model, with no gain threshold as in native, 360 of 427 Poisson and 378 of 456 quantile nodes agree, and 257 of 337 with integer quantile responses. Remaining Poisson differences are mostly cut choices in near-binary count data, which no tested criterion (total or mean deviance, minimum child size) explains.
 - [ ] Validate periodic association rotation invariance and missing/unknown routing.
 - [ ] Validate random multifold CV, native test-sample pruning, broader model-based pruning and prediction-limit combinations.
 - [ ] Explain the additional categorical CV-table discrepancy while preserving independently verified CV. Its output, direct native refits and independent values are already frozen and tested.

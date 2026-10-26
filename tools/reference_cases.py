@@ -211,10 +211,38 @@ def glm_cases():
     add("quantile-cut-grid", rows,
         [round((2 if r[0] > 0.5 else 0) + rng.gauss(0, 1), 4) for r in rows], median)
     pairs = [[round(rng.random(), 4), round(rng.random(), 4)] for _ in range(150)]
+    add("poisson-constant-response", [[i + 1, (i * 7) % 11] for i in range(40)], [1] * 40,
+        poisson, depth=2, features=[("a", "numeric"), ("b", "numeric")])
+    for name, loss, seed, integer in GLM_TREE_CASES:
+        rows, targets = glm_tree_design(seed, loss, integer)
+        add(name, rows, targets, poisson if loss == "poisson" else median, depth=3,
+            features=[("a", "numeric"), ("b", "numeric")])
     add("quantile-depth-2", pairs,
         [round((2 if a > 0.5 else 0) + (1 if b > 0.3 else 0) + rng.gauss(0, 1), 4)
          for a, b in pairs], median, depth=2, features=[("a", "numeric"), ("b", "numeric")])
     return result
+
+
+def glm_tree_design(seed, loss, integer=False):
+    """Two uniform predictors with additive step effects: Poisson counts, or a
+    median-regression response, optionally rounded to integers."""
+    rng = random.Random(seed)
+    rows, targets = [], []
+    for _ in range(120):
+        a, b = round(rng.random(), 4), round(rng.random(), 4)
+        if loss == "poisson":
+            rate = math.exp(0.2 + (1.0 if a > 0.5 else 0) + (0.6 if b > 0.3 else 0))
+            # Knuth's method keeps the draw reproducible across Python versions.
+            k, p, limit = 0, rng.random(), math.exp(-rate)
+            while p > limit:
+                k += 1
+                p *= rng.random()
+            targets.append(k)
+        else:
+            y = (2 if a > 0.5 else 0) + (1 if b > 0.3 else 0) + rng.gauss(0, 1.5)
+            targets.append(float(round(y)) if integer else round(y, 4))
+        rows.append([a, b])
+    return rows, targets
 
 
 def pair_design(seed, classification):
@@ -253,6 +281,14 @@ PAIR_CASES = [
     ("ls-pair-depth-2", False, 112, 2),
     ("class-pair-last-level", True, 119, 1),
     ("class-pair-depth-2", True, 104, 2),
+]
+
+
+# (name, loss, design seed, integer response); see glm_tree_design.
+GLM_TREE_CASES = [
+    ("poisson-anscombe-groups", "poisson", 343, False),
+    ("quantile-zero-residuals", "quantile", 112, False),
+    ("quantile-zero-residuals-integer", "quantile", 104, True),
 ]
 
 

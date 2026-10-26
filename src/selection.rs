@@ -178,7 +178,56 @@ pub(crate) fn select(
             }
         })
         .collect();
+    let labels = match (&ctx.loss, model) {
+        (crate::Loss::Poisson, _) => anscombe_groups(ctx, ids, model),
+        (crate::Loss::Quantile { .. }, LeafModel::Quantiles { .. }) => labels,
+        (crate::Loss::Quantile { .. }, _) => zero_residuals_to_smaller(ctx, ids, model, labels),
+        _ => labels,
+    };
     select_with_labels(ctx, ids, &labels, features, mode)
+}
+/// GUIDE 34.2 groups Poisson rows by whether their Anscombe residual,
+/// `1.5 (y^(2/3) - mu^(2/3)) / mu^(1/6)`, lies above the mean residual.
+fn anscombe_groups(ctx: &Context<'_>, ids: &[usize], model: &LeafModel) -> Vec<usize> {
+    let r: Vec<f64> = ids
+        .iter()
+        .map(|&i| {
+            let mu = model
+                .fitting_scalar(&ctx.data.rows[i], ctx.data.offset(i), &ctx.loss)
+                .max(f64::MIN_POSITIVE);
+            1.5 * (ctx.y[i].powf(2.0 / 3.0) - mu.powf(2.0 / 3.0)) / mu.powf(1.0 / 6.0)
+        })
+        .collect();
+    let mean = r.iter().sum::<f64>() / r.len().max(1) as f64;
+    r.iter().map(|&v| usize::from(v > mean)).collect()
+}
+/// GUIDE 28.1 puts quantile rows with zero residuals in the smaller of the
+/// positive and negative residual groups; probes show the positive group
+/// takes them when the two are equal.
+fn zero_residuals_to_smaller(
+    ctx: &Context<'_>,
+    ids: &[usize],
+    model: &LeafModel,
+    mut labels: Vec<usize>,
+) -> Vec<usize> {
+    let fitted: Vec<f64> = ids
+        .iter()
+        .map(|&i| model.fitting_scalar(&ctx.data.rows[i], ctx.data.offset(i), &ctx.loss))
+        .collect();
+    let zero: Vec<bool> = ids
+        .iter()
+        .zip(&fitted)
+        .map(|(&i, f)| ctx.y[i] == *f)
+        .collect();
+    let positive = labels.iter().filter(|&&l| l == 1).count();
+    let negative = labels.len() - positive - zero.iter().filter(|&&z| z).count();
+    let group = usize::from(positive <= negative);
+    for (label, z) in labels.iter_mut().zip(zero) {
+        if z {
+            *label = group;
+        }
+    }
+    labels
 }
 /// Variable selection from precomputed response groups, one per row of
 /// `ids`: class indices, residual signs or, for boosting, gradient signs.
