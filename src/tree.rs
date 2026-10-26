@@ -1183,10 +1183,23 @@ impl RegressionSweep {
     }
 }
 fn admissible(ctx: &Context<'_>, l: &[usize], r: &[usize]) -> bool {
+    // GUIDE's Poisson trees never leave a child without a positive count,
+    // whose log rate would be minus infinity.
+    let poisson = ctx.loss == Loss::Poisson;
+    let usable = |ids: &[usize]| {
+        ids.iter()
+            .any(|&i| ctx.weights[i] > 0.0 && (!poisson || ctx.y[i] > 0.0))
+    };
     l.len() >= ctx.options.min_samples_leaf
         && r.len() >= ctx.options.min_samples_leaf
-        && l.iter().any(|&i| ctx.weights[i] > 0.0)
-        && r.iter().any(|&i| ctx.weights[i] > 0.0)
+        && usable(l)
+        && usable(r)
+}
+/// Number of cut positions GUIDE evaluates for Poisson and quantile trees.
+const NATIVE_CUT_GRID: usize = 102;
+/// Whether numerical cuts follow GUIDE's fixed Poisson/quantile grid.
+fn native_cut_grid(ctx: &Context<'_>) -> bool {
+    matches!(ctx.loss, Loss::Poisson | Loss::Quantile { .. })
 }
 /// Splits `ids` into `left` and `right`, keeping their order.
 fn partition(
@@ -1692,15 +1705,39 @@ fn candidates_sorted(
             }
             let lower = values[minimum - 1];
             let upper = values[values.len() - minimum - 1];
-            values.dedup();
-            let cuts: Vec<f64> = values
-                .windows(2)
-                .map(|p| {
-                    let mid = p[0] / 2.0 + p[1] / 2.0;
-                    if mid >= p[1] { p[0] } else { mid }
-                })
-                .collect();
-            for threshold in reduce(cuts, ctx.options.max_split_candidates) {
+            let midpoint = |a: f64, b: f64| {
+                let mid = a / 2.0 + b / 2.0;
+                if mid >= b { a } else { mid }
+            };
+            let cuts: Vec<f64> = if native_cut_grid(ctx) {
+                // Poisson and quantile trees in GUIDE 46.3 cut after at most
+                // 102 evenly spaced row positions, whatever the cutpoint
+                // option says: s - 1 + floor(j (m - 1) / 101) rows on the
+                // left, with s the minimum node size and m = n - 2s + 1.
+                let n = values.len();
+                let m = (n + 1).saturating_sub(2 * minimum);
+                let positions: Vec<usize> = if m <= NATIVE_CUT_GRID {
+                    (1..n).collect()
+                } else {
+                    (0..NATIVE_CUT_GRID)
+                        .map(|k| minimum - 1 + k * (m - 1) / (NATIVE_CUT_GRID - 1))
+                        .collect()
+                };
+                let mut cuts: Vec<f64> = positions
+                    .into_iter()
+                    .filter(|&k| k >= 1 && k < n && values[k - 1] < values[k])
+                    .map(|k| midpoint(values[k - 1], values[k]))
+                    .collect();
+                cuts.dedup();
+                cuts
+            } else {
+                values.dedup();
+                reduce(
+                    values.windows(2).map(|p| midpoint(p[0], p[1])).collect(),
+                    ctx.options.max_split_candidates,
+                )
+            };
+            for threshold in cuts {
                 if threshold < lower || threshold >= upper {
                     continue;
                 }

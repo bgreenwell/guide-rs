@@ -40,15 +40,24 @@ pub fn sorted_quantile(x: &[f64], p: f64) -> f64 {
     let i = a.floor() as usize;
     x[i] + (a - i as f64) * (x[a.ceil() as usize] - x[i])
 }
+/// Weighted sample quantile, GUIDE's convention: the inverted empirical CDF,
+/// averaging with the next value when the cumulative weight reaches `p`
+/// exactly (Hyndman and Fan type 2). Unit weights give the usual median.
 pub fn weighted_quantile(values: &[(f64, f64)], p: f64) -> f64 {
     let mut v = values.to_vec();
     v.sort_by(|a, b| a.0.total_cmp(&b.0));
     let total: f64 = v.iter().map(|x| x.1).sum();
+    let target = p * total;
     let mut sum = 0.0;
-    for &(x, w) in &v {
+    for (k, &(x, w)) in v.iter().enumerate() {
         sum += w;
-        if sum >= p * total {
-            return x;
+        if sum >= target {
+            // Equality within roundoff of the accumulated weights.
+            let tie = (sum - target).abs() <= 1e-12 * total.max(1.0);
+            return match v[k + 1..].iter().find(|next| next.1 > 0.0) {
+                Some(next) if tie && w > 0.0 => x / 2.0 + next.0 / 2.0,
+                _ => x,
+            };
         }
     }
     v.last().map(|x| x.0).unwrap_or(0.0)

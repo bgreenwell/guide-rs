@@ -2,6 +2,16 @@
 
 Local environment: Apple Silicon macOS, Rust 1.99.1. The runtime implementation is pure Rust; R is used only as an independent test oracle. GitHub Actions runs the ordinary suite on Linux, macOS and Windows plus the independent R job; all passed from a clean checkout on 2026-10-25. R prediction-function export was excluded from product scope on 2026-10-24 and removed from the code on 2026-10-25. Historical export checks below remain a record of earlier work; independent R numerical/statistical validation remains in scope.
 
+## Poisson and quantile cut grids, 2026-10-25
+
+New fits record **`guide-rs-0.1-experimental-reference15`**; saved format remains 1. Step-response probes (x = 1..n, response stepping after row k, one run for every k) mapped the cuts native GUIDE 46.3 can choose in Poisson and quantile trees:
+
+- **Fixed grid.** Up to about 100 admissible cuts every position is available; beyond that, exactly 102 grid positions `s - 1 + floor(j (m - 1) / 101)` rows from the left, `m = n - 2s + 1`, confirmed for n = 101 to 300 and minimum node sizes 2, 3, 5 and 10. The report still says "exhaustive search". Least-squares and classification trees are unaffected.
+- **Positive counts.** Poisson cuts that leave a child with only zero counts are never chosen; a 0-to-6 step is cut one row late.
+- **Sample quantile.** Root-only quantile trees for 6 sample sizes and 5 probabilities match the type 2 sample quantile in all 30 runs; Rust used type 1, which differs at exact ties such as even-sized medians.
+
+On 180 random single-predictor Poisson designs the grid explains 179 native splits, against 104 for exhaustive deviance search. On 40 random two-predictor depth-1 or depth-3 trees per model, root agreement rose from 24 to 37 (Poisson) and 26 to 40 (quantile), node agreement from 81/139 to 111/139 and 101/153 to 126/153, and whole-tree agreement from 16 to 24 and 17 to 27. The remaining differences are mostly the variable selected at deeper nodes. Ten new captures (`poisson-cut-grid`, `poisson-zero-child`, `poisson-exposure`, `quantile-cut-grid`, `quantile-depth-2`, both versions) bring the corpus to **572 captures across 286 cases**; GUIDE reports Poisson observations and predictions with an exposure as rates, which the corpus comparison now handles.
+
 ## Minimum rows for quantile linear leaves, 2026-10-25
 
 New fits record **`guide-rs-0.1-experimental-reference14`**; saved format remains 1. Black-box probes of GUIDE 46.3 median-regression trees (depth 3, minimum node size 2, 25 datasets for each of 1, 2 and 3 complete numeric regressors) show that native fits a linear model in a leaf with at least `p + 4` rows and a constant below that: the largest constant and smallest linear leaves were 4 and 5 rows for p = 1, 5 and 6 for p = 2, and 6 and 7 for p = 3. Rust had fitted linear quantile models from `p + 1` rows, which can interpolate small children and win the split search. Quantile leaves with complete numeric regressors now use the native threshold, and `quantile_linear_leaves_need_p_plus_four_rows` covers it. The same probes found no size threshold for Poisson (linear leaves with two rows, including rank-deficient fits) or logistic leaves (smallest linear leaf four rows; constant leaves of up to thirteen rows were degenerate); those keep the `terms + 1` requirement and remain open in the coverage checklist.

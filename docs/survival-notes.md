@@ -25,6 +25,10 @@ The DSC file marks the time as `t` and the 0/1 event indicator as `d`. The fit f
 - **Depth 1.** The tree, its split and the root chi-square ranks are identical to a GUIDE Poisson tree with response δ and offset `log Λ_NA(t)`; the Poisson node constants are the first step of the PH estimates. Native then re-estimates node constants and a Breslow baseline jointly, normalized as above. Its final values are within about 2e-4 (log hazard) of the exact Cox partial-likelihood fixed point; native's baseline increments imply node risks that do not satisfy its own node equations, so it stops before convergence.
 - **Deeper trees.** The baseline is updated during growth. In a depth-3 probe, the native split of the second node is reproduced by a Poisson search using the baseline re-estimated after the root split, but not by the original Nelson-Aalen baseline. The final tree is not a Poisson tree grown on native's final baseline either (the third node differs), so updates are progressive; their schedule (per split, per level, iteration count) is not yet known.
 
+## Native Poisson split points: resolved
+
+Step-response probes found the rule (see [validation record](validation.md#poisson-and-quantile-cut-grids-2026-10-25)): GUIDE evaluates at most 102 evenly spaced cut positions for Poisson and quantile trees, even when the report says exhaustive, and rejects Poisson children without a positive count. The grid explains 179 of 180 random native Poisson splits. The findings below record the search that led there.
+
 ## Native Poisson split points (2026-10-25, second session)
 
 PH splits follow native Poisson splits, so the PH work depends on native Poisson growth, which the corpus does not cover. Probes with one numeric predictor (120 to 300 rows, unit exposures, random exposures, and 0/1 counts):
