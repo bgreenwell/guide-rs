@@ -39,6 +39,18 @@ Like GUIDE, classifiers choose the tree size by held-out misclassification cost.
 
 Cross-validation folds, forest trees and importance permutations run in parallel. `n_jobs` sets the number of threads; unlike most scikit-learn estimators, its default of None uses all cores. Results are the same for any thread count.
 
+## Boosting
+
+`GuideBoostingRegressor` and `GuideBoostingClassifier` fit gradient-boosted trees. Each split variable comes from GUIDE's tests on the signs of the negative gradients, and the split point from the second-order gain, so variables with many distinct values are not favored. Early stopping keeps the round with the lowest loss on a validation set:
+
+```python
+from guide import GuideBoostingClassifier
+
+model = GuideBoostingClassifier(n_estimators=500, early_stopping_rounds=20)
+model.fit(X_train, y_train, validation_data=(X_valid, y_valid))
+model.n_estimators_  # rounds kept
+```
+
 ## Importance scores
 
 {func}`guide.importance` computes GUIDE's bias-adjusted variable importance from shallow unpruned trees and permutations of the response:

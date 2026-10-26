@@ -1,6 +1,13 @@
 from sklearn.utils.estimator_checks import parametrize_with_checks
 
-from guide import GuideClassifier, GuideForestClassifier, GuideForestRegressor, GuideRegressor
+from guide import (
+    GuideBoostingClassifier,
+    GuideBoostingRegressor,
+    GuideClassifier,
+    GuideForestClassifier,
+    GuideForestRegressor,
+    GuideRegressor,
+)
 
 
 def expected_failures(estimator):
@@ -18,6 +25,8 @@ def expected_failures(estimator):
         GuideClassifier(),
         GuideForestRegressor(n_estimators=5),
         GuideForestClassifier(n_estimators=5),
+        GuideBoostingRegressor(n_estimators=10),
+        GuideBoostingClassifier(n_estimators=10),
     ],
     expected_failed_checks=expected_failures,
 )

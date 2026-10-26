@@ -41,6 +41,8 @@ def _leaf_label(model, classes, names, precision):
         return classes[model["predicted_class"]]
     if kind == "constant":
         return _number(model["value"], precision)
+    if kind == "score":
+        return f"score {_number(model['value'], precision)}"
     if kind == "quantiles":
         return f"({_number(model['lower'], precision)}, {_number(model['upper'], precision)})"
     terms = model["terms"]

@@ -2,6 +2,8 @@
 
 from ._core import ALGORITHM_VERSION
 from ._estimators import (
+    GuideBoostingClassifier,
+    GuideBoostingRegressor,
     GuideClassifier,
     GuideForestClassifier,
     GuideForestRegressor,
@@ -12,6 +14,8 @@ from ._plot import plot_tree
 
 __all__ = [
     "ALGORITHM_VERSION",
+    "GuideBoostingClassifier",
+    "GuideBoostingRegressor",
     "GuideClassifier",
     "GuideForestClassifier",
     "GuideForestRegressor",

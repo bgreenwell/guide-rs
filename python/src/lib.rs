@@ -2,7 +2,7 @@
 //! scikit-learn estimators; options and schemas cross the boundary as JSON so
 //! the core crate's validation applies unchanged.
 use guide_rs::{
-    Dataset, EnsembleOptions, FeatureSchema, FeatureType, FitOptions, FittedModel,
+    BoostingOptions, Dataset, EnsembleOptions, FeatureSchema, FeatureType, FitOptions, FittedModel,
     ImportanceOptions, Prediction, Task, Value,
 };
 use pyo3::exceptions::PyValueError;
@@ -162,8 +162,9 @@ impl Model {
     /// crate's configuration format.
     #[staticmethod]
     /// `validation` is `(columns, target, weights, exposure)` for validation
-    /// pruning, with the same schema as the training data.
-    #[pyo3(signature = (schema, columns, target, options, weights=None, exposure=None, ensemble=None, threads=None, validation=None))]
+    /// pruning or boosting's early stopping, with the training schema.
+    /// `boosting` is the core's boosting options as JSON.
+    #[pyo3(signature = (schema, columns, target, options, weights=None, exposure=None, ensemble=None, threads=None, validation=None, boosting=None))]
     #[allow(clippy::too_many_arguments)]
     fn fit(
         py: Python<'_>,
@@ -176,9 +177,14 @@ impl Model {
         ensemble: Option<&str>,
         threads: Option<usize>,
         validation: Option<ValidationInput<'_>>,
+        boosting: Option<&str>,
     ) -> PyResult<Self> {
         let options: FitOptions = serde_json::from_str(options).map_err(value_error)?;
         let ensemble: Option<EnsembleOptions> = ensemble
+            .map(serde_json::from_str)
+            .transpose()
+            .map_err(value_error)?;
+        let boosting: Option<BoostingOptions> = boosting
             .map(serde_json::from_str)
             .transpose()
             .map_err(value_error)?;
@@ -193,9 +199,13 @@ impl Model {
                 "ensemble validation pruning is not implemented",
             ));
         }
-        let inner = parallel(py, threads, || match &ensemble {
-            Some(e) => FittedModel::fit_ensemble(&data, &options, e),
-            None => FittedModel::fit_with_validation(&data, &options, validation.as_ref()),
+        if boosting.is_some() && ensemble.is_some() {
+            return Err(value_error("boosting and ensemble options are exclusive"));
+        }
+        let inner = parallel(py, threads, || match (&ensemble, &boosting) {
+            (Some(e), _) => FittedModel::fit_ensemble(&data, &options, e),
+            (None, Some(b)) => FittedModel::fit_boosting(&data, &options, b, validation.as_ref()),
+            (None, None) => FittedModel::fit_with_validation(&data, &options, validation.as_ref()),
         })?
         .map_err(value_error)?;
         Ok(Self { inner })
