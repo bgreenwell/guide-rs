@@ -873,8 +873,8 @@ class GuideForestClassifier(ClassifierMixin, _Forest, _Classification):
 
 
 class _Boosting(_Guide):
-    """Gradient boosting: GUIDE's tests choose each split variable from the
-    signs of the negative gradients, a second-order gain chooses the split,
+    """Gradient boosting: chi-square tests of the gradients choose each split
+    variable, a second-order gain chooses the split,
     and leaves hold shrunken Newton steps."""
 
     def _pruning(self):
@@ -969,9 +969,11 @@ n_jobs, random_state
 class GuideBoostingRegressor(RegressorMixin, _Boosting, _Regression):
     __doc__ = """Gradient-boosted GUIDE regression trees.
 
-    Each split variable is chosen by GUIDE's chi-square tests on the signs of
-    the negative gradients, so boosted trees inherit GUIDE's unbiased variable
-    selection; the split point maximizes the second-order (Newton) gain.
+    Each split variable is chosen by chi-square tests of the gradients against
+    each predictor's bins: GUIDE's tests on their signs for squared error, and
+    score tests for bin effects for the Poisson and logistic losses. Boosted
+    trees thus inherit GUIDE's unbiased variable selection; the split point
+    maximizes the second-order (Newton) gain.
 
     Parameters
     ----------
@@ -1043,6 +1045,10 @@ class GuideBoostingRegressor(RegressorMixin, _Boosting, _Regression):
 class GuideBoostingClassifier(ClassifierMixin, _Boosting, _Classification):
     __doc__ = """Gradient-boosted GUIDE classification trees (logistic loss for two
     classes, softmax with one tree per class and round otherwise).
+
+    Each split variable is chosen by score tests of the gradients against each
+    predictor's bins, which keep GUIDE's unbiased variable selection; the
+    split point maximizes the second-order (Newton) gain.
 
     Parameters
     ----------""" + _BOOSTING_DOC

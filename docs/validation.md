@@ -2,6 +2,20 @@
 
 Local environment: Apple Silicon macOS, Rust 1.99.1. The runtime implementation is pure Rust; R is used only as an independent test oracle. GitHub Actions runs the ordinary suite on Linux, macOS and Windows plus the independent R job; all passed from a clean checkout on 2026-10-25. R prediction-function export was excluded from product scope on 2026-10-24 and removed from the code on 2026-10-25. Historical export checks below remain a record of earlier work; independent R numerical/statistical validation remains in scope.
 
+## Boosting selection by score tests, 2026-10-26
+
+New fits record **`guide-rs-0.1-experimental-reference16`**; saved format remains 1. Boosted classification and logistic-loss trees selected split variables from the signs of the negative gradients, which equal the class labels in every round, so each node's variable never changed across rounds: on covertype (classes 1 and 2, 50,000 sampled rows, 25% held out, 300 rounds, learning rate 0.1, depth 3) all 300 roots split on Elevation. Those losses and Poisson now select by score tests for bin effects on the current fit; squared error keeps the sign tests and is unchanged (California housing R² 0.8154 before and after).
+
+| Covertype, held out | log loss | AUROC |
+|---|---|---|
+| guide-rs, sign tests | 0.4818 | 0.8416 |
+| guide-rs, score tests | 0.4204 | 0.8851 |
+| XGBoost 3.4.1, same settings | 0.4128 | 0.8898 |
+| LightGBM 4.7.0, same settings, 8 leaves | 0.4131 | 0.8897 |
+| scikit-learn HistGradientBoosting | 0.4150 | 0.8885 |
+
+Null check (five pure-noise predictors with 2, 5, 10, 50 and continuous values, n = 200, 400 replicates): the first tree's root variable is consistent with uniform selection for binary, three-class and Poisson losses (chi-square p = 0.32, 0.96, 0.96). The root of the 20th tree is not (p < 0.005); GUIDE's sign tests for squared error drift the same way (p = 0.0007), because later rounds test residuals of a fit grown on the same predictors. `classification_boosting_moves_on_from_a_fitted_variable` fails under sign selection and passes now.
+
 ## Poisson and quantile cut grids, 2026-10-25
 
 New fits record **`guide-rs-0.1-experimental-reference15`**; saved format remains 1. Step-response probes (x = 1..n, response stepping after row k, one run for every k) mapped the cuts native GUIDE 46.3 can choose in Poisson and quantile trees:
