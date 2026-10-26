@@ -57,7 +57,7 @@ Cross-validation pruning, forests and importance permutations run in parallel, w
 
 ## Documentation
 
-- Example notebooks comparing GUIDE with scikit-learn's CART trees on its bundled datasets: [classification](examples/classification.ipynb), [regression](examples/regression.ipynb), and [selection bias and importance](examples/selection_bias.ipynb)
+- Example notebooks comparing GUIDE with scikit-learn on its bundled datasets: [classification trees](examples/classification.ipynb), [regression trees](examples/regression.ipynb), [ensembles](examples/ensembles.ipynb) (bagging, forests and boosting), and [selection bias and importance](examples/selection_bias.ipynb)
 - [User guide and API reference](https://bgreenwell.github.io/guide-rs/), built from `docs/` and published on each push to `main`
 - [Usage and configuration of the core](https://github.com/bgreenwell/guide-rs/blob/main/docs/usage.md)
 
