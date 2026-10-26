@@ -68,6 +68,17 @@ All stochastic operations use the recorded seed with ChaCha8; they do not reprod
 
 Ensemble trees, cross-validation folds and importance permutations are fitted in parallel on all cores. Results do not depend on the number of threads; `--threads` (or `RAYON_NUM_THREADS`) limits it.
 
+## Boosting
+
+A `boosting` section fits gradient-boosted GUIDE trees instead of a single tree. It requires `fit.pruning` `none` and constant leaves, and supports squared-error, Poisson and logistic regression and classification:
+
+```json
+"boosting": {"rounds": 300, "learning_rate": 0.1, "max_depth": 3, "min_child_weight": 1.0,
+             "lambda": 1.0, "gamma": 0.0, "subsample": 1.0, "early_stopping_rounds": 20}
+```
+
+With `early_stopping_rounds`, pass `--validation` to `fit`; the model keeps the round with the lowest validation loss. `fit.mtry` samples split variables per node. Predictions sum the trees on the link scale. See [the algorithm specification](algorithms.md#boosting).
+
 ## Exports
 
 `guide-rs export --format text|dot|latex` writes a text summary, a Graphviz DOT graph, or a LaTeX document using the `forest` package. Rendering DOT or LaTeX requires the corresponding external tools.

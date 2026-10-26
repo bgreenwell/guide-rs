@@ -14,6 +14,7 @@ struct RunConfig {
     data: CsvOptions,
     fit: FitOptions,
     ensemble: Option<EnsembleOptions>,
+    boosting: Option<BoostingOptions>,
     importance: ImportanceOptions,
 }
 
@@ -53,7 +54,7 @@ enum Command {
         /// Saved model JSON
         #[arg(long)]
         model: PathBuf,
-        /// Separate pruning sample (requires validation pruning)
+        /// Separate sample for validation pruning or boosting's early stopping
         #[arg(long)]
         validation: Option<PathBuf>,
     },
@@ -218,14 +219,24 @@ fn run(cli: Cli) -> Result<()> {
                     read_dataset(&p, &options, &config.fit.task)
                 })
                 .transpose()?;
-            if validation.is_some() && config.fit.pruning != Pruning::Validation {
-                bail!("--validation requires validation pruning");
+            if config.ensemble.is_some() && config.boosting.is_some() {
+                bail!("ensemble and boosting configurations are exclusive");
+            }
+            let early_stopping = config
+                .boosting
+                .as_ref()
+                .is_some_and(|b| b.early_stopping_rounds.is_some());
+            if validation.is_some() && config.fit.pruning != Pruning::Validation && !early_stopping
+            {
+                bail!("--validation requires validation pruning or boosting early stopping");
             }
             if validation.is_some() && config.ensemble.is_some() {
                 bail!("ensemble validation pruning is not implemented");
             }
             let mut fitted = if let Some(e) = &config.ensemble {
                 FittedModel::fit_ensemble(&training, &config.fit, e)?
+            } else if let Some(b) = &config.boosting {
+                FittedModel::fit_boosting(&training, &config.fit, b, validation.as_ref())?
             } else {
                 FittedModel::fit_with_validation(&training, &config.fit, validation.as_ref())?
             };

@@ -102,6 +102,10 @@ pub enum LeafModel {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         prediction_bounds: Option<PredictionBounds>,
     },
+    /// A boosted tree's additive contribution on the link scale.
+    Score {
+        value: f64,
+    },
 }
 impl LeafModel {
     pub(crate) fn scalar(&self, row: &[Value], offset: f64, loss: &Loss) -> f64 {
@@ -113,6 +117,7 @@ impl LeafModel {
     fn scalar_impl(&self, row: &[Value], offset: f64, loss: &Loss, truncate: bool) -> f64 {
         match self {
             Self::Quantiles { lower, upper } => lower / 2.0 + upper / 2.0,
+            Self::Score { value } => *value,
             Self::Classification {
                 predicted_class, ..
             } => *predicted_class as f64,

@@ -233,6 +233,7 @@ impl FittedModel {
             input: None,
             requires_exposure: !data.offsets.is_empty(),
             ensemble: Some(ensemble.clone()),
+            boosting: None,
             trees,
             report,
         };

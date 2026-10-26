@@ -2,6 +2,7 @@
 //!
 //! This is an independent, evolving implementation. See `docs/coverage.md` for
 //! the distinction between implemented methods and verified GUIDE 46.3 parity.
+mod boosting;
 mod config;
 mod data;
 mod ensemble;
@@ -14,6 +15,7 @@ mod selection;
 pub mod stats;
 mod tree;
 
+pub use boosting::{BoostedModel, BoostingOptions};
 pub use config::*;
 pub use data::*;
 pub use ensemble::*;

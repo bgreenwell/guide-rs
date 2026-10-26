@@ -181,6 +181,7 @@ impl FittedModel {
                 self.classes[*predicted_class], probabilities
             ),
             LeafModel::Constant { value } => format!("prediction {value:.6}"),
+            LeafModel::Score { value } => format!("score {value:.6}"),
             LeafModel::Linear {
                 coefficients,
                 converged,

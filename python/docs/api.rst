@@ -14,6 +14,8 @@ Estimators
    GuideClassifier
    GuideForestRegressor
    GuideForestClassifier
+   GuideBoostingRegressor
+   GuideBoostingClassifier
 
 Functions
 ---------

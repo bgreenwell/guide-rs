@@ -154,6 +154,16 @@ class _Guide(BaseEstimator):
     def _fits_features(self):
         return False
 
+    def _mtry(self):
+        """Split variables sampled per node, from ``max_features``."""
+        m = self.max_features
+        if isinstance(m, numbers.Integral) and not isinstance(m, bool) and m > 0:
+            return int(m)
+        if isinstance(m, numbers.Real) and not isinstance(m, bool) and 0 < m <= 1:
+            splitting = sum(f["role"] in ("split", "both") for f in self._schema)
+            return max(1, round(m * splitting))
+        raise ValueError("max_features must be None, a positive int or a float in (0, 1]")
+
     def _columns(self, X, y=None, *, reset):
         """Validates X (and y) and returns per-feature columns for the core."""
         # A fit needs two samples; check_array words the error as sklearn expects.
@@ -279,8 +289,12 @@ class _Guide(BaseEstimator):
         check_consistent_length(columns[0] if columns else [], y)
         return columns, self._target(y), _weights(rest[0], len(y)), _floats(rest[1])
 
+    def _boosting(self):
+        """Boosting options for the core, or None."""
+
     def _fit_model(self, columns, target, options, weights, exposure=None, validation=None):
         ensemble = self._ensemble(options)
+        boosting = self._boosting()
         self._model = Model.fit(
             json.dumps(self._schema),
             columns,
@@ -291,6 +305,7 @@ class _Guide(BaseEstimator):
             ensemble=None if ensemble is None else json.dumps(ensemble),
             threads=_threads(self.n_jobs),
             validation=validation,
+            boosting=None if boosting is None else json.dumps(boosting),
         )
         self.fit_report_ = json.loads(self._model.report)
         for message in self.fit_report_["warnings"]:
@@ -352,14 +367,7 @@ class _Forest(_Guide):
         if self.max_features is not None:
             if self.kind == "bagging":
                 raise ValueError("max_features requires kind='forest'")
-            m = self.max_features
-            if isinstance(m, numbers.Integral):
-                options["mtry"] = int(m)
-            elif isinstance(m, numbers.Real) and 0 < m <= 1:
-                splitting = sum(f["role"] in ("split", "both") for f in self._schema)
-                options["mtry"] = max(1, round(m * splitting))
-            else:
-                raise ValueError("max_features must be None, an int or a float in (0, 1]")
+            options["mtry"] = self._mtry()
         return {"kind": self.kind, "trees": self.n_estimators, "sample_fraction": self.max_samples}
 
     @property
@@ -862,6 +870,235 @@ class GuideForestClassifier(ClassifierMixin, _Forest, _Classification):
         self.missing_flags = missing_flags
         self.n_jobs = n_jobs
         self.random_state = random_state
+
+
+class _Boosting(_Guide):
+    """Gradient boosting: GUIDE's tests choose each split variable from the
+    signs of the negative gradients, a second-order gain chooses the split,
+    and leaves hold shrunken Newton steps."""
+
+    def _pruning(self):
+        return {"kind": "none"}
+
+    def _options(self, task, node_model):
+        options = {
+            "task": task,
+            "node_model": node_model,
+            "max_depth": self.max_depth,
+            "min_samples_leaf": self.min_samples_leaf,
+            "interactions": self.interactions,
+            "significance_level": self.significance_level,
+            "max_split_candidates": self.max_split_candidates,
+            "pruning": {"kind": "none"},
+            "seed": _seed(self.random_state),
+        }
+        if self.max_features is not None:
+            options["mtry"] = self._mtry()
+        return options
+
+    def _boosting(self):
+        return {
+            "rounds": self.n_estimators,
+            "learning_rate": self.learning_rate,
+            "max_depth": self.max_depth,
+            "min_child_weight": self.min_child_weight,
+            "lambda": self.reg_lambda,
+            "gamma": self.gamma,
+            "subsample": self.subsample,
+            "early_stopping_rounds": self.early_stopping_rounds,
+        }
+
+    def _validation(self, validation_data):
+        if (validation_data is None) != (self.early_stopping_rounds is None):
+            raise ValueError("early_stopping_rounds and validation_data must be used together")
+        if validation_data is None:
+            return None
+        if not 2 <= len(validation_data) <= 4:
+            raise ValueError("validation_data must be (X, y), (X, y, sample_weight) or "
+                             "(X, y, sample_weight, exposure)")
+        X, y, *rest = validation_data
+        rest += [None] * (2 - len(rest))
+        columns, _ = self._columns(X, reset=False)
+        y = column_or_1d(y)
+        check_consistent_length(columns[0] if columns else [], y)
+        return columns, self._target(y), _weights(rest[0], len(y)), _floats(rest[1])
+
+    @property
+    def n_estimators_(self):
+        """Boosting rounds kept; with early stopping, the best validation round."""
+        check_is_fitted(self)
+        return json.loads(self._model.to_json())["boosting"]["rounds"]
+
+    def apply(self, X):
+        """Terminal node ids, shape (n_samples, n_trees)."""
+        check_is_fitted(self)
+        columns, _ = self._columns(X, reset=False)
+        return np.asarray(self._model.apply(columns), dtype=np.intp).T
+
+
+_BOOSTING_DOC = """
+    n_estimators : int, default=100
+        Maximum number of boosting rounds. Multiclass models fit one tree per
+        class in each round.
+    learning_rate : float, default=0.1
+        Shrinkage applied to every leaf value.
+    max_depth : int, default=3
+        Depth of each tree; boosted trees are not pruned.
+    min_samples_leaf : int, default=2
+    min_child_weight : float, default=1.0
+        Minimum sum of loss Hessians (times sample weights) in a child.
+    reg_lambda : float, default=1.0
+        L2 penalty on leaf values.
+    gamma : float, default=0.0
+        Minimum gain to split.
+    subsample : float, default=1.0
+        Fraction of rows sampled without replacement for each round.
+    max_features : int or float, default=None
+        Split variables sampled at each node; by default all.
+    early_stopping_rounds : int, default=None
+        Stop when the loss on ``validation_data`` (passed to ``fit``) has not
+        improved for this many rounds, and keep the best round.
+    interactions, significance_level, max_split_candidates, \
+categorical_features, feature_roles, periodic_features, missing_flags, \
+n_jobs, random_state
+        As in :class:`GuideRegressor`. After the first round the chi-square
+        statistics rank variables; they are not significance tests.
+"""
+
+
+class GuideBoostingRegressor(RegressorMixin, _Boosting, _Regression):
+    __doc__ = """Gradient-boosted GUIDE regression trees.
+
+    Each split variable is chosen by GUIDE's chi-square tests on the signs of
+    the negative gradients, so boosted trees inherit GUIDE's unbiased variable
+    selection; the split point maximizes the second-order (Newton) gain.
+
+    Parameters
+    ----------
+    loss : {"squared_error", "poisson", "logistic"}, default="squared_error"
+        Poisson uses a log link and accepts ``exposure``; logistic fits a 0/1
+        response and predicts probabilities.
+""" + _BOOSTING_DOC
+
+    def __init__(
+        self,
+        *,
+        loss="squared_error",
+        n_estimators=100,
+        learning_rate=0.1,
+        max_depth=3,
+        min_samples_leaf=2,
+        min_child_weight=1.0,
+        reg_lambda=1.0,
+        gamma=0.0,
+        subsample=1.0,
+        max_features=None,
+        early_stopping_rounds=None,
+        interactions=True,
+        significance_level=0.1,
+        max_split_candidates=100,
+        categorical_features=None,
+        feature_roles=None,
+        periodic_features=None,
+        missing_flags=None,
+        n_jobs=None,
+        random_state=0,
+    ):
+        self.loss = loss
+        self.n_estimators = n_estimators
+        self.learning_rate = learning_rate
+        self.max_depth = max_depth
+        self.min_samples_leaf = min_samples_leaf
+        self.min_child_weight = min_child_weight
+        self.reg_lambda = reg_lambda
+        self.gamma = gamma
+        self.subsample = subsample
+        self.max_features = max_features
+        self.early_stopping_rounds = early_stopping_rounds
+        self.interactions = interactions
+        self.significance_level = significance_level
+        self.max_split_candidates = max_split_candidates
+        self.categorical_features = categorical_features
+        self.feature_roles = feature_roles
+        self.periodic_features = periodic_features
+        self.missing_flags = missing_flags
+        self.n_jobs = n_jobs
+        self.random_state = random_state
+
+    def _fits_features(self):
+        return False
+
+    def _prepare(self, X, y, sample_weight):
+        if self.loss not in ("squared_error", "poisson", "logistic"):
+            raise ValueError(
+                f"loss must be 'squared_error', 'poisson' or 'logistic', got {self.loss!r}"
+            )
+        columns, y = self._columns(X, y, reset=True)
+        target = self._target(y)
+        options = self._options({"kind": "regression", "loss": {"kind": self.loss}},
+                                {"kind": "constant"})
+        return columns, target, options, _weights(sample_weight, len(target))
+
+
+class GuideBoostingClassifier(ClassifierMixin, _Boosting, _Classification):
+    __doc__ = """Gradient-boosted GUIDE classification trees (logistic loss for two
+    classes, softmax with one tree per class and round otherwise).
+
+    Parameters
+    ----------""" + _BOOSTING_DOC
+
+    def __init__(
+        self,
+        *,
+        n_estimators=100,
+        learning_rate=0.1,
+        max_depth=3,
+        min_samples_leaf=2,
+        min_child_weight=1.0,
+        reg_lambda=1.0,
+        gamma=0.0,
+        subsample=1.0,
+        max_features=None,
+        early_stopping_rounds=None,
+        interactions=True,
+        significance_level=0.1,
+        max_split_candidates=100,
+        categorical_features=None,
+        feature_roles=None,
+        periodic_features=None,
+        missing_flags=None,
+        n_jobs=None,
+        random_state=0,
+    ):
+        self.n_estimators = n_estimators
+        self.learning_rate = learning_rate
+        self.max_depth = max_depth
+        self.min_samples_leaf = min_samples_leaf
+        self.min_child_weight = min_child_weight
+        self.reg_lambda = reg_lambda
+        self.gamma = gamma
+        self.subsample = subsample
+        self.max_features = max_features
+        self.early_stopping_rounds = early_stopping_rounds
+        self.interactions = interactions
+        self.significance_level = significance_level
+        self.max_split_candidates = max_split_candidates
+        self.categorical_features = categorical_features
+        self.feature_roles = feature_roles
+        self.periodic_features = periodic_features
+        self.missing_flags = missing_flags
+        self.n_jobs = n_jobs
+        self.random_state = random_state
+
+    def _prepare(self, X, y, sample_weight):
+        columns, y = self._columns(X, y, reset=True)
+        check_classification_targets(y)
+        self.classes_ = np.unique(y)
+        names = [str(c) for c in self.classes_]
+        if len(set(names)) != len(names):
+            raise ValueError("class labels must have distinct string forms")
+        options = self._options({"kind": "classification"}, {"kind": "constant"})
+        return columns, self._target(y), options, _weights(sample_weight, len(y))
 
 
 def importance(estimator, X, y, *, sample_weight=None, permutations=300, max_depth=4,
