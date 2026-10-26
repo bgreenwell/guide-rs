@@ -821,7 +821,16 @@ pub(crate) fn grow(
     }
     let selection = selection::select(ctx, ids, &node.model, &features, mode);
     node.diagnostics = selection.diagnostics;
-    let pair = selection.pair && mode == SelectionMode::Fit && depth + 1 < ctx.options.max_depth;
+    // With constant leaves, GUIDE runs the two-level search for a selected
+    // pair at every depth, including the last level, where the children will
+    // not be split, and takes the parent's cuts from its fixed grid. Other
+    // node models keep the search to nodes whose children can split, with
+    // every cut; their native rule is unverified.
+    let constant = matches!(ctx.options.node_model, NodeModel::Constant);
+    let pair = selection.pair
+        && mode == SelectionMode::Fit
+        && (constant || depth + 1 < ctx.options.max_depth);
+    let pair_grid = pair && constant;
     let split_candidates = if let Some(p) = &selection.linear {
         let values: Vec<Option<f64>> = ids
             .iter()
@@ -864,7 +873,7 @@ pub(crate) fn grow(
         selection
             .features
             .iter()
-            .flat_map(|&j| candidates(ctx, ids, j))
+            .flat_map(|&j| candidates_sorted(ctx, ids, j, None, pair_grid))
             .collect()
     };
     // Candidates are scored independently, in parallel at large nodes; the
@@ -1047,7 +1056,7 @@ fn best_child_score(
         return best;
     }
     if ctx.classifying() {
-        let splits = candidates_sorted(ctx, ids, j, sorted.as_deref());
+        let splits = candidates_sorted(ctx, ids, j, sorted.as_deref(), false);
         let mut sweep = ClassSweep::new(ctx, ids, j, sorted);
         for s in splits {
             if let Some(score) = sweep.score(&s) {
@@ -1699,15 +1708,17 @@ fn orient_fewer_left(split: Split, node_missing: &[&[Value]]) -> Split {
     }
 }
 pub(crate) fn candidates(ctx: &Context<'_>, ids: &[usize], j: usize) -> Vec<Split> {
-    candidates_sorted(ctx, ids, j, None)
+    candidates_sorted(ctx, ids, j, None, false)
 }
 /// `candidates`, given the rows' numeric values of feature `j` in
-/// `f64::total_cmp` order when they are already sorted.
+/// `f64::total_cmp` order when they are already sorted. `grid` forces GUIDE's
+/// fixed grid of numerical cuts.
 fn candidates_sorted(
     ctx: &Context<'_>,
     ids: &[usize],
     j: usize,
     sorted: Option<&[(f64, usize)]>,
+    grid: bool,
 ) -> Vec<Split> {
     let mut result = vec![];
     let routes = missing_routes(ctx, ids, j);
@@ -1757,7 +1768,7 @@ fn candidates_sorted(
                 let mid = a / 2.0 + b / 2.0;
                 if mid >= b { a } else { mid }
             };
-            let cuts: Vec<f64> = if native_cut_grid(ctx) {
+            let cuts: Vec<f64> = if grid || native_cut_grid(ctx) {
                 // Poisson and quantile trees in GUIDE 46.3 cut after at most
                 // 102 evenly spaced row positions, whatever the cutpoint
                 // option says: s - 1 + floor(j (m - 1) / 101) rows on the
@@ -2043,7 +2054,10 @@ mod tests {
                 presorted.sort_by(|a, b| a.0.total_cmp(&b.0));
                 if j == 0 {
                     assert_eq!(
-                        format!("{:?}", candidates_sorted(&ctx, &ids, j, Some(&presorted))),
+                        format!(
+                            "{:?}",
+                            candidates_sorted(&ctx, &ids, j, Some(&presorted), false)
+                        ),
                         format!("{:?}", candidates(&ctx, &ids, j))
                     );
                 }

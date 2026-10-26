@@ -1,10 +1,10 @@
 # GUIDE 46.3 coverage and remaining work
 
-Updated **2026-10-25**, through algorithm revision **`guide-rs-0.1-experimental-reference16`**.
+Updated **2026-10-25**, through algorithm revision **`guide-rs-0.1-experimental-reference17`**.
 
 **guide-rs is a working subset of GUIDE, not a full replacement.** Its strongest native validation is for constant classification/regression, multiple-linear squared-error trees, and pruning. Other implemented losses and ensembles have narrower independent checks. No complete subsystem is certified equivalent to every GUIDE option.
 
-The primary oracle is the pinned GUIDE **46.3** build of July 11, 2026; **46.2** is a secondary regression reference. Documentation comes from the **46.1** manual and history through 46.2. The fixed acceptance corpus contains **572 native captures across 286 distinct cases**, plus separately recorded diagnostics. See [reference provenance](reference-upstream.md) and [validation results](validation.md).
+The primary oracle is the pinned GUIDE **46.3** build of July 11, 2026; **46.2** is a secondary regression reference. Documentation comes from the **46.1** manual and history through 46.2. The fixed acceptance corpus contains **580 native captures across 290 distinct cases**, plus separately recorded diagnostics. See [reference provenance](reference-upstream.md) and [validation results](validation.md).
 
 A checked box below means the stated capability exists with tests. It does **not** certify full native parity. Unchecked boxes identify remaining work, including validation of existing implementations.
 
@@ -55,12 +55,12 @@ A checked box below means the stated capability exists with tests. It does **not
 These are the next priorities before expanding into the missing specialized families.
 
 - [ ] Establish native tie-breaking among exactly tied multi-predictor scores. Zero-gain splitting (`min_gain = 0`) and same-class leaf merging are resolved; the singleton zero-score rule is resolved. Native tie order is not column order and is recorded as a known difference.
-- [ ] Identify how native GUIDE chooses the split variable of an interaction pair selected at the last level, where no lookahead is possible; Rust's best-single-split rule agrees in 22 of 51 probes ([selection validation](selection-validation.md#weights-and-priors-in-selection-tests-2026-10-25)).
+- [ ] Identify how native GUIDE scores the parent cuts of an interaction pair. With constant leaves it runs the two-level search at every depth, with parent cuts on its fixed grid (both now matched, reference17), but its chosen cut still differs from the best two-level loss in about one case in five; most remaining variable differences are exact ties between two equivalent trees. Pairs with linear leaves are unverified ([selection validation](selection-validation.md#interaction-pairs-2026-10-26)).
 - [ ] Validate high-cardinality categorical linear searches, near-tied partitions, broader missing patterns and projected/periodic split defaults. Multiclass categorical search above 11 levels is implemented and validated; when both sides have the same number of levels its orientation follows native eigenvector signs, which are not reproduced.
 - [ ] Finish importance calibration/normalization, zero-null fallback conventions, 50% thresholds and missing-flag aggregation.
 - [ ] Missing-value flags (M variables) with linear/polynomial/stepwise node models via the documented M-to-B conversion, and on periodic parents. Constant-node flags for numeric and categorical parents are implemented and validated ([flag validation](missing-flag-validation.md)).
 - [ ] Validate GUIDE's polynomial degree selection, missing handling and model-specific fallback rules.
-- [ ] Validate native quantile/Poisson/logistic split selection, residual grouping, model selection and fitting-policy combinations. Poisson and quantile cut grids, Poisson positive-count children and the quantile definition now match native (reference15); deeper Poisson/quantile nodes still select a different variable in some designs (about 80% of nodes agree in random depth-3 probes).
+- [ ] Validate native quantile/Poisson/logistic split selection, residual grouping, model selection and fitting-policy combinations. Poisson and quantile cut grids, Poisson positive-count children and the quantile definition now match native (reference15); deeper Poisson/quantile nodes still differ in some designs (110 of 139 and 125 of 153 nodes agree in random depth-1 and depth-3 probes at reference17). Native quantile cuts lie on the fixed grid with s = 2 at 152 of 153 nodes and minimize the summed check loss at 144; the other nodes are not explained by a larger minimum child size, a different grid, or interaction pairs (most differing nodes selected a single variable), and about half differ in the cut rather than the variable.
 - [ ] Validate periodic association rotation invariance and missing/unknown routing.
 - [ ] Validate random multifold CV, native test-sample pruning, broader model-based pruning and prediction-limit combinations.
 - [ ] Explain the additional categorical CV-table discrepancy while preserving independently verified CV. Its output, direct native refits and independent values are already frozen and tested.

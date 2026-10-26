@@ -217,8 +217,47 @@ def glm_cases():
     return result
 
 
+def pair_design(seed, classification):
+    """Two uniform predictors whose interaction GUIDE selects as a pair:
+    an XOR pattern plus random main effects."""
+    rng = random.Random(seed)
+    rows, targets = [], []
+    sa, sb = rng.uniform(0.0, 1.0), rng.uniform(0.0, 1.0)
+    for _ in range(160):
+        a, b = rng.random(), rng.random()
+        xor = (a > 0.5) != (b > 0.5)
+        if classification:
+            p = 0.15 + 0.7 * xor * (0.6 + 0.4 * sa) + 0.1 * sb * b
+            targets.append("b" if rng.random() < p else "a")
+        else:
+            targets.append(round(3 * xor + sa * a + sb * b + rng.gauss(0, 1), 4))
+        rows.append([round(a, 4), round(b, 4)])
+    return rows, targets
+
+
+def pair_cases():
+    """Interaction pairs: GUIDE's two-level lookahead at every depth, with
+    root cuts on its fixed grid."""
+    result = {}
+    for name, classification, seed, depth in PAIR_CASES:
+        rows, targets = pair_design(seed, classification)
+        result[name] = case(name, classification, [("u", "numeric"), ("v", "numeric")],
+                            rows, targets, depth=depth)
+    return result
+
+
+# (name, classification, design seed, depth); the seeds give pairs whose
+# variable, cuts and predictions guide-rs reproduces in both versions.
+PAIR_CASES = [
+    ("ls-pair-last-level", False, 103, 1),
+    ("ls-pair-depth-2", False, 112, 2),
+    ("class-pair-last-level", True, 119, 1),
+    ("class-pair-depth-2", True, 104, 2),
+]
+
+
 def all_cases():
-    return {**cases(), **pruning_cases(), **glm_cases()}
+    return {**cases(), **pruning_cases(), **glm_cases(), **pair_cases()}
 
 
 def data_files(value):

@@ -2,6 +2,10 @@
 
 Local environment: Apple Silicon macOS, Rust 1.99.1. The runtime implementation is pure Rust; R is used only as an independent test oracle. GitHub Actions runs the ordinary suite on Linux, macOS and Windows plus the independent R job; all passed from a clean checkout on 2026-10-25. R prediction-function export was excluded from product scope on 2026-10-24 and removed from the code on 2026-10-25. Historical export checks below remain a record of earlier work; independent R numerical/statistical validation remains in scope.
 
+## Interaction pairs at every depth, 2026-10-26
+
+New fits record **`guide-rs-0.1-experimental-reference17`**; saved format remains 1. In constant-leaf trees, selected interaction pairs now use the two-level search at the last level too, with parent cuts on GUIDE's fixed grid. Identical predictions on fresh pair designs rose from 0 to 64 of 126 (regression, depth 1), 76 to 87 (regression, depth 2), 33 to 116 (classification, depth 1) and 82 to 110 (classification, depth 2). Eight new captures bring the corpus to 580 across 290 cases. Details and the remaining gap are in the [selection validation](selection-validation.md#interaction-pairs-2026-10-26).
+
 ## Boosting selection by score tests, 2026-10-26
 
 New fits record **`guide-rs-0.1-experimental-reference16`**; saved format remains 1. Boosted classification and logistic-loss trees selected split variables from the signs of the negative gradients, which equal the class labels in every round, so each node's variable never changed across rounds: on covertype (classes 1 and 2, 50,000 sampled rows, 25% held out, 300 rounds, learning rate 0.1, depth 3) all 300 roots split on Elevation. Those losses and Poisson now select by score tests for bin effects on the current fit; squared error keeps the sign tests and is unchanged (California housing R² 0.8154 before and after).
