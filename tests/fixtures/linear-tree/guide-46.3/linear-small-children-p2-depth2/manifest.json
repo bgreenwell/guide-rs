@@ -1,0 +1,329 @@
+{
+  "fixture_format": 2,
+  "case": "linear-small-children-p2-depth2",
+  "created_utc": "2026-10-26T17:11:04.645558+00:00",
+  "source_url": "https://pages.stat.wisc.edu/~loh/treeprogs/guide/mac/m1/guide.zip",
+  "binary_sha256": "8d37e993f1948310d9f5003574db43734ab0f23aea0bb6c34c653dbf9a55a526",
+  "requested_version": "46.3",
+  "template_generated_by": "46.3",
+  "completed": true,
+  "settings": {
+    "task": {
+      "kind": "regression",
+      "loss": {
+        "kind": "squared_error"
+      }
+    },
+    "node_model": {
+      "kind": "linear"
+    },
+    "max_depth": 2,
+    "min_samples_leaf": 2,
+    "min_gain": 0.0,
+    "interactions": true,
+    "linear_splits": false,
+    "significance_level": 0.1,
+    "max_split_candidates": 0,
+    "pruning": {
+      "kind": "none"
+    },
+    "seed": 0,
+    "class_priors": null,
+    "class_costs": null,
+    "mtry": null
+  },
+  "tolerances": {
+    "cutpoint_absolute": 1e-09,
+    "prediction_absolute": 5e-05,
+    "prediction_relative": 5e-06,
+    "probability_absolute": 5e-06
+  },
+  "returncode": 0,
+  "result": {
+    "version": "46.3",
+    "build_date": "July 11, 2026",
+    "outcome": "fitted",
+    "classes": [],
+    "leaf_count": 4,
+    "splits": [
+      {
+        "node_id": 1,
+        "feature": "z",
+        "native_fields": [
+          "s",
+          "z",
+          "z",
+          "1",
+          "0.8415000000E+00"
+        ],
+        "conditions": [
+          "z <= 0.84150000",
+          "z > 0.84150000 or NA"
+        ],
+        "missing_left": false,
+        "kind": "numeric",
+        "threshold": 0.8415
+      },
+      {
+        "node_id": 2,
+        "feature": "u",
+        "native_fields": [
+          "n",
+          "u",
+          "u",
+          "1",
+          "0.4115000000E+00"
+        ],
+        "conditions": [
+          "u <= 0.41150000",
+          "u > 0.41150000 or NA"
+        ],
+        "missing_left": false,
+        "kind": "numeric",
+        "threshold": 0.4115
+      },
+      {
+        "node_id": 3,
+        "feature": "x",
+        "native_fields": [
+          "n",
+          "x",
+          "x",
+          "1",
+          "0.5199500000E+00"
+        ],
+        "conditions": [
+          "x <= 0.51995000",
+          "x > 0.51995000 or NA"
+        ],
+        "missing_left": false,
+        "kind": "numeric",
+        "threshold": 0.51995
+      }
+    ],
+    "predictions": [
+      0.912531,
+      1.53817,
+      0.757652,
+      0.981702,
+      1.39199,
+      0.983082,
+      1.82217,
+      2.63841,
+      2.33351,
+      2.16577,
+      1.6568,
+      1.48349,
+      3.0221,
+      1.10246,
+      0.886669,
+      2.00334,
+      2.07371,
+      1.56524,
+      2.11055,
+      2.03962,
+      1.09137,
+      7.06947,
+      2.24883,
+      1.83886,
+      3.0221,
+      7.06947,
+      7.06947,
+      0.805909,
+      1.11208,
+      1.2065,
+      1.98199,
+      1.86075,
+      0.309559,
+      1.95185,
+      3.0221,
+      1.76226,
+      1.37218,
+      1.81696,
+      2.35791,
+      3.0221,
+      1.61621,
+      0.709455,
+      1.9498,
+      2.164,
+      0.520027,
+      1.28335,
+      2.58986,
+      1.77373
+    ],
+    "observed": [
+      1.3823,
+      0.8938,
+      -0.0584,
+      2.0004,
+      1.5635,
+      1.2832,
+      1.5296,
+      2.6458,
+      1.7469,
+      2.4047,
+      1.5012,
+      1.3784,
+      3.0451,
+      1.0198,
+      -0.1948,
+      1.7581,
+      2.2605,
+      2.7091,
+      2.1499,
+      1.9046,
+      1.3982,
+      7.1061,
+      2.6195,
+      2.0209,
+      4.1465,
+      7.4199,
+      6.6824,
+      1.238,
+      1.5193,
+      1.6547,
+      1.9236,
+      1.7611,
+      0.458,
+      1.8022,
+      2.0497,
+      1.8695,
+      1.2952,
+      1.451,
+      2.4242,
+      2.8471,
+      1.71,
+      0.9519,
+      2.5024,
+      1.9596,
+      0.0564,
+      0.449,
+      3.0971,
+      0.7299
+    ],
+    "terminal_node_ids": [
+      5,
+      5,
+      4,
+      5,
+      4,
+      5,
+      5,
+      5,
+      5,
+      4,
+      5,
+      4,
+      6,
+      5,
+      5,
+      5,
+      4,
+      4,
+      5,
+      4,
+      4,
+      7,
+      5,
+      5,
+      6,
+      7,
+      7,
+      4,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      6,
+      4,
+      4,
+      4,
+      4,
+      6,
+      4,
+      5,
+      5,
+      4,
+      5,
+      5,
+      5,
+      4
+    ],
+    "probabilities": [],
+    "leaf_coefficients": {
+      "4": {
+        "Constant": {
+          "value": 0.22865,
+          "tolerance": 5.001e-06
+        },
+        "x": {
+          "value": 1.6339,
+          "tolerance": 5.0001000000000005e-05
+        },
+        "u": {
+          "value": 1.5944,
+          "tolerance": 5.0001000000000005e-05
+        }
+      },
+      "5": {
+        "Constant": {
+          "value": -0.91238,
+          "tolerance": 5.001e-06
+        },
+        "x": {
+          "value": 2.0663,
+          "tolerance": 5.0001000000000005e-05
+        },
+        "u": {
+          "value": 2.117,
+          "tolerance": 5.0001000000000005e-05
+        }
+      },
+      "6": {
+        "Constant": {
+          "value": 3.0221,
+          "tolerance": 5.0001000000000005e-05
+        },
+        "x": {
+          "value": 0.0,
+          "tolerance": 5.0001000000000005e-05
+        },
+        "u": {
+          "value": 0.0,
+          "tolerance": 5.0001000000000005e-05
+        }
+      },
+      "7": {
+        "Constant": {
+          "value": 7.0695,
+          "tolerance": 5.0001000000000005e-05
+        },
+        "x": {
+          "value": 0.0,
+          "tolerance": 5.0001000000000005e-05
+        },
+        "u": {
+          "value": 0.0,
+          "tolerance": 5.0001000000000005e-05
+        }
+      }
+    }
+  },
+  "file_sha256": {
+    "data.dsc": "d6ad2b911edf75e402af106c6f86ee3b9953362fb5df99d8c91976ef534ca1ad",
+    "data.txt": "2494d7379b5f499972339370143946f032761941e688d05c22d09297e5e426e1",
+    "data.csv": "9d92348cbd148a8a00b7aed7b6a9cd236c21ff75d9871c190f50b8fcf9e8cdfc",
+    "input.txt": "b37d0aa51a2e973101650ef9186779b79e389c11b75ece94e8471ace485d7684",
+    "dataset.json": "72d7846e88af056df9a81c5b9997573f6fe78fcb4ff4dac1f0389a6e37135375",
+    "options.json": "a40d4a34b8a8bfb13fa6f181e1158e6aaa41f7c5a0b351cfb7343e28316f7ef1",
+    "stdout.txt": "0afe44d12e94961f05da3813fcb1134f1a49f8fc1c2d3646b35c8142a5b744c0",
+    "stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "report.out": "b2c2d48fc472d0e644ec85aeba591e34aee73271c18df7a57aebb2736be5b766",
+    "splits.txt": "efc7fd851b9339c91be8cc9bf01b8cf9aa85695f2e4fd4d89e81e6e9cf0ed955",
+    "predictions.txt": "d2b7318f59d3a8dbf5f2711fa026f70d32ab44807c9c5e0d9547b4dd2c20e090",
+    "coefficients.txt": "0784544b86764e4fbedd458930a3164331a26bc20a60fc43e38dcebdb8aea265",
+    "predict.R": "56cf3002acf92344891df8efccf70630739757816af3b030022e6b7674a02da1"
+  }
+}
