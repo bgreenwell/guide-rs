@@ -1,5 +1,6 @@
 """Multiple-linear growth/pruning, isolated from deferred stepwise work."""
 import copy
+import random
 from reference_cases import case, data_files as constant_data_files
 
 
@@ -74,8 +75,44 @@ def multilevel_cases():
     return result
 
 
+def small_child_design(seed, p):
+    """A slope change in the z > 0.85 tail (about seven of 48 rows) with p
+    numeric regressors that split and fit and z split-only, so that split
+    search meets children near GUIDE's small-child thresholds."""
+    rng = random.Random(seed)
+    rows, targets = [], []
+    for _ in range(48):
+        x, z, u = rng.random(), rng.random(), rng.random()
+        y = 2 * x + u + (3 + 4 * x - 2 * u if z > 0.85 else 0) + rng.gauss(0, 0.5)
+        rows.append([round(x, 4), round(u, 4), round(z, 4)][:p] + [round(z, 4)])
+        targets.append(round(y, 4))
+    return rows, targets
+
+
+def small_child_cases():
+    result = {}
+    for name, seed, p, depth in SMALL_CHILD_CASES:
+        rows, targets = small_child_design(seed, p)
+        features = [("x", "numeric"), ("u", "numeric")][:p] + [("z", "numeric")]
+        value = case(name, False, features, rows, targets, depth=depth)
+        for j in range(p):
+            value["dataset"]["schema"][j]["role"] = "both"
+        value["options"]["node_model"] = {"kind": "linear"}
+        result[name] = value
+    return result
+
+
+# (name, design seed, numeric regressors, depth); minimum node size 2.
+SMALL_CHILD_CASES = [
+    ("linear-small-children-p1-depth2", 700, 1, 2),
+    ("linear-small-children-p2-depth2", 700, 2, 2),
+    ("linear-small-children-p1-depth3", 700, 1, 3),
+    ("linear-small-children-p2-depth3", 700, 2, 3),
+]
+
+
 def cases():
-    return {**shallow_cases(), **multilevel_cases()}
+    return {**shallow_cases(), **multilevel_cases(), **small_child_cases()}
 
 
 def data_files(value):
@@ -83,7 +120,9 @@ def data_files(value):
     codes = {"split": "s", "fit": "f", "both": "n"}
     files["data.dsc"] = "data.txt\nNA\n2\n" + "".join(
         f'{i} {f["name"]} {codes[f["role"]]}\n'
-        for i, f in enumerate(value["dataset"]["schema"], 1)) + "3 y d\n"
+        for i, f in enumerate(value["dataset"]["schema"], 1))
+    k = len(value["dataset"]["schema"])
+    files["data.dsc"] += f"{k + 1} y d\n"
     if value["dataset"]["weights"]:
-        files["data.dsc"] += "4 weight w\n"
+        files["data.dsc"] += f"{k + 2} weight w\n"
     return files

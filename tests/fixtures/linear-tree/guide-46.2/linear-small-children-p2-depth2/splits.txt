@@ -1,0 +1,7 @@
+         1 s z z        1   0.8415000000E+00
+         2 n u u        1   0.4115000000E+00
+         4 t x x   t
+         5 t x x   t
+         3 n x x        1   0.5199500000E+00
+         6 t NONE NONE   t
+         7 t NONE NONE   t
