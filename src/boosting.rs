@@ -1,4 +1,5 @@
-//! Gradient boosting with GUIDE trees. In each node, chi-square tests of the
+//! Gradient boosting with GUIDE trees, an experimental guide-rs extension
+//! whose selection tests and defaults may change. In each node, chi-square tests of the
 //! gradients against each predictor's GUIDE bins (and bin pairs) choose the
 //! split variable, the regularized second-order gain chooses its split, and
 //! leaves hold Newton steps (Chen and Guestrin 2016 for the gain; Friedman
@@ -177,7 +178,8 @@ fn class_probabilities(scores: &[f64], classes: usize) -> Vec<f64> {
 }
 
 impl FittedModel {
-    /// Fits a boosted ensemble of GUIDE trees. `validation`, required with
+    /// Fits a boosted ensemble of GUIDE trees (experimental; selection tests
+    /// and defaults may change). `validation`, required with
     /// `early_stopping_rounds`, scores each round.
     pub fn fit_boosting(
         data: &Dataset,

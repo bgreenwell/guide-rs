@@ -70,7 +70,7 @@ Ensemble trees, cross-validation folds and importance permutations are fitted in
 
 ## Boosting
 
-A `boosting` section fits gradient-boosted GUIDE trees instead of a single tree. It requires `fit.pruning` `none` and constant leaves, and supports squared-error, Poisson and logistic regression and classification:
+A `boosting` section fits gradient-boosted GUIDE trees instead of a single tree. Boosting is experimental: a guide-rs extension, not part of GUIDE, whose variable selection and defaults may change between releases. It requires `fit.pruning` `none` and constant leaves, and supports squared-error, Poisson and logistic regression and classification:
 
 ```json
 "boosting": {"rounds": 300, "learning_rate": 0.1, "max_depth": 3, "min_child_weight": 1.0,
