@@ -46,9 +46,14 @@ The search space for a deviance-like criterion with an n-dependent candidate rul
 - **Final constants.** With native's final leaves, 5 or more joint Breslow iterations reproduce the native leaf constants to the printed four decimals, and the baseline to within 6e-5 in log.
 - **Root selection.** Root chi-square ranks differ between native PH and a native Poisson tree with offset `log Λ_NA` (for example 22.9 against 25.0), so PH variable selection does not use exactly those Poisson residuals; the survey's mention of adjusted Anscombe residuals for Poisson trees is a candidate.
 
+## Retry after reference15
+
+With native Poisson split points matched, the four baseline schedules (Nelson-Aalen throughout; re-estimation after each split, breadth or depth first; re-estimation per level) were compared again with native depth-3 PH trees on 16 random designs, counting nodes whose split and ancestors agree (categorical partitions compared without orientation). Agreement is low for every schedule, 33 to 36 of 112 nodes, and barely separates them. Disagreements often start at the root: PH variable selection does not use the residuals of a Poisson fit with offset `log Λ_NA` (root chi-square values differ, for example 22.9 against 25.0), and deeper Poisson nodes still select a different variable in about one node in five. Two further gaps surfaced: the orientation of two-against-two categorical PH splits, and the PH selection residuals themselves (adjusted Anscombe or martingale residuals are candidates).
+
 ## Next steps
 
-1. Determine the growth-time baseline schedule with designs where per-split and per-level updates disagree. This needs native Poisson split points first (above).
-2. Implement constant-node PH trees on the existing Poisson-with-exposure machinery: exposure `Λ0(t)`, response δ, then the joint re-estimation.
-3. Freeze captures that compare root chi-square ranks, splits, node constants and fit-file columns, with declared tolerances for the documented non-convergence.
-4. Then restricted mean event time, pruning and linear node models.
+1. Identify the residuals PH selection tests use, from root chi-square values (one node, no schedule involved).
+2. Then determine the growth-time baseline schedule with designs where per-split and per-level updates disagree.
+3. Implement constant-node PH trees on the existing Poisson-with-exposure machinery: exposure `Λ0(t)`, response δ, then the joint re-estimation.
+4. Freeze captures that compare root chi-square ranks, splits, node constants and fit-file columns, with declared tolerances for the documented non-convergence.
+5. Then restricted mean event time, pruning and linear node models.
