@@ -1,0 +1,22 @@
+GUIDE (46.x constant-node reference)
+46.3 (version)
+1 (model fitting)
+"report.out"
+1 (single tree)
+2 (regression)
+3 (Poisson)
+3 (constant nodes)
+1 (interaction tests)
+2 (no pruning)
+"data.dsc"
+2 (explicit depth)
+2
+2 (explicit minimum node size)
+2
+0 (no LaTeX)
+3 (store splits)
+"splits.txt"
+2 (store predictions)
+"predictions.txt"
+1 (skip R export)
+1 (root variable rank)
