@@ -23,7 +23,7 @@ pub use pruning::PruningScore;
 pub use tree::{FitReport, FittedModel, MissingCodes, Node, SelectionDiagnostic, Split, Tree};
 
 /// Numerical behavior revision recorded in every newly fitted model.
-pub const ALGORITHM_VERSION: &str = "guide-rs-0.1-experimental-reference13";
+pub const ALGORITHM_VERSION: &str = "guide-rs-0.1-experimental-reference14";
 
 /// Errors from input validation, fitting, prediction, and model serialization.
 #[derive(Debug)]

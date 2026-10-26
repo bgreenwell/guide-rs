@@ -1,6 +1,6 @@
 # GUIDE 46.3 coverage and remaining work
 
-Updated **2026-10-25**, through algorithm revision **`guide-rs-0.1-experimental-reference13`**.
+Updated **2026-10-25**, through algorithm revision **`guide-rs-0.1-experimental-reference14`**.
 
 **guide-rs is a working subset of GUIDE, not a full replacement.** Its strongest native validation is for constant classification/regression, multiple-linear squared-error trees, and pruning. Other implemented losses and ensembles have narrower independent checks. No complete subsystem is certified equivalent to every GUIDE option.
 
@@ -71,7 +71,7 @@ These are the next priorities before expanding into the missing specialized fami
 
 Carried over from the 2026-10-23 repository review; fixed items (log-scale selection, bagging with CV, CSV/CLI diagnostics) are omitted.
 
-- [ ] Non-SSE linear and polynomial nodes (quantile, Poisson, logistic) accept children with only `terms + 1` rows, which can interpolate and win the split search; validate GUIDE's minimum node sizes for these models.
+- [ ] Minimum rows for non-least-squares linear leaves: quantile leaves now follow native's `p + 4` rule for complete numeric regressors; categorical or incomplete regressors, polynomial leaves, and Poisson and logistic leaves (native has no size rule and fits rank-deficient models in two-row nodes, Rust requires `terms + 1`) remain unmatched.
 - [ ] Unseen-category direction and the larger-child missing route are chosen by row count rather than weight; stepwise F tests use the unweighted n.
 - [ ] Excluded numeric columns must still parse as numbers at fit and prediction time.
 - [ ] Performance at scale: split search refits both child models for every candidate except in the classification lookahead and for squared-error constant leaves, which sweep sorted rows; periodic splits try O(cuts²) intervals; growth of a single tree is sequential below 512 rows per node; `predict` revalidates the model on every call (about 0.1 ms for a 100-tree forest).

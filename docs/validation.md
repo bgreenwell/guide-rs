@@ -2,6 +2,10 @@
 
 Local environment: Apple Silicon macOS, Rust 1.99.1. The runtime implementation is pure Rust; R is used only as an independent test oracle. GitHub Actions runs the ordinary suite on Linux, macOS and Windows plus the independent R job; all passed from a clean checkout on 2026-10-25. R prediction-function export was excluded from product scope on 2026-10-24 and removed from the code on 2026-10-25. Historical export checks below remain a record of earlier work; independent R numerical/statistical validation remains in scope.
 
+## Minimum rows for quantile linear leaves, 2026-10-25
+
+New fits record **`guide-rs-0.1-experimental-reference14`**; saved format remains 1. Black-box probes of GUIDE 46.3 median-regression trees (depth 3, minimum node size 2, 25 datasets for each of 1, 2 and 3 complete numeric regressors) show that native fits a linear model in a leaf with at least `p + 4` rows and a constant below that: the largest constant and smallest linear leaves were 4 and 5 rows for p = 1, 5 and 6 for p = 2, and 6 and 7 for p = 3. Rust had fitted linear quantile models from `p + 1` rows, which can interpolate small children and win the split search. Quantile leaves with complete numeric regressors now use the native threshold, and `quantile_linear_leaves_need_p_plus_four_rows` covers it. The same probes found no size threshold for Poisson (linear leaves with two rows, including rank-deficient fits) or logistic leaves (smallest linear leaf four rows; constant leaves of up to thirteen rows were degenerate); those keep the `terms + 1` requirement and remain open in the coverage checklist.
+
 ## Classification splits that raise impurity, 2026-10-25
 
 New fits record **`guide-rs-0.1-experimental-reference13`**; saved format remains 1. With `min_gain = 0`, classification no longer rejects a split of the selected variable whose count-weighted Gini rises, which priors or costs can cause; this resolves the depth-2 priors difference. Six new captures bring the corpus to **562 captures across 281 cases**; see [selection validation](selection-validation.md#classification-splits-that-raise-impurity-2026-10-25).
