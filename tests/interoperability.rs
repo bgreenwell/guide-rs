@@ -186,10 +186,12 @@ fn multiple_linear_tree_leaves_and_loocv_agree_with_independent_r_fits() {
         } else {
             format!("{formula}+{}", flags.join("+"))
         };
+        // GUIDE predicts the node mean in leaves with fewer than p + 3 rows.
+        let small = formula.split('+').count() + 3;
         let expected = r(
             &t,
             &format!(
-                "d<-read.csv('data.csv');g<-scan('leaves.txt',quiet=TRUE);p<-numeric(nrow(d));for(k in unique(g)){{v<-d[g==k,];w<-if('weight'%in%names(v))v$weight else rep(1,nrow(v));for(n in c('x','z')){{seen<-!is.na(v[[n]]);v[[paste0(n,'.NA')]]<-as.numeric(!seen);v[[n]][!seen]<-weighted.mean(v[[n]][seen],w[seen])}};p[g==k]<-fitted(lm(y~{formula},data=v,weights=w))}};cat(format(p,digits=17))"
+                "d<-read.csv('data.csv');g<-scan('leaves.txt',quiet=TRUE);p<-numeric(nrow(d));for(k in unique(g)){{v<-d[g==k,];w<-if('weight'%in%names(v))v$weight else rep(1,nrow(v));for(n in c('x','z')){{seen<-!is.na(v[[n]]);v[[paste0(n,'.NA')]]<-as.numeric(!seen);v[[n]][!seen]<-weighted.mean(v[[n]][seen],w[seen])}};p[g==k]<-if(nrow(v)<{small})weighted.mean(v$y,w) else fitted(lm(y~{formula},data=v,weights=w))}};cat(format(p,digits=17))"
             ),
         );
         near(
