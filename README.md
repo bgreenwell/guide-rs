@@ -10,7 +10,7 @@ A pure Rust implementation of GUIDE-style classification and regression trees, t
 - Constant, multiple-linear, polynomial, quantile, Poisson and logistic node models
 - Numeric, categorical and periodic predictors; weights, exposures, missing values and missing-value flag variables
 - Cost-complexity, fixed-size, validation-sample and cross-validation pruning
-- Bagged ensembles, forests, gradient boosting with GUIDE's variable selection, and GUIDE-style importance scores
+- Bagged ensembles, forests, experimental gradient boosting with GUIDE's variable selection, and GUIDE-style importance scores
 - Seeded, deterministic fits saved as JSON, identical for any thread count; text, Graphviz DOT and LaTeX tree output
 - scikit-learn compatible Python estimators (experimental; see [python/](python/README.md))
 - No GUIDE, Fortran, BLAS or LAPACK dependency

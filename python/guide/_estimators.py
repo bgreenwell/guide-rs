@@ -967,7 +967,10 @@ n_jobs, random_state
 
 
 class GuideBoostingRegressor(RegressorMixin, _Boosting, _Regression):
-    __doc__ = """Gradient-boosted GUIDE regression trees.
+    __doc__ = """Gradient-boosted GUIDE regression trees (experimental).
+
+    Boosting is a guide-rs extension, not part of GUIDE; its variable
+    selection and defaults may change between releases.
 
     Each split variable is chosen by chi-square tests of the gradients against
     each predictor's bins: GUIDE's tests on their signs for squared error, and
@@ -1043,8 +1046,11 @@ class GuideBoostingRegressor(RegressorMixin, _Boosting, _Regression):
 
 
 class GuideBoostingClassifier(ClassifierMixin, _Boosting, _Classification):
-    __doc__ = """Gradient-boosted GUIDE classification trees (logistic loss for two
-    classes, softmax with one tree per class and round otherwise).
+    __doc__ = """Gradient-boosted GUIDE classification trees (experimental).
+
+    Logistic loss for two classes, softmax with one tree per class and round
+    otherwise. Boosting is a guide-rs extension, not part of GUIDE; its
+    variable selection and defaults may change between releases.
 
     Each split variable is chosen by score tests of the gradients against each
     predictor's bins, which keep GUIDE's unbiased variable selection; the

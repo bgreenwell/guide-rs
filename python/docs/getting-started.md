@@ -41,7 +41,7 @@ Cross-validation folds, forest trees and importance permutations run in parallel
 
 ## Boosting
 
-`GuideBoostingRegressor` and `GuideBoostingClassifier` fit gradient-boosted trees. Each split variable comes from chi-square tests of the gradients against each predictor's bins (GUIDE's tests on the gradient signs for squared error), and the split point from the second-order gain, so variables with many distinct values are not favored. Early stopping keeps the round with the lowest loss on a validation set:
+`GuideBoostingRegressor` and `GuideBoostingClassifier` fit gradient-boosted trees. Boosting is experimental: a guide-rs extension, not part of GUIDE, whose variable selection and defaults may change between releases. Each split variable comes from chi-square tests of the gradients against each predictor's bins (GUIDE's tests on the gradient signs for squared error), and the split point from the second-order gain, so variables with many distinct values are not favored. Early stopping keeps the round with the lowest loss on a validation set:
 
 ```python
 from guide import GuideBoostingClassifier

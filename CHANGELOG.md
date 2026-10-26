@@ -17,7 +17,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 - Sphinx documentation for the Python package: user guide, API reference and the example notebooks
 - Python wheels for Linux, macOS and Windows built and tested in CI, published to PyPI on version tags
 - `pruning_loss` prunes classification trees and measures out-of-bag loss by log loss or Brier score instead of misclassification cost
-- Gradient boosting with GUIDE variable selection (`fit_boosting`, a `boosting` CLI section, `GuideBoostingRegressor` and `GuideBoostingClassifier`) for squared-error, Poisson and logistic regression and classification, with early stopping
+- Experimental gradient boosting with GUIDE variable selection (`fit_boosting`, a `boosting` CLI section, `GuideBoostingRegressor` and `GuideBoostingClassifier`) for squared-error, Poisson and logistic regression and classification, with early stopping
 - Multiclass trees split categorical predictors with more than 11 levels instead of rejecting them
 - Missing-value flag variables (GUIDE M variables) for constant node models
 - `exposures_from_csv` reads prediction exposures with line-numbered errors
