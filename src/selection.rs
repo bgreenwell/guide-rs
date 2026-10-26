@@ -194,6 +194,24 @@ pub(crate) fn select_with_labels(
         .copied()
         .collect::<std::collections::BTreeSet<_>>()
         .len();
+    select_with_test(ctx, ids, features, mode, classes, Some(labels), |bins| {
+        test(labels, bins)
+    })
+}
+/// Variable selection with a custom association test of the response with a
+/// predictor's bins, one bin per row of `ids`, returning the statistic,
+/// degrees of freedom and log upper-tail probability. `classes` sets the bin
+/// count for classification contexts; linear-combination splits need the
+/// response groups `labels`.
+pub(crate) fn select_with_test(
+    ctx: &Context<'_>,
+    ids: &[usize],
+    features: &[usize],
+    mode: SelectionMode,
+    classes: usize,
+    labels: Option<&[usize]>,
+    test: impl Fn(&[usize]) -> (f64, usize, f64) + Sync,
+) -> Selection {
     let parallel = ids.len() >= PARALLEL_MIN_ROWS;
     let tests = ordered_map(
         features,
@@ -201,7 +219,7 @@ pub(crate) fn select_with_labels(
         || (),
         |_, &j| {
             let bins = discretize(ctx, ids, j, false, mode, classes);
-            (!bins.iter().all(|x| *x == bins[0])).then(|| test(labels, &bins))
+            (!bins.iter().all(|x| *x == bins[0])).then(|| test(&bins))
         },
     );
     let mut diagnostics = vec![];
@@ -277,7 +295,7 @@ pub(crate) fn select_with_labels(
             || (vec![], vec![]),
             |(index, joint), &(a, b)| {
                 joint_cells(&bins[a], &bins[b], 16 * ids.len() + 1024, index, joint);
-                test(labels, joint).2
+                test(joint).2
             },
         );
         let mut best_pair = None;
@@ -324,7 +342,8 @@ pub(crate) fn select_with_labels(
             }
         }
     }
-    if mode == SelectionMode::Fit
+    if let Some(labels) = labels
+        && mode == SelectionMode::Fit
         && ctx.options.linear_splits
         && !selection.pair
         && best_main_log_p >= main_log_threshold

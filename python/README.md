@@ -13,7 +13,7 @@ The bindings are experimental; see the core's [coverage and remaining work](http
 - Per-feature roles (`feature_roles`): split only, fit only, both or excluded; periodic features (`periodic_features`) and missing-value flags (`missing_flags`)
 - Pruning by cross-validation, cost complexity, leaf count or a validation sample (`fit(..., validation_data=...)`)
 - Bagged ensembles and forests with out-of-bag loss, and bias-adjusted GUIDE importance scores (`guide.importance`)
-- Gradient boosting (`GuideBoostingRegressor`, `GuideBoostingClassifier`) whose split variables come from GUIDE's tests on gradient signs, so split counts and gain are not biased toward variables with many values
+- Gradient boosting (`GuideBoostingRegressor`, `GuideBoostingClassifier`) whose split variables come from GUIDE-style chi-square tests on the gradients, so split counts and gain are not biased toward variables with many values
 - Tree drawings with matplotlib (`guide.plot_tree`), plus text, Graphviz DOT and JSON output, the JSON matching models saved by the guide-rs CLI
 
 ## Installation

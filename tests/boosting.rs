@@ -238,3 +238,27 @@ fn invalid_boosting_configurations_and_models_are_rejected() {
     json["trees"] = serde_json::Value::Array(vec![json["trees"][0].clone()]);
     assert!(FittedModel::from_json(&json.to_string()).is_err());
 }
+
+#[test]
+fn classification_boosting_moves_on_from_a_fitted_variable() {
+    // Additive log odds, stronger in x than in z, with labels drawn from a
+    // deterministic pseudo-random uniform. Once x is fitted, z explains the
+    // rest. Gradient signs are the class labels in every round, so selection
+    // on them would split every root on x.
+    let d = dataset(1000, |x, z| {
+        let u = ((x * 12.9898 + z * 78.233).sin() * 43758.5453).rem_euclid(1.0);
+        let logit = if x > 0.5 { 2.0 } else { -2.0 } + if z > 0.5 { 0.8 } else { -0.8 };
+        Value::Text(if u < stats::sigmoid(logit) { "b" } else { "a" }.into())
+    });
+    let b = BoostingOptions {
+        rounds: 60,
+        ..Default::default()
+    };
+    let m = FittedModel::fit_boosting(&d, &options(Task::Classification), &b, None).unwrap();
+    let roots: Vec<usize> = m
+        .trees
+        .iter()
+        .filter_map(|t| t.root.split.as_ref().map(|s| s.feature()))
+        .collect();
+    assert!(roots.contains(&0) && roots.contains(&1), "{roots:?}");
+}

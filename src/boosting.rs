@@ -1,9 +1,12 @@
-//! Gradient boosting with GUIDE trees. In each node, GUIDE's chi-square tests
-//! on the signs of the negative gradients choose the split variable, the
-//! regularized second-order gain chooses its split, and leaves hold Newton
-//! steps (Chen and Guestrin 2016 for the gain; Friedman 2001 for boosting).
-//! The tests rank variables; after the first round they are not significance
-//! tests.
+//! Gradient boosting with GUIDE trees. In each node, chi-square tests of the
+//! gradients against each predictor's GUIDE bins (and bin pairs) choose the
+//! split variable, the regularized second-order gain chooses its split, and
+//! leaves hold Newton steps (Chen and Guestrin 2016 for the gain; Friedman
+//! 2001 for boosting). For squared error the tests are GUIDE's, on the signs
+//! of the negative gradients. For the other losses the sign is mostly fixed
+//! by the response (it is the class label for classification), so the tests
+//! are score tests for bin effects on the current fit instead. The tests rank
+//! variables; after the first round they are not significance tests.
 use crate::{
     node::Context,
     selection::{self, SelectionMode},
@@ -136,6 +139,31 @@ impl Objective {
     }
 }
 
+/// Score test for bin effects on the current fit: with `G` and `H` the
+/// gradient and Hessian sums of the rows and `G_b`, `H_b` those of bin `b`,
+/// `sum_b (G_b - H_b G / H)^2 / H_b`, on (nonempty bins - 1) degrees of
+/// freedom. The Hessian is the variance of the gradient when the loss is a
+/// log likelihood, as for the Poisson, logistic and softmax losses.
+fn score_test(ids: &[usize], g: &[f64], h: &[f64], bins: &[usize]) -> (f64, usize, f64) {
+    let width = bins.iter().max().map_or(0, |m| m + 1);
+    let (mut gb, mut hb) = (vec![0.0; width], vec![0.0; width]);
+    for (&i, &b) in ids.iter().zip(bins) {
+        gb[b] += g[i];
+        hb[b] += h[i];
+    }
+    let (gs, hs): (f64, f64) = (gb.iter().sum(), hb.iter().sum());
+    let mut stat = 0.0;
+    let mut active = 0_usize;
+    for (&gb, &hb) in gb.iter().zip(&hb) {
+        if hb > 0.0 {
+            stat += (gb - hb * gs / hs).powi(2) / hb;
+            active += 1;
+        }
+    }
+    let df = active.saturating_sub(1);
+    (stat, df, stats::chi_square_log_survival(stat, df))
+}
+
 /// Probabilities of every class from per-output scores.
 fn class_probabilities(scores: &[f64], classes: usize) -> Vec<f64> {
     if classes == 2 {
@@ -256,7 +284,15 @@ impl FittedModel {
                 }
                 let mut next = 0;
                 let root = grow(
-                    &ctx, &sample, &gradients, &hessians, 0, &mut next, &mut rng, boosting,
+                    &ctx,
+                    &sample,
+                    &gradients,
+                    &hessians,
+                    objective == Objective::SquaredError,
+                    0,
+                    &mut next,
+                    &mut rng,
+                    boosting,
                 );
                 for (i, row) in data.rows.iter().enumerate() {
                     scores[i][k] += root.leaf(row).model.scalar(row, 1.0, &Loss::SquaredError);
@@ -472,13 +508,16 @@ fn mean_loss(
         / total
 }
 
-/// Grows one boosted tree on gradients `g` and Hessians `h` (weighted).
+/// Grows one boosted tree on gradients `g` and Hessians `h` (weighted),
+/// selecting split variables by gradient signs if `signs`, else by score
+/// tests.
 #[allow(clippy::too_many_arguments)]
 fn grow(
     ctx: &Context<'_>,
     ids: &[usize],
     g: &[f64],
     h: &[f64],
+    signs: bool,
     depth: usize,
     next_id: &mut usize,
     rng: &mut ChaCha8Rng,
@@ -521,8 +560,14 @@ fn grow(
         features.truncate(m);
         features.sort_unstable();
     }
-    let labels: Vec<usize> = ids.iter().map(|&i| usize::from(-g[i] > 0.0)).collect();
-    let selection = selection::select_with_labels(ctx, ids, &labels, &features, SelectionMode::Fit);
+    let selection = if signs {
+        let labels: Vec<usize> = ids.iter().map(|&i| usize::from(-g[i] > 0.0)).collect();
+        selection::select_with_labels(ctx, ids, &labels, &features, SelectionMode::Fit)
+    } else {
+        selection::select_with_test(ctx, ids, &features, SelectionMode::Fit, 2, None, |bins| {
+            score_test(ids, g, h, bins)
+        })
+    };
     node.diagnostics = selection.diagnostics;
     let splits: Vec<Split> = selection
         .features
@@ -562,12 +607,23 @@ fn grow(
         let (mut left, mut right) = (vec![], vec![]);
         partition(ids, split, ctx.data, &mut left, &mut right);
         node.split = Some(split.clone());
-        node.left = Some(Box::new(grow(ctx, &left, g, h, depth + 1, next_id, rng, b)));
+        node.left = Some(Box::new(grow(
+            ctx,
+            &left,
+            g,
+            h,
+            signs,
+            depth + 1,
+            next_id,
+            rng,
+            b,
+        )));
         node.right = Some(Box::new(grow(
             ctx,
             &right,
             g,
             h,
+            signs,
             depth + 1,
             next_id,
             rng,

@@ -1,6 +1,6 @@
 # GUIDE 46.3 coverage and remaining work
 
-Updated **2026-10-25**, through algorithm revision **`guide-rs-0.1-experimental-reference15`**.
+Updated **2026-10-25**, through algorithm revision **`guide-rs-0.1-experimental-reference16`**.
 
 **guide-rs is a working subset of GUIDE, not a full replacement.** Its strongest native validation is for constant classification/regression, multiple-linear squared-error trees, and pruning. Other implemented losses and ensembles have narrower independent checks. No complete subsystem is certified equivalent to every GUIDE option.
 
@@ -22,7 +22,7 @@ A checked box below means the stated capability exists with tests. It does **not
 - [x] Missing-value flag (M) variables for constant node models, with per-code selection groups and code-subset split routing.
 - [x] Cost-complexity, fixed-size, validation-sample and cross-validation pruning; independently verified correct behavior in documented native counterexamples.
 - [x] Extension: classification pruning and out-of-bag loss by log loss or Brier score (`pruning_loss`) instead of misclassification cost.
-- [x] Extension: gradient boosting with GUIDE variable selection on gradient signs (squared error, Poisson, logistic, binary and multiclass classification), subsampling, per-node feature sampling and early stopping.
+- [x] Extension: gradient boosting with GUIDE-style variable selection, on gradient signs for squared error and score tests for bin effects otherwise (squared error, Poisson, logistic, binary and multiclass classification), subsampling, per-node feature sampling and early stopping.
 - [x] Basic bagging/forest ensembles, per-node feature sampling, OOB loss and deterministic seeds.
 - [x] Constant classification/SSE importance scoring, permutation adjustment and scoped important-variable checks.
 - [x] Prediction, JSON conversion, text/DOT/LaTeX tree output, and macOS/Linux/Windows CI.
