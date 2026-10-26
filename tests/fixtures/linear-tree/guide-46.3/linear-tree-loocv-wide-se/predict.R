@@ -1,5 +1,5 @@
 ## Function for predicting least-squares mean of y
-## Code produced by greenwbm using GUIDE 46.3 on 10/23/26 at 23:0
+## Code produced by GUIDE 46.3 on 10/23/26 at 23:0
 guide_predict <- function(){
  nodeid <- 1
  predict <- 4.97500000000

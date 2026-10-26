@@ -1,5 +1,5 @@
 ## Function for predicting least-squares mean of y
-## Code produced by greenwbm using GUIDE 46.3 on 10/23/26 at 23:56
+## Code produced by GUIDE 46.3 on 10/23/26 at 23:56
 guide_predict <- function(){
  if(!is.na(x) & x <= 63.5000000000 ){
    if(!is.na(x) & x <= 31.5000000000 ){
