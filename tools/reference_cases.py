@@ -88,14 +88,21 @@ def cases():
         ["a" if k < shares[x] else "b" for x in range(4) for k in range(40)], depth=1)
     pair = [("A", "numeric"), ("B", "numeric")]
     cells = [(0, 0), (0, 1), (1, 0), (1, 1)]
-    def merge_case(name, last, **kwargs):
-        share = dict(zip(cells, [40, 40, 38, last]))
+    def merge_case(name, last, shares=None, **kwargs):
+        share = dict(zip(cells, shares or [40, 40, 38, last]))
         add(name, True, pair, [[a, b] for a, b in cells for _ in range(40)],
             ["a" if k < share[a, b] else "b" for a, b in cells for k in range(40)],
             depth=2, **kwargs)
     merge_case("class-same-class-kept", 12)
     merge_case("class-same-class-cascade", 24)
     merge_case("class-same-class-costs", 24, costs=[[0.0, 1.0], [3.0, 0.0]])
+    # With priors or unequal costs, count-weighted Gini can rise at a split
+    # whose children predict different classes; GUIDE still makes the split.
+    merge_case("class-impurity-increase-priors", 24, priors=[0.3, 0.7])
+    merge_case("class-impurity-increase-priors-2", None, shares=[38, 38, 40, 12],
+               priors=[0.3, 0.7])
+    merge_case("class-impurity-increase-costs", None, shares=[0, 12, 36, 0],
+               costs=[[0.0, 1.0], [3.0, 0.0]])
     # Categorical orientation: the side with fewer levels goes left, whatever
     # its row count or response. Each spec lists (level, rows, low response).
     for k, spec in enumerate([[("p", 10, 1), ("q", 10, 1), ("r", 40, 0)],
