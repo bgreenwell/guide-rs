@@ -54,6 +54,26 @@ def inputs(value, version):
             lines += ["2 (explicit costs)", '"costs.txt"']
         else:
             lines += ["1 (unit costs)"]
+    elif opt["task"]["loss"]["kind"] in ("poisson", "quantile"):
+        # These models have no cutpoint prompt: GUIDE uses its fixed grid.
+        loss = opt["task"]["loss"]
+        if kind != "none":
+            raise ValueError("Poisson/quantile reference cases do not prune")
+        lines += ["2 (regression)"]
+        if loss["kind"] == "poisson":
+            lines += ["3 (Poisson)", "3 (constant nodes)"]
+        else:
+            lines += ["2 (quantile)", "3 (constant nodes)", "1 (one quantile)",
+                      f'{loss["probability"]} (quantile probability)']
+        lines += ["1 (interaction tests)"] + pruning_input + ['"data.dsc"']
+        lines += ["2 (explicit depth)", str(opt["max_depth"]),
+                  "2 (explicit minimum node size)", "2", "0 (no LaTeX)",
+                  "3 (store splits)", '"splits.txt"', "2 (store predictions)",
+                  '"predictions.txt"', "1 (skip R export)", "1 (root variable rank)"]
+        files["input.txt"] = "\n".join(lines) + "\n"
+        files["dataset.json"] = json.dumps(value["dataset"], indent=2) + "\n"
+        files["options.json"] = json.dumps(opt, indent=2) + "\n"
+        return files
     else:
         lines += ["2 (regression)", "1 (linear)", "1 (least squares)",
                   "3 (constant nodes)", "1 (interaction tests)"] + pruning_input + ['"data.dsc"']
@@ -102,11 +122,15 @@ def parse_result(stdout, files, expected_version, value):
     if lines[0][4:] != [f"P({c})" for c in classes]:
         raise ValueError("unexpected probability columns")
     predictions, observed, node_ids, probabilities = [], [], [], []
-    for row, target in zip(lines[1:], value["dataset"]["targets"]):
+    # With an exposure, GUIDE reports Poisson observations and predictions as
+    # rates: counts divided by exposure.
+    exposures = value["dataset"]["offsets"] or [None] * len(value["dataset"]["rows"])
+    for row, target, exposure in zip(lines[1:], value["dataset"]["targets"], exposures):
         if len(row) != len(lines[0]) or row[0] != "y":
             raise ValueError("incomplete prediction row")
         obs = row[2] if classes else float(row[2])
-        if obs != target:
+        expected_obs = target if exposure is None else target / exposure
+        if obs != expected_obs and not (exposure and abs(obs - expected_obs) <= 1e-5 * max(1, abs(expected_obs))):
             raise ValueError("observed response does not match the input row")
         observed.append(obs)
         predictions.append(row[3] if classes else float(row[3]))

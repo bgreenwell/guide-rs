@@ -34,6 +34,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 - `min_gain = 0` accepts zero-gain splits on the selected variable, matching GUIDE
 - With `min_gain = 0`, classification keeps splits that raise prior- or cost-adjusted impurity, matching GUIDE
 - Linear quantile leaves need `p + 4` rows for a linear fit, matching GUIDE; smaller leaves are constant
+- Poisson and quantile trees search GUIDE's fixed grid of cutpoints, Poisson children need a positive count, and quantile leaves average at exact ties, matching GUIDE
 - CSV parse errors report the line number and column name
 - File I/O errors name the file that could not be read or written
 

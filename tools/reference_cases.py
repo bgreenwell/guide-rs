@@ -1,16 +1,17 @@
 """Deterministic, small datasets for the constant-node GUIDE acceptance milestone."""
 import csv
 import io
+import math
 import random
 
 
 def case(name, classification, features, rows, targets, *, weights=None,
-         priors=None, costs=None, depth=2):
+         priors=None, costs=None, depth=2, loss=None, offsets=None):
     schema = [{"name": n, "feature_type": {"kind": k}, "role": "split"}
               for n, k in features]
     options = {
         "task": {"kind": "classification"} if classification else
-                {"kind": "regression", "loss": {"kind": "squared_error"}},
+                {"kind": "regression", "loss": loss or {"kind": "squared_error"}},
         "node_model": {"kind": "constant"}, "max_depth": depth,
         "min_samples_leaf": 2, "min_gain": 0.0, "interactions": True,
         "linear_splits": False, "significance_level": 0.1,
@@ -19,7 +20,8 @@ def case(name, classification, features, rows, targets, *, weights=None,
     }
     return {"name": name, "classification": classification,
             "dataset": {"schema": schema, "rows": rows, "targets": targets,
-                        "weights": weights or [], "offsets": []}, "options": options}
+                        "weights": weights or [], "offsets": offsets or []},
+            "options": options}
 
 
 def cases():
@@ -185,8 +187,38 @@ def pruning_cases():
     return result
 
 
+def glm_cases():
+    """Poisson and quantile constant trees: GUIDE's fixed cutpoint grid and
+    Poisson's positive-count children."""
+    result = {}
+    def add(name, rows, targets, loss, depth=1, offsets=None, features=None):
+        value = case(name, False, features or [("x", "numeric")], rows, targets,
+                     depth=depth, loss=loss, offsets=offsets)
+        result[name] = value
+    poisson, median = {"kind": "poisson"}, {"kind": "quantile", "probability": 0.5}
+    rng = random.Random(46)
+    xs = [rng.random() for _ in range(200)]
+    rows = [[round(x, 4)] for x in xs]
+    def counts(rate, n=40):
+        return sum(1 for _ in range(n) if rng.random() < rate / n)
+    add("poisson-cut-grid", rows, [counts(2.5 if r[0] > 0.5 else 1.0) for r in rows], poisson)
+    add("poisson-zero-child", [[i + 1] for i in range(40)],
+        [0 if i < 12 else 6 for i in range(40)], poisson)
+    exposure = [round(rng.uniform(0.2, 3.0), 4) for _ in rows[:150]]
+    add("poisson-exposure", rows[:150],
+        [counts(e * (2.5 if r[0] > 0.5 else 1.0), 80) for r, e in zip(rows, exposure)],
+        poisson, offsets=exposure)
+    add("quantile-cut-grid", rows,
+        [round((2 if r[0] > 0.5 else 0) + rng.gauss(0, 1), 4) for r in rows], median)
+    pairs = [[round(rng.random(), 4), round(rng.random(), 4)] for _ in range(150)]
+    add("quantile-depth-2", pairs,
+        [round((2 if a > 0.5 else 0) + (1 if b > 0.3 else 0) + rng.gauss(0, 1), 4)
+         for a, b in pairs], median, depth=2, features=[("a", "numeric"), ("b", "numeric")])
+    return result
+
+
 def all_cases():
-    return {**cases(), **pruning_cases()}
+    return {**cases(), **pruning_cases(), **glm_cases()}
 
 
 def data_files(value):
@@ -199,6 +231,11 @@ def data_files(value):
         names.append("weight")
         codes.append("w")
         records = [r + [w] for r, w in zip(records, data["weights"])]
+    if data["offsets"]:
+        # GUIDE's Poisson offset is the log exposure.
+        names.append("offset")
+        codes.append("z")
+        records = [r + [repr(math.log(o))] for r, o in zip(records, data["offsets"])]
     records = [["NA" if v is None else v for v in r] for r in records]
     csv_text = io.StringIO(newline="")
     writer = csv.writer(csv_text, lineterminator="\n")

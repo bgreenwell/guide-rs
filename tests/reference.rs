@@ -466,7 +466,8 @@ fn compare_core_case(path: &Path) -> std::result::Result<(), String> {
             .as_f64()
             .unwrap(),
     )?;
-    let predictions = model.predict(&data.rows).unwrap();
+    let exposure = (!data.offsets.is_empty()).then_some(&data.offsets[..]);
+    let predictions = model.predict_with_offsets(&data.rows, exposure).unwrap();
     if predictions.len() != result["predictions"].as_array().unwrap().len() {
         return Err("prediction count differs".into());
     }
@@ -501,6 +502,11 @@ fn compare_core_case(path: &Path) -> std::result::Result<(), String> {
                 let rtol = manifest["tolerances"]["prediction_relative"]
                     .as_f64()
                     .unwrap();
+                // GUIDE reports Poisson predictions with an exposure as rates.
+                let value = match exposure {
+                    Some(e) => value / e[i],
+                    None => *value,
+                };
                 let tolerance = if qr_evidence.is_some() {
                     1e-9
                 } else {
@@ -536,7 +542,7 @@ fn compare_core_case(path: &Path) -> std::result::Result<(), String> {
     }
     let restored = FittedModel::from_json(&model.to_json().unwrap()).unwrap();
     assert_eq!(
-        serde_json::to_value(restored.predict(&data.rows).unwrap()).unwrap(),
+        serde_json::to_value(restored.predict_with_offsets(&data.rows, exposure).unwrap()).unwrap(),
         serde_json::to_value(predictions).unwrap()
     );
     Ok(())
