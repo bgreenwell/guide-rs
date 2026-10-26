@@ -65,6 +65,14 @@ Black-box probes with both pinned executables (multiple-linear SSE with a fit-on
 
 The constant-node findings are frozen as twelve captures in the core corpus (see [reference provenance](reference-upstream.md#zero-gain-splits-and-same-class-leaf-merging-2026-10-25)). A depth-2 classification design with priors 0.3/0.7 kept three native leaves but two Rust leaves; the [follow-up below](#classification-splits-that-raise-impurity-2026-10-25) resolves it.
 
+## Weights and priors in selection tests, 2026-10-25
+
+The audit asked whether native contingency tables count rows or weights, and whether class priors enter them. Rust counts rows, uses weights only through the fitted node model (and so the residual signs), and leaves priors out.
+
+- **Priors.** In 45 classification probes (15 designs, each with estimated priors, 0.8/0.2 and 0.2/0.8) built so that prior-weighted tables would select a different variable, native and Rust selected the same root variable every time.
+- **Weights.** In 15 weighted regression probes where a few heavy rows carry a different signal, weights changed native's root variable in 3 designs, and Rust followed in all of them; 14 of the 15 agree.
+- **Last-level pairs.** The one disagreement had no room below the root (`max_depth = 1`) and selected an interaction pair. Rust then splits on the variable with the best single split; native chose the other one. Across 51 depth-1 designs that select a pair, Rust agrees with native in 22. No candidate rule explains native's choice: the earlier column (27), the stronger main effect (32), the two-level lookahead used at deeper nodes (27), lookahead variants allowing either variable or only the same variable in the children (27, 25), or the opposite of the best single split (29). This is tracked in the coverage checklist.
+
 ## Classification splits that raise impurity, 2026-10-25
 
 In that design, the node A > 0.5 holds 62 rows of class a and 18 of class b. Its best split on B gives children with prior-adjusted posteriors (0.508, 0.492) and (0.075, 0.925), which predict different classes, but their count-weighted Gini (25.56) exceeds the parent's (21.24). Rust rejected the split for raising impurity; native keeps it. Native classification with no gain threshold therefore splits the selected variable whenever an admissible split exists, and same-class merging alone decides what survives. Without priors or costs, count-weighted Gini cannot rise, so only prior- and cost-adjusted trees change.

@@ -54,6 +54,7 @@ A checked box below means the stated capability exists with tests. It does **not
 These are the next priorities before expanding into the missing specialized families.
 
 - [ ] Establish native tie-breaking among exactly tied multi-predictor scores. Zero-gain splitting (`min_gain = 0`) and same-class leaf merging are resolved; the singleton zero-score rule is resolved. Native tie order is not column order and is recorded as a known difference.
+- [ ] Identify how native GUIDE chooses the split variable of an interaction pair selected at the last level, where no lookahead is possible; Rust's best-single-split rule agrees in 22 of 51 probes ([selection validation](selection-validation.md#weights-and-priors-in-selection-tests-2026-10-25)).
 - [ ] Validate high-cardinality categorical linear searches, near-tied partitions, broader missing patterns and projected/periodic split defaults. Multiclass categorical search above 11 levels is implemented and validated; when both sides have the same number of levels its orientation follows native eigenvector signs, which are not reproduced.
 - [ ] Finish importance calibration/normalization, zero-null fallback conventions, 50% thresholds and missing-flag aggregation.
 - [ ] Missing-value flags (M variables) with linear/polynomial/stepwise node models via the documented M-to-B conversion, and on periodic parents. Constant-node flags for numeric and categorical parents are implemented and validated ([flag validation](missing-flag-validation.md)).
@@ -71,7 +72,6 @@ These are the next priorities before expanding into the missing specialized fami
 Carried over from the 2026-10-23 repository review; fixed items (log-scale selection, bagging with CV, CSV/CLI diagnostics) are omitted.
 
 - [ ] Non-SSE linear and polynomial nodes (quantile, Poisson, logistic) accept children with only `terms + 1` rows, which can interpolate and win the split search; validate GUIDE's minimum node sizes for these models.
-- [ ] Selection contingency tables count rows without weights, and class priors do not enter the tests; confirm against the native binary and document in `algorithms.md`.
 - [ ] Unseen-category direction and the larger-child missing route are chosen by row count rather than weight; stepwise F tests use the unweighted n.
 - [ ] Excluded numeric columns must still parse as numbers at fit and prediction time.
 - [ ] Performance at scale: split search refits both child models for every candidate except in the classification lookahead and for squared-error constant leaves, which sweep sorted rows; periodic splits try O(cuts²) intervals; growth of a single tree is sequential below 512 rows per node; `predict` revalidates the model on every call (about 0.1 ms for a 100-tree forest).
