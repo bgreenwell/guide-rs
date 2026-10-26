@@ -1,0 +1,114 @@
+             GGG   U   U  I  DDDD   EEEE
+            G   G  U   U  I  D   D  E
+            G      U   U  I  D   D  E
+            G  GG  U   U  I  D   D  EEE
+            G   G  U   U  I  D   D  E
+            G   G  U   U  I  D   D  E
+             GGG    UUU   I  DDDD   EEEE
+   
+ GUIDE Classification and Regression Trees and Forests
+ Version 46.3 (Build date: July 11, 2026)          
+ Compiled with NAG Fortran 7.2 on macOS Tahoe 26.4.1 for Apple ARM processors    
+ Copyright (c) 1997-2023 Wei-Yin Loh. All rights reserved.
+ This software is based upon work partially supported by the U.S. Army Research Office,
+ National Science Foundation, National Institutes of Health,
+ Bureau of Labor Statistics, USDA Economic Research Service, and Eli Lilly.
+  
+ This job was started on 10/25/26 at 21:04
+  
+ Poisson regression tree
+ No pruning
+ DSC file: data.dsc
+ Training sample file: data.txt
+ Missing value code: NA
+ Records in data file start on line 2
+ D variable is y
+ Piecewise constant model
+ Number of records in data file: 40
+ Length of longest entry in data file: 2
+ Number of cases with positive D values: 28
+  
+ Summary information for training sample of size 40
+ d=dependent, b=split and fit cat variable using indicator variables,
+ c=split-only categorical, i=fit-only categorical (via indicators),
+ s=split-only numerical, n=split and fit numerical, f=fit-only numerical,
+ m=missing-value flag variable, p=periodic variable, w=weight,
+ z=offset variable
+                                                  #Codes/           
+                                                  Levels/           
+  Column  Name            Minimum      Maximum    Periods   #Missing
+       1  x          s    1.000        40.00    
+       2  y          d    0.000        6.000    
+  
+ Numbers of N, F, S, and P below exclude constant variables
+      Total  #cases w/   #missing
+     #cases    miss. D  ord. vals   #X-var   #N-var   #F-var   #S-var
+         40          0          0        0        0        0        1
+     #P-var   #M-var   #B-var   #C-var   #I-var
+          0        0        0        0        0
+ No offset variable in data file.
+ Number of cases used for training: 40
+  
+ Nodewise interaction tests on all variables
+ Split values for N and S variables based on exhaustive search
+ Maximum number of interaction splits: 100
+ Maximum number of split levels: 1
+ Minimum node sample size: 2
+  
+ Structure of final tree. Each terminal node is marked with a T.
+  
+ D-mean is mean of y in the node
+ Cases fit give the number of cases used to fit node
+ Deviance is mean residual deviance for all cases in node
+        Node    Total    Cases Matrix    Node       Node    Split          Other
+        label   cases      fit  rank    D-mean    deviance  variable       variables
+           1       40       40     1  4.200E+00  3.073E+00  x 
+           2T      13       13     1  4.615E-01  2.565E+00  - 
+           3T      27       27     1  6.000E+00  0.000E+00  - 
+  
+ Number of terminal nodes of final tree: 2
+ Total number of nodes of final tree: 3
+  
+ Regression tree:
+  
+ Node 1: x <= 13.500000
+   Node 2: y sample mean = 0.46153846
+ Node 1: x > 13.500000 or NA
+   Node 3: y sample mean = 6.0000000
+ 
+ ***************************************************************
+  
+ WARNING: p-values below not adjusted for split search. For a bootstrap solution see:
+  
+ 1. Loh et al. (2016), "Identification of subgroups with differential treatment effects
+ for longitudinal and multiresponse variables", Statistics in Medicine, v.35, 4837-4855.
+  
+ 2. Loh et al. (2019), "Subgroups from regression trees with adjustment for prognostic
+ effects and post-selection inference", Statistics in Medicine, v.38, 545-557.
+  
+ 3. Loh and Zhou (2020), "The GUIDE approach to subgroup identification",
+ in "Design and Analysis of Subgroups with Biopharmaceutical Applications", Springer, pp.147-165.
+  
+Node 1: Intermediate node
+ A case goes into Node 2 if x <= 13.500000
+ x mean = 20.500000
+ Coefficients of regression function for log mean:
+ Regressor    Coefficient  t-stat      p-value
+ Constant      1.435        18.60        0.000    
+ Predicted mean = 4.2000000
+ ----------------------------
+Node 2: Terminal node
+ Coefficients of regression function for log mean:
+ Regressor    Coefficient  t-stat      p-value
+ Constant    -0.7732       -1.894       0.8259E-01
+ Predicted mean = 0.46153846
+ ----------------------------
+Node 3: Terminal node
+ Coefficients of regression function for log mean:
+ Regressor    Coefficient  t-stat      p-value
+ Constant      1.792        22.81       0.3881E-15
+ Predicted mean = 6.0000000
+ ----------------------------
+ Observed and fitted values are stored in predictions.txt
+ Split and fit variable names are stored in splits.txt
+ Elapsed time in seconds: 0.17040E-02
