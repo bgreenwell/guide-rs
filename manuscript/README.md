@@ -1,8 +1,9 @@
 # guide-rs manuscript
 
-Working skeleton for a **Journal of Statistical Software (JSS)** article.
+Working draft for a **Journal of Statistical Software (JSS)** article.
 `manuscript/` is independent of Cargo and excluded from the Rust package.
-The draft contains explicit TODOs, not completed analyses or submission claims.
+The abstract and introduction establish the contribution and scope; later
+sections retain explicit TODOs. Empirical analyses remain to be completed.
 The paper leads with the Rust implementation, library API, and CLI. The
 scikit-learn-compatible Python wrapper follows as a convenient interface to
 the same core.
@@ -82,13 +83,45 @@ and the [official article template](https://www.jstatsoft.org/public/journals/1/
   use `\citet`/`\citep`, complete journal titles, and available DOIs.
 - Put optional, descriptively titled appendices after the bibliography.
 
-## Proposed paper scope and workflow
+## Contribution and scope
+
+The central contribution is **open, reusable statistical computing
+infrastructure for GUIDE-style trees**. Present the contributions in this order:
+
+1. An independent, MIT-licensed implementation that users can inspect, build,
+   modify, redistribute, and embed in other applications.
+2. A reusable Rust library and explicit CLI for scripted fitting, inspection,
+   model persistence, and prediction.
+3. Native deployment on tested Linux, macOS, and Windows targets, without the
+   original GUIDE executable, a Python interpreter for CLI use, or external
+   BLAS/LAPACK dependencies.
+4. A complementary scikit-learn-compatible Python wrapper using the same core.
+
+Native comparisons and independent numerical checks support these claims;
+their scope and known differences must be reported. Demonstrate convenience
+through complete workflows and concrete integration steps.
+
+The methodological treatment and detailed evaluation center on variable
+selection, split search, constant classification/least-squares trees,
+multiple-linear least-squares leaves, pruning, and associated predictor and
+missing-value handling. Describe other implemented losses, node models,
+ensembles, and importance with their validation status. Identify boosting as
+an experimental extension. Survival, treatment-effect, longitudinal, and
+multiresponse methods are outside the implemented scope.
+
+Credit original GUIDE methods and distinguish a subset implementation from
+full compatibility. Original GUIDE already supports batch operation and
+provides executables for the three major desktop/server operating systems;
+the distinction is source availability, buildability, reusable interfaces,
+and integration. Avoid claims of universal OS support, superior speed or
+accuracy, or measured usability improvements without corresponding evidence.
+
+## Writing workflow
 
 These are project choices, not additional journal rules:
 
-1. Confirm author information and the paper's supported release and feature set.
-   Start with constant classification/regression and multiple-linear trees.
-   Treat wider coverage and experimental boosting as scope decisions.
+1. Confirm author information and pin the software release. Audit the agreed
+   scope above against that release and document its known differences.
 2. Develop the statistical motivation and software design together. Explain why
    separating variable selection from split search helps users and what the
    Rust library and CLI make practical. Present those interfaces first, then
@@ -128,5 +161,5 @@ Replication must not silently depend on ignored local binaries or papers.
 - Check the live JSS instructions and assemble the PDF, software, replication
   materials, and final manuscript sources as required.
 
-The initial skeleton has no empirical results, so a successful LaTeX build
+The current draft has no empirical results, so a successful LaTeX build
 does not establish replication readiness. Generated build files stay out of Git.

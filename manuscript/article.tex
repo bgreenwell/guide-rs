@@ -11,13 +11,20 @@
 \Plaintitle{guide-rs: GUIDE-Style Classification and Regression Trees in Rust}
 \Shorttitle{GUIDE-Style Trees in \proglang{Rust}}
 \Abstract{
-  \pkg{guide-rs} is an experimental implementation of GUIDE-style
-  classification and regression trees written in \proglang{Rust}.
-  Its library and command-line interface support programmatic integration
-  and reproducible statistical analyses. A complementary \proglang{Python}
-  wrapper provides a convenient scikit-learn-compatible estimator interface.
-  \todo{Complete the abstract with the supported scope, application, and
-  evidence. This skeleton reports no empirical results.}
+  We present \pkg{guide-rs}, an open-source implementation of GUIDE-style
+  classification and regression trees in \proglang{Rust}. The software
+  provides a reusable library and a command-line interface for fitting,
+  inspecting, saving, and applying models. Its pure \proglang{Rust} core
+  supports native execution on Linux, macOS, and Windows without requiring
+  the original GUIDE executable or external numerical libraries. A
+  complementary \proglang{Python} wrapper provides
+  \pkg{scikit-learn}-compatible estimators. The paper focuses on
+  association-based variable selection, constant classification and
+  regression trees, multiple-linear regression leaves, and pruning.
+  The contribution centers on source availability, reusable interfaces,
+  and integration into reproducible statistical workflows.
+  \todo{Add the completed application's findings and scoped validation
+  results. This draft reports no empirical results.}
 }
 \Keywords{recursive partitioning, variable selection, model-based trees,
   reproducible research, \proglang{Rust}, \proglang{Python}}
@@ -34,17 +41,93 @@
 
 \section{Introduction}\label{sec:introduction}
 
-GUIDE (generalized, unbiased, interaction detection and estimation) provides
-the methodological foundation for this implementation \citep{Loh:2002}.
-\pkg{guide-rs} implements a subset of GUIDE-style methods in a
-\proglang{Rust} library, with a command-line interface for statistical
-analysis and automation. A complementary \proglang{Python} wrapper makes
-the implementation accessible through familiar estimator workflows.
+Classification and regression trees express prediction rules through
+successive partitions of the predictor space. Their statistical behavior
+depends on the procedures used to select variables, choose splits, fit
+terminal-node models, and prune the resulting tree. GUIDE (generalized,
+unbiased, interaction detection and estimation) separates variable selection
+from split-point search and incorporates tests for local interactions
+\citep{Loh:2002,Loh:2009}. These methods provide the statistical foundation
+for \pkg{guide-rs}.
 
-\todo{Explain the practical need, intended users, and software contribution.
-Credit the original GUIDE methods and software. Position this implementation
-against both competing and complementary software across languages.
-State the paper's supported scope without claiming full GUIDE equivalence.}
+Access to a statistical method also depends on how its implementation is
+distributed and used. GUIDE has historically been available free of charge
+as closed-source software \citep{Rusch+Zeileis:2014}. Its current distribution
+provides executables for Linux, macOS, and Windows and supports both
+interactive and batch operation \citep{GUIDE:software}. An openly available
+implementation additionally enables researchers to inspect numerical
+decisions, rebuild the software, adapt its methods, and incorporate its
+components into other applications.
+
+We present \pkg{guide-rs}, an independent, MIT-licensed implementation of
+a subset of GUIDE-style methods. Its central contribution is to make these
+methods available as open, reusable statistical computing infrastructure.
+The intended users include analysts conducting scripted studies, developers
+embedding tree models in applications, and researchers examining or extending
+the implementation. The original GUIDE publications establish the methods;
+this article describes their implementation, interfaces, and evaluation.
+
+\subsection{Software contribution}\label{sec:contribution}
+
+The contribution has four connected elements. First, the source code makes
+the implementation available for inspection, modification, and redistribution.
+Statistical routines and implementation choices can be examined alongside
+tests and documented numerical conventions.
+
+Second, a reusable \proglang{Rust} library and an explicit command-line
+interface (CLI) support both embedded and scripted use. Library users fit
+models and obtain predictions directly in memory. CLI users supply data and
+structured configuration to separate commands for fitting, inspection, and
+prediction, with fitted models saved in JSON format. These interfaces allow
+applications to call the implementation directly and scripts to specify
+their operations without an interactive dialogue. A worked example will
+illustrate the complete workflow and its inputs and outputs.
+
+Third, the pure \proglang{Rust} computational core supports native deployment
+and is tested on Linux, macOS, and Windows. The CLI requires neither the
+original GUIDE executable nor a \proglang{Python} interpreter, and the core
+has no external BLAS or LAPACK dependency. The source distribution permits
+users to build the library and executable for supported targets. This
+combination of source availability and reusable interfaces complements the
+platform-specific executables already available for GUIDE.
+
+Fourth, a complementary \proglang{Python} wrapper exposes the same core
+through estimators compatible with \pkg{scikit-learn}
+\citep{Pedregosa+etal:2011}. Familiar fitting and prediction methods,
+pipelines, and model-selection tools provide a convenient entry point for
+existing \proglang{Python} users. Statistical fitting and configuration
+validation remain in the shared \proglang{Rust} implementation.
+
+The implementation is accompanied by frozen comparisons with native GUIDE,
+independent numerical checks, and documented behavioral differences.
+These provide evidence for specific capabilities and numerical objectives.
+Section~\ref{sec:validation} will distinguish reference agreement from
+independently checked correctness and state the limits of each comparison.
+
+\subsection{Scope}\label{sec:scope}
+
+The methodological treatment and evaluation focus on association-based
+variable selection and split search, constant classification and
+least-squares regression trees, multiple-linear least-squares leaves, and
+pruning. Numeric and categorical predictors and missing-value handling are
+considered within these model families. The software presentation leads
+with the \proglang{Rust} library and CLI and then introduces the
+\proglang{Python} wrapper.
+
+Other implemented capabilities include additional losses and node models,
+bagging and forests, and variable importance. Their coverage and validation
+status will be summarized separately. Gradient boosting is an experimental
+\pkg{guide-rs} extension. Survival, treatment-effect, longitudinal, and
+multiresponse methods are outside the implemented scope described here.
+\pkg{guide-rs} remains experimental: it implements a subset of GUIDE's
+capabilities and has known numerical and behavioral differences from native
+GUIDE. Feature availability, reference agreement, and numerical correctness
+are separate aspects of the evaluation.
+
+\todo{Complete the related-software comparison, including conventional CART
+implementations and the conditional inference and model-based trees in
+\pkg{partykit} \citep{Hothorn+Zeileis:2015}. Pin the release and match each
+final claim to its validation evidence.}
 
 \section{Statistical methods}\label{sec:methods}
 
@@ -125,6 +208,7 @@ The repository is \url{https://github.com/bgreenwell/guide-rs}.}
 \todo{Confirm authorship, affiliations, funding, and acknowledgments.
 Add any required disclosures.}
 
+\clearpage
 \bibliography{refs}
 
 % Optional appendices go after the bibliography, beginning on a new page.
