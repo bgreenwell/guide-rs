@@ -1,0 +1,551 @@
+{
+  "fixture_format": 2,
+  "case": "lda-leaf-relaxed-one",
+  "created_utc": "2026-10-28T01:28:00.802637+00:00",
+  "source_url": "https://pages.stat.wisc.edu/~loh/treeprogs/guide/mac/m1/guide462.zip",
+  "binary_sha256": "5ff05c74d9b6554c460d8d8fdfede07ec46616340e6f48cbcd93f62bb4ab5a24",
+  "requested_version": "46.2",
+  "template_generated_by": "46.3",
+  "completed": true,
+  "tolerances": {
+    "coefficient_relative": 1e-06,
+    "statistic_relative": 5e-06,
+    "coordinate_relative": 0.0005,
+    "prior_absolute": 1e-07
+  },
+  "returncode": 0,
+  "result": {
+    "coefficients": [
+      {
+        "variable": "x0",
+        "mean": 10.70618,
+        "coefficients": [
+          -0.097534818
+        ]
+      },
+      {
+        "variable": "x1",
+        "mean": 10.203722,
+        "coefficients": [
+          -0.043672315
+        ]
+      },
+      {
+        "variable": "x2",
+        "mean": 10.153263,
+        "coefficients": [
+          -0.022974635
+        ]
+      }
+    ],
+    "fitted": [
+      {
+        "coordinates": [
+          -1.824,
+          0.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.757,
+          0.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.677,
+          0.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.704,
+          0.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.652,
+          0.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.794,
+          0.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.924,
+          0.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.699,
+          0.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.701,
+          0.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.814,
+          0.0
+        ],
+        "observed": "k0",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.843,
+          2.127e-314
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.774,
+          0.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.772,
+          0.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.518,
+          0.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.563,
+          2.127e-314
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.747,
+          2.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.612,
+          1.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.702,
+          1.0
+        ],
+        "observed": "k1",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.579,
+          1.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.626,
+          2.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.458,
+          2.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.842,
+          1.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.654,
+          1.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.8,
+          2.0
+        ],
+        "observed": "k0",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.683,
+          2.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.808,
+          2.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.716,
+          2.0
+        ],
+        "observed": "k1",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.78,
+          1.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.843,
+          1.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.89,
+          2.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.868,
+          1.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.711,
+          1.0
+        ],
+        "observed": "k1",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.551,
+          1.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.69,
+          1.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.468,
+          1.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.782,
+          2.0
+        ],
+        "observed": "k0",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -2.068,
+          1.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.663,
+          2.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.793,
+          1.0
+        ],
+        "observed": "k0",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.795,
+          2.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.765,
+          1.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.804,
+          2.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.932,
+          2.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.908,
+          2.0
+        ],
+        "observed": "k0",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.587,
+          2.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.763,
+          1.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.608,
+          1.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.709,
+          1.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.478,
+          1.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.809,
+          2.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.388,
+          2.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.601,
+          1.0
+        ],
+        "observed": "k1",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.547,
+          2.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.814,
+          2.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.773,
+          2.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.882,
+          2.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.71,
+          2.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      },
+      {
+        "coordinates": [
+          -1.754,
+          2.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.777,
+          1.0
+        ],
+        "observed": "k1",
+        "predicted": "k1"
+      },
+      {
+        "coordinates": [
+          -1.633,
+          2.0
+        ],
+        "observed": "k0",
+        "predicted": "k0"
+      }
+    ],
+    "leaf": {
+      "coordinate1": {
+        "k0": {
+          "mean": -1.64182,
+          "variance": 0.0104046
+        },
+        "k1": {
+          "mean": -1.80441,
+          "variance": 0.0104046
+        }
+      },
+      "priors": {
+        "k0": 0.5,
+        "k1": 0.5
+      }
+    }
+  },
+  "file_sha256": {
+    "input.txt": "757fcd69047d96d755b40b94b30b3bd19898fe4aa2b5a7696c95844dab42433c",
+    "data.dsc": "80696e46affd8ea5c754569c4945e13218ec9fc167e4d94f255a60b99f277bd3",
+    "data.txt": "06a9080f63636b41e5bd38de193813398602c726a0eb8733c94a9028e7a6b6d1",
+    "case.json": "8c87a842cf14c352431fa84a3cc1eedb9615fe6fba96bd59060ec5cc40bd457c",
+    "stdout.txt": "4d5d172f9681bc5207adfb917ac61b66287da1785cdae9e8e98048e08ecf5174",
+    "stderr.txt": "87b5b8bb4a0a6bd30605d782da011cc7a51719c96290ee6b9881a1a09c79a984",
+    "report.out": "29fcbd7b859abd8e21b8640f9b25799fb8feb9b02fd062debdb8690dfb3a3cc3",
+    "coefficients.txt": "1e2f05362b30b26c14f532544ef8fd6e839bec38e6cb6d089ead11f421b009d9",
+    "fitted.txt": "af28ae1ddfd788745889738a90fb4f11233a7a3398e8add9ba6f2cc13210cd81"
+  }
+}
