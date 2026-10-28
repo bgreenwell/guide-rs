@@ -6,6 +6,10 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- JSS manuscript skeleton, official style files, and a writing and submission guide in `manuscript/`
+
 ## [0.1.0] - 2026-10-27
 
 ### Added
