@@ -5,8 +5,6 @@
 mod boosting;
 mod config;
 mod data;
-// Tested against native captures; tree growth uses it from the LDA node model on.
-#[cfg_attr(not(test), allow(dead_code))]
 mod discriminant;
 mod ensemble;
 mod export;
@@ -21,6 +19,7 @@ mod tree;
 pub use boosting::{BoostedModel, BoostingOptions};
 pub use config::*;
 pub use data::*;
+pub use discriminant::Discriminant;
 pub use ensemble::*;
 pub use importance::*;
 pub use node::{LeafModel, Prediction, PredictionBounds, Term};

@@ -106,6 +106,28 @@ impl FittedModel {
     fn split_label(&self, s: &Split) -> String {
         let f = &self.schema[s.feature()].name;
         match s {
+            Split::Discriminant {
+                terms,
+                coefficients,
+                threshold,
+            } => {
+                let sum: Vec<String> = terms
+                    .iter()
+                    .zip(coefficients)
+                    .map(|(t, a)| {
+                        let name = &self.schema[t.feature].name;
+                        if t.missing_indicator {
+                            format!("{a:.6e} * {name}.NA")
+                        } else {
+                            format!("{a:.6e} * {name}")
+                        }
+                    })
+                    .collect();
+                format!(
+                    "{} <= {threshold:.6e}; missing values take node means",
+                    sum.join(" + ")
+                )
+            }
             Split::Linear {
                 features,
                 coefficients,
@@ -179,6 +201,11 @@ impl FittedModel {
             } => format!(
                 "class {:?}; p={:?}",
                 self.classes[*predicted_class], probabilities
+            ),
+            LeafModel::Discriminant(d) => format!(
+                "LDA on {} coordinate(s) of {} column(s)",
+                d.coefficients.len(),
+                d.terms.len()
             ),
             LeafModel::Constant { value } => format!("prediction {value:.6}"),
             LeafModel::Score { value } => format!("score {value:.6}"),

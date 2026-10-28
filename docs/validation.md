@@ -2,6 +2,10 @@
 
 Local environment: Apple Silicon macOS, Rust 1.99.1. The runtime implementation is pure Rust; R is used only as an independent test oracle. GitHub Actions runs the ordinary suite on Linux, macOS and Windows plus the independent R job; all passed from a clean checkout on 2026-10-25. R prediction-function export was excluded from product scope on 2026-10-24 and removed from the code on 2026-10-25. Historical export checks below remain a record of earlier work; independent R numerical/statistical validation remains in scope.
 
+## LDA node models, 2026-10-27
+
+`node_model: lda` implements GUIDE's linear discriminant classification trees for numeric features, following the probes in [the LDA notes](discriminant-notes.md). Fits that were previously accepted are unchanged, so the algorithm revision stays `reference19`; models with LDA nodes add a `discriminant` leaf and split kind to saved format 1. Forty-four captures (`tests/fixtures/discriminant/`, both versions) bring the corpus to **640 captures across 320 cases**: 12 single-node designs, including exact-p designs at both variable-count fallback thresholds, and 10 depth-4 trees. Every single-node coefficient (to 1e-6 relative), leaf statistic and training prediction matches; 8 of 10 trees match exactly, and the two differences (a sign-dependent tie and a missing-value search) are asserted as known. GUIDE's coordinate sign rule is not identified; it decides cuts in larger nodes, where 13 of 30 fresh 200-row designs reproduce native's predictions against 28 of 30 at 100 rows.
+
 ## Linear least-squares small children, 2026-10-26
 
 New fits record **`guide-rs-0.1-experimental-reference19`**; saved format remains 1. The `p+7` minimum for multiple-linear least squares came from single-node captures, and the validated tree captures used minimum node sizes of 10 or 12, so small children were untested. Probes with minimum node size 2, 48 rows and a slope change in about seven rows (46.3) show three separate native rules for complete numeric regressors:

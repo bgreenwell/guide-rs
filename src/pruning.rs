@@ -417,24 +417,26 @@ fn row_loss(ctx: &Context<'_>, leaf: &LeafModel, data: &Dataset, i: usize) -> Re
     // GUIDE averages the observed misclassification costs over validation rows.
     // Callers pass only active rows, whose responses are observed and typed
     // by the validated task, so the response accessors below cannot fail.
-    let loss = if let LeafModel::Classification {
-        predicted_class,
-        probabilities,
-    } = leaf
-    {
+    let loss = if let Some(predicted_class) = leaf.predicted_class(&data.rows[i]) {
         let label = data.targets[i].label().unwrap();
         let y = ctx
             .classes
             .binary_search(&label)
             .map_err(|_| invalid(format!("unknown validation class {label}")))?;
-        let cost = ctx.costs[y][*predicted_class];
+        let cost = ctx.costs[y][predicted_class];
         if ctx.options.pruning_loss.is_default() {
             cost
         } else {
             // Leaves of trees still being pruned hold raw probabilities;
-            // score the corrected ones a fitted tree would predict.
-            let mut probabilities = probabilities.clone();
-            ctx.correct_zero_posteriors(&mut probabilities);
+            // score the corrected ones a fitted tree would predict. LDA
+            // leaves apply the correction themselves.
+            let mut probabilities = leaf
+                .class_probabilities(&data.rows[i])
+                .unwrap()
+                .into_owned();
+            if matches!(leaf, LeafModel::Classification { .. }) {
+                ctx.correct_zero_posteriors(&mut probabilities);
+            }
             ctx.options.pruning_loss.loss(&probabilities, y, cost)
         }
     } else {

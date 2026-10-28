@@ -41,6 +41,10 @@ impl FittedModel {
         options.validate()?;
         data.validate(&options.task)?;
         validate_supported(data, options)?;
+        // GUIDE has disabled LDA in its forests since version 24.
+        if options.node_model == NodeModel::Lda {
+            return Err(invalid("ensembles do not support lda node models"));
+        }
         if matches!(ensemble.kind, EnsembleKind::Bagging) && options.mtry.is_some() {
             return Err(invalid(
                 "per-node feature sampling requires ensemble kind forest",

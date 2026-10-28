@@ -4,8 +4,10 @@
 //! coordinates and classifies with class-specific Gaussian densities on those
 //! coordinates. The rules follow black-box probes of GUIDE 46.3; see
 //! `docs/discriminant-notes.md`.
-use crate::node::Term;
+use crate::node::{Context, Term};
 use crate::{Dataset, FeatureType, stats};
+use crate::{LeafModel, Node, Split};
+use serde::{Deserialize, Serialize};
 
 /// Relative residual sum of squares below which a selected column is treated
 /// as a linear combination of columns selected before it and dropped.
@@ -47,10 +49,14 @@ pub(crate) fn candidate_columns(data: &Dataset, ids: &[usize]) -> Vec<Column> {
     columns
 }
 
-/// A fitted LDA leaf. Classes absent from the node have no mean.
-#[derive(Clone, Debug)]
-pub(crate) struct Discriminant {
-    /// The selected columns as raw (uncentered, unscaled) terms.
+/// A fitted LDA leaf: Gaussian class densities on the node's leading
+/// discriminant coordinates, with a pooled variance per coordinate. Classes
+/// absent from the node have no mean and are never predicted.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Discriminant {
+    /// The selected columns as raw (uncentered, unscaled) terms; missing
+    /// values take the node mean.
     pub terms: Vec<Term>,
     /// `coefficients[k][t]` is the weight of term `t` in coordinate `k`.
     pub coefficients: Vec<Vec<f64>>,
@@ -60,6 +66,10 @@ pub(crate) struct Discriminant {
     pub variances: Vec<f64>,
     /// Class priors used for classification.
     pub priors: Vec<f64>,
+    /// Training rows and class priors at the root, for GUIDE's zero-posterior
+    /// correction of the reported probabilities.
+    pub root_rows: usize,
+    pub root_priors: Vec<f64>,
 }
 impl Discriminant {
     /// The coordinate values of a row.
@@ -70,8 +80,20 @@ impl Discriminant {
             .map(|a| a.iter().zip(&x).map(|(a, x)| a * x).sum())
             .collect()
     }
-    /// Posterior class probabilities of a row; absent classes get zero.
+    /// Posterior class probabilities of a row, with GUIDE's zero-posterior
+    /// correction: absent classes keep their share of one prior observation.
     pub(crate) fn posteriors(&self, row: &[crate::Value]) -> Vec<f64> {
+        let mut p = self.classifier_posteriors(row);
+        if p.contains(&0.0) {
+            let n = self.root_rows as f64;
+            for (p, prior) in p.iter_mut().zip(&self.root_priors) {
+                *p = (n * *p + prior) / (n + 1.0);
+            }
+        }
+        p
+    }
+    /// Posteriors of the classifier itself; absent classes get zero.
+    fn classifier_posteriors(&self, row: &[crate::Value]) -> Vec<f64> {
         let z = self.coordinates(row);
         let scores: Vec<Option<f64>> = self
             .class_means
@@ -104,11 +126,58 @@ impl Discriminant {
         }
         p
     }
+    /// Whether a deserialized leaf is usable with `classes` classes.
+    pub(crate) fn is_valid(&self, schema: &[crate::FeatureSchema], classes: usize) -> bool {
+        let dimensions = self.coefficients.len();
+        valid_terms(&self.terms, schema)
+            && (1..=2).contains(&dimensions)
+            && self
+                .coefficients
+                .iter()
+                .all(|a| a.len() == self.terms.len() && a.iter().all(|x| x.is_finite()))
+            && self.variances.len() == dimensions
+            && self.variances.iter().all(|v| v.is_finite() && *v > 0.0)
+            && self.class_means.len() == classes
+            && self.class_means.iter().flatten().count() >= 2
+            && self
+                .class_means
+                .iter()
+                .flatten()
+                .all(|m| m.len() == dimensions && m.iter().all(|x| x.is_finite()))
+            && self.priors.len() == classes
+            && self.root_priors.len() == classes
+            && self.root_rows > 0
+            && self
+                .priors
+                .iter()
+                .chain(&self.root_priors)
+                .all(|p| p.is_finite() && *p >= 0.0)
+            && self
+                .class_means
+                .iter()
+                .zip(&self.priors)
+                .all(|(m, p)| m.is_none() || *p > 0.0)
+    }
     /// The class with the largest posterior, the first on ties.
     pub(crate) fn predict(&self, row: &[crate::Value]) -> usize {
-        let p = self.posteriors(row);
+        let p = self.classifier_posteriors(row);
         (0..p.len()).fold(0, |best, k| if p[k] > p[best] { k } else { best })
     }
+}
+
+/// Whether `terms` are raw numeric fit columns of `schema`, as LDA models use.
+pub(crate) fn valid_terms(terms: &[Term], schema: &[crate::FeatureSchema]) -> bool {
+    !terms.is_empty()
+        && terms.iter().all(|t| {
+            t.feature < schema.len()
+                && matches!(schema[t.feature].feature_type, FeatureType::Numeric)
+                && schema[t.feature].role.fits()
+                && t.power == 1
+                && t.category.is_none()
+                && t.center == 0.0
+                && t.scale == 1.0
+                && t.impute.is_finite()
+        })
 }
 
 /// Columns kept by a node: ranked by one-way ANOVA F p-value, then counted by
@@ -266,8 +335,10 @@ pub(crate) fn coordinates(design: &[Vec<f64>], labels: &[usize], classes: usize)
 }
 
 /// Fits an LDA leaf to rows `ids` with class `labels` (indices below
-/// `classes`). `priors` are the class priors used for classification. Returns
-/// None when fewer than two classes are present or no column can be used.
+/// `classes`). `priors` are the class priors used for classification and
+/// `root_rows` and `root_priors` those of the zero-posterior correction.
+/// Returns None when fewer than two classes are present, no column can be
+/// used or a coordinate has no within-class variance.
 pub(crate) fn fit(
     data: &Dataset,
     ids: &[usize],
@@ -275,6 +346,7 @@ pub(crate) fn fit(
     classes: usize,
     columns: &[Column],
     priors: &[f64],
+    root: (usize, &[f64]),
 ) -> Option<Discriminant> {
     let present: Vec<usize> = (0..classes).filter(|c| labels.contains(c)).collect();
     if present.len() < 2 {
@@ -285,19 +357,30 @@ pub(crate) fn fit(
         .iter()
         .map(|t| ids.iter().map(|&i| t.value(&data.rows[i])).collect())
         .collect();
-    let kept = select(&design, labels, classes);
+    let mut kept = select(&design, labels, classes);
     if kept.is_empty() {
         return None;
     }
+    kept.sort_unstable();
     let design: Vec<Vec<f64>> = kept.iter().map(|&j| design[j].clone()).collect();
     let dimensions = if present.len() == 2 {
         1
     } else {
         kept.len().min(2)
     };
+    // GUIDE's coordinate signs follow no rule found so far (see
+    // docs/discriminant-notes.md). They matter because the cut grid counts
+    // from the low end; here the last column's coefficient is positive.
     let coefficients: Vec<Vec<f64>> = coordinates(&design, labels, classes)
         .into_iter()
         .take(dimensions)
+        .map(|a| {
+            if a[a.len() - 1] < 0.0 {
+                a.iter().map(|x| -x).collect()
+            } else {
+                a
+            }
+        })
         .collect();
     let projected: Vec<Vec<f64>> = coefficients
         .iter()
@@ -333,6 +416,8 @@ pub(crate) fn fit(
         class_means,
         variances,
         priors: priors.to_vec(),
+        root_rows: root.0,
+        root_priors: root.1.to_vec(),
     })
 }
 
@@ -360,6 +445,124 @@ fn node_term(data: &Dataset, ids: &[usize], column: Column) -> Term {
         },
         missing_indicator,
     }
+}
+
+/// The LDA leaf of rows `ids`, or a constant leaf when LDA does not apply.
+/// Search-time child leaves (`search`) classify with the node's raw class
+/// probabilities as priors; fitted leaves use GUIDE's corrected priors.
+fn leaf(ctx: &Context<'_>, ids: &[usize], search: bool) -> LeafModel {
+    let mut counts = vec![0.0; ctx.classes.len()];
+    let labels: Vec<usize> = ids.iter().map(|&i| ctx.y[i] as usize).collect();
+    for &c in &labels {
+        counts[c] += 1.0;
+    }
+    let mut priors = counts.clone();
+    ctx.class_probabilities(&mut priors);
+    if !search {
+        ctx.correct_zero_posteriors(&mut priors);
+    }
+    fit(
+        ctx.data,
+        ids,
+        &labels,
+        ctx.classes.len(),
+        &ctx.discriminant_columns,
+        &priors,
+        (ctx.root_samples, &ctx.class_priors),
+    )
+    .map_or_else(|| ctx.classification_leaf(counts), LeafModel::Discriminant)
+}
+
+/// GUIDE's cut sizes for a node of `n` rows and minimum node size `s`: every
+/// left size when there are at most 102 positions, otherwise 102 evenly
+/// indexed ones, in both cases without the end sizes `s` and `n - s`.
+fn cut_sizes(n: usize, s: usize) -> Vec<usize> {
+    if n < 2 * s + 2 {
+        return vec![];
+    }
+    let m = n - 2 * s + 1;
+    let mut sizes: Vec<usize> = if m <= 102 {
+        (s..=n - s).collect()
+    } else {
+        (0..102).map(|j| s + j * (m - 1) / 101).collect()
+    };
+    sizes.dedup();
+    sizes.retain(|&i| s < i && i < n - s);
+    sizes
+}
+
+/// Grows an LDA tree on rows `ids`. A node splits only with at least
+/// 2.5 times the minimum node size, below the depth limit, with two or more
+/// classes and with training errors under its own leaf. The split is a cut
+/// on the leaf's first discriminant coordinate whose two children, fitted as
+/// search leaves, misclassify fewest training rows; ties go to the most even
+/// split, then the smaller left child.
+pub(crate) fn grow(ctx: &Context<'_>, ids: &[usize], depth: usize, next_id: &mut usize) -> Node {
+    let model = leaf(ctx, ids, false);
+    let risk = ctx.risk(&model, ids);
+    let mut node = Node {
+        id: *next_id,
+        sample_count: ids.len(),
+        weight_sum: ids.iter().map(|&i| ctx.weights[i]).sum(),
+        risk: risk / ctx.root_weight,
+        impurity: ctx.impurity(&model, ids),
+        model,
+        diagnostics: vec![],
+        split: None,
+        left: None,
+        right: None,
+    };
+    *next_id += 1;
+    let s = ctx.options.min_samples_leaf;
+    let LeafModel::Discriminant(d) = &node.model else {
+        return node;
+    };
+    if depth >= ctx.options.max_depth || 2 * ids.len() < 5 * s || risk == 0.0 {
+        return node;
+    }
+    let mut order: Vec<(f64, usize)> = ids
+        .iter()
+        .map(|&i| (d.coordinates(&ctx.data.rows[i])[0], i))
+        .collect();
+    order.sort_by(|a, b| a.0.total_cmp(&b.0));
+    let sorted: Vec<usize> = order.iter().map(|&(_, i)| i).collect();
+    let sizes: Vec<usize> = cut_sizes(ids.len(), s)
+        .into_iter()
+        .filter(|&i| order[i - 1].0 < order[i].0)
+        .collect();
+    let errors = crate::tree::ordered_map(
+        &sizes,
+        ids.len() >= crate::tree::PARALLEL_MIN_ROWS,
+        || (),
+        |_, &i| {
+            let (left, right) = sorted.split_at(i);
+            ctx.risk(&leaf(ctx, left, true), left) + ctx.risk(&leaf(ctx, right, true), right)
+        },
+    );
+    let n = ids.len();
+    let Some((&best, _)) = sizes.iter().zip(&errors).min_by(|a, b| {
+        a.1.total_cmp(b.1)
+            .then((n.abs_diff(2 * a.0)).cmp(&n.abs_diff(2 * b.0)))
+            .then(a.0.cmp(b.0))
+    }) else {
+        return node;
+    };
+    let (below, above) = (order[best - 1].0, order[best].0);
+    let mid = below / 2.0 + above / 2.0;
+    let split = Split::Discriminant {
+        terms: d.terms.clone(),
+        coefficients: d.coefficients[0].clone(),
+        threshold: if mid >= above { below } else { mid },
+    };
+    let (left, right): (Vec<usize>, Vec<usize>) = ids
+        .iter()
+        .partition(|&&i| split.goes_left(&ctx.data.rows[i]));
+    let l = grow(ctx, &left, depth + 1, next_id);
+    let r = grow(ctx, &right, depth + 1, next_id);
+    node.split = Some(split);
+    node.left = Some(Box::new(l));
+    node.right = Some(Box::new(r));
+    node
 }
 
 #[cfg(test)]
@@ -432,7 +635,16 @@ mod tests {
             .map(|c| labels.iter().filter(|&&l| l == c).count() as f64 / labels.len() as f64)
             .collect();
         let columns = candidate_columns(&data, &ids);
-        let model = fit(&data, &ids, &labels, classes.len(), &columns, &priors).unwrap();
+        let model = fit(
+            &data,
+            &ids,
+            &labels,
+            classes.len(),
+            &columns,
+            &priors,
+            (ids.len(), &priors),
+        )
+        .unwrap();
         let term_name = |t: &Term| {
             let base = &names[t.feature];
             if t.missing_indicator {
@@ -535,7 +747,13 @@ mod tests {
             let mut dirs: Vec<_> = std::fs::read_dir(root.join(version))
                 .unwrap()
                 .map(|e| e.unwrap().path())
-                .filter(|p| p.file_name().unwrap().to_str().unwrap().starts_with("lda-leaf-"))
+                .filter(|p| {
+                    p.file_name()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                        .starts_with("lda-leaf-")
+                })
                 .collect();
             dirs.sort();
             for dir in dirs {
