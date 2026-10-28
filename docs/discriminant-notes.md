@@ -1,0 +1,52 @@
+# LDA/QDA node models: native probe findings
+
+Working notes from black-box probes of the pinned GUIDE 46.3 binary (and 46.2 where noted), 2026-10-27, in preparation for classification LDA/QDA node models. Nothing here is implemented yet, and no captures are frozen; treat it as the starting point for that item in [the coverage checklist](coverage.md). Data were iris (`tests/fixtures/datasets/iris.csv`) and seeded synthetic Gaussian designs with 2 or 3 classes, 2 to 4 signal and 1 to 8 noise variables, rounded to four decimals before being written for GUIDE.
+
+## Running GUIDE
+
+The interactive writer asks "1 for basic tree, 2 for trees with higher accuracy" before the node model; only the second shows the model menu, and the answer is not written to the batch file. The node-model codes differ by version:
+
+| Version | Codes |
+|---|---|
+| 46.2 | 1 simple, 2 nearest-neighbor, 3 kernel, 4 LDA, 5 QDA, 6 linear splits with constant nodes |
+| 46.3 | 1 simple, 2 nearest-neighbor, 3 kernel, 4 LDA, 5 QDA, 6 bivariate QDA, 7 linear splits with constant nodes |
+
+LDA is the menu default. With codes 4 to 6 there are no interaction or linear-split prompts. Defaults in this mode are 5 split levels and minimum node size 10, independent of n (checked for n = 40 to 3000). A no-pruning run with explicit depth and minimum node size is:
+
+```
+ 1  (model fitting)    "o.out"    1  (one tree)    1  (classification)
+ 4  (LDA; 5 QDA, 6 bivariate QDA in 46.3)    3  (no pruning)    "data.dsc"
+ 1  (estimated priors; 3 then a file)    1  (unit costs)    1  (default split count)
+ 2  then depth    2  then minimum node size
+ 0  (no LaTeX)    2  "o.coef"    2  "o.fit"    1  (no R)    2  (no plot code)
+```
+
+Batch mode still validates its inputs: depth must exceed 1 and minimum node size cannot exceed n/2, and fixed-size pruning requires at least 3 leaves, so a single-node fit is only obtainable from data the model classifies perfectly. The `.coef` file lists, per node, each variable used with its node mean and both coordinate vectors. The `.fit` file gives each case's terminal node, its two coordinate values (raw `x·a`, not centered by the printed means) and the observed and predicted classes. Both are better acceptance evidence than the report.
+
+## Established
+
+- **Discriminant coordinates.** Coefficients are the generalized eigenvectors of the between-class scatter B against the total scatter T (unweighted sums of squares about the node means), normalized so `a'Ta = 1`. Recomputing them reproduces native's to 8 printed digits at every iris node, up to sign. Because of that normalization, a coordinate's total variance is `1/(n - 1)`; a coordinate with no between-class separation has pooled variance `1/(n - g)` (the `0.100000` printed for a 12-case, 2-class node is this, not a floor).
+- **Splits.** Every split is `D <= c` on the node's first coordinate, with `c` the midpoint of adjacent sorted coordinate values (507 of 507 synthetic splits). Rows with missing values are routed by their imputed coordinate value, not by a separate learned direction (29 of 29 checked rows).
+- **Cut candidates.** The candidate left-child sizes are the fixed grid guide-rs already uses for Poisson and quantile trees, with `s` the minimum node size: every size when `m = n - 2s + 1 <= 102`, otherwise `s + floor(j (m - 1) / 101)` for `j = 0..101`, in both cases excluding the two end sizes `s` and `n - s`. That leaves at most 100 cuts (the report's "Maximum number of splits: 100"). All 272 native cuts in large nodes lie on the grid, against 73 expected by chance, and no child ever has exactly `s` cases.
+- **Cut criterion.** Each candidate cut is scored by the total training misclassifications of the two children, each fitted as a complete leaf (its own variable selection, coordinates and LDA or QDA rule) but with the children's raw class proportions as priors rather than the corrected leaf priors. Ties go to the most balanced split, then the smaller left child. This selects native's cut in 279 of 279 synthetic LDA splits used to find it and 358 of 360 held-out LDA splits (4 classes, minimum node sizes 5 and 15). It explains the median cuts: they are the balanced choice among tied error counts. Because children reselect their variables, the cut depends on variables the parent does not use: adding a column that is insignificant at the root (p = 0.8) moves the root cut. Corrected priors (268 of 279 in the minimum-error set), equal priors (28), pooled variance denominators `n` or `n - 1` (at most 225 with corrected priors), a single QDA coordinate in two-class children, and first, last, Gini, entropy or middle tie-breaks all fit worse.
+- **Variable subset.** Each node fits its own subset of the candidate columns: numeric variables, k-1 dummies for each categorical (first level as reference; C variables become B), and a `.NA` indicator for each variable with missing values, each competing on its own (a node can use `sl.NA` without `sl`). Variables are ranked by the node's one-way ANOVA F p-value. With K candidate columns and m of them below `0.4/K`, the node keeps the top m if m >= 2; if m = 1 it keeps those below `0.8/(K - 2)`, and if m = 0 those below `0.8/(K - 1)`, in both cases at least two. Controlled probes with exactly set p-values fixed each threshold to three digits (K = 3 to 10, n = 24 to 200, balanced and unbalanced classes), and the rule reproduces the subset at 1208 of 1208 synthetic nodes, 25 of 25 iris nodes and 773 of 773 held-out nodes. GUIDE's own chi-square ranking agrees with the subsets in only 66 of 160 roots.
+- **Missing values.** Missing numeric values are imputed by the node mean of the observed values; this reproduces native coefficients at every node, where root-mean or zero imputation fails.
+- **LDA leaves.** A case is classified by Gaussian densities on the first two coordinates (one with two classes) treated as independent: class means, a pooled variance per coordinate with denominator `n - g`, and the leaf priors below. This reproduces all 150 native iris predictions at depths 1, 2 and 5.
+- **QDA leaves (46.3 code 5).** As LDA but with a per-class variance per coordinate (denominator `n_c - 1`) and the `log variance` term, still with independent coordinates, and always two coordinates, even in a two-class node. Reproduces all 150 predictions at depths 1, 2 and 5.
+- **Bivariate QDA leaves (code 6).** A full per-class 2×2 covariance. Printed correlations match the sample correlation except for classes with two cases (below), and with native's printed correlation the rule reproduces every prediction in nodes whose class covariances are nonsingular.
+- **Leaf priors.** The printed prior is the node posterior `π_c n_c / N_c` (normalized; `π` the training priors), corrected as `(N p + π_c) / (N + 1)` with N the root size, exactly `Context::correct_zero_posteriors`. Classes absent from the node keep `π_c / (N + 1)`. Explicit priors change only these; coordinates and cuts are identical to the estimated-priors fit.
+- **Stopping.** A node splits only if `n >= ceil(2.5 × min_node)` (exact for minimum sizes 3, 5, 8, 10, 15 and 20), and children have more than `min_node` cases. Nodes the leaf model classifies without error do not split (52 mixed-class zero-error leaves above the size threshold); single-class nodes print "All cases classified as".
+- **46.2.** LDA trees, coefficients and predictions on iris are identical to 46.3. QDA differs: 46.2 writes `NA` for the second coordinate of two-class nodes, chooses a different root cut (-0.0875 against -0.0840) and grows a different tree. 46.2 is not a regression reference for QDA.
+- **Not observed.** The "crimcoords switched in node" messages of manual section 5.2 (46.1) appeared in no 46.3 or 46.2 run.
+
+## Open questions
+
+- **The second coordinate in two-class nodes.** It is a null vector of B, and 46.3 QDA depends on it. With two selected variables it is unique up to sign and matches native in 319 of 319 leaves; with three or more native's vector is a genuine null vector (53 of 53) but neither Gram-Schmidt from a unit vector nor the bases of LAPACK's generalized, Cholesky-reduced or nonsymmetric eigensolvers reproduces it. It decides QDA cuts as well as leaves: QDA cuts match native in 20 of 20 nodes where no candidate child depends on it (or on a one-case class), and in 226 of 265 otherwise. A documented deterministic choice is the alternative to exact parity.
+- **Four-class cuts.** Two held-out LDA splits, both in four-class nodes, pick a cut with one more training error than the rule's minimum, so some detail of four-class leaves during the search differs.
+- **Coordinate sign.** No simple convention (first, last or largest coefficient positive, class mean order, sign of `a·mean`) matches more than 218 of 341 nodes, as for the high-cardinality categorical coordinates. The sign only exchanges which child is left, so predictions are unaffected.
+- **Degenerate classes.** For a class with two cases native prints correlations of ±0.50 or 1.0 where the sample value is ±1, and its predictions in such nodes follow its printed value. Whether this is a guard or numerical noise is unknown; it should be a documented guard in guide-rs rather than reproduced.
+- **Not yet probed.** Weights (the manual reports "All positive weights treated as 1"), P variables (manual: excluded from LDA/QDA models with a warning), pruning and CV with these models, ensembles (LDA has been off in forests since version 24), and multiclass nodes with fewer cases than variables.
+
+## Consequences for implementation
+
+Variable selection, coordinates, imputation, routing, leaf rules, priors, the cut search and the stopping rules are specified well enough to implement LDA trees and test them against frozen `.coef` and `.fit` captures at the tree level. QDA trees can be matched wherever the two-class null coordinate does not enter; elsewhere tree-level differences should be recorded as known. The cut search refits two leaves for each of up to 100 candidates per node, so it is the expensive step.

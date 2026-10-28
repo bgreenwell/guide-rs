@@ -80,7 +80,7 @@ Carried over from the 2026-10-23 repository review; fixed items (log-scale selec
 ## Remaining checklist: missing statistical capabilities
 
 - [ ] Classification kernel and nearest-neighbor node models.
-- [ ] Classification LDA/QDA node models and full discriminant-coordinate split options. The existing bivariate split is not an LDA/QDA node model.
+- [ ] Classification LDA/QDA node models and full discriminant-coordinate split options. The existing bivariate split is not an LDA/QDA node model. Native probes have established the leaf models, coordinates, per-node variable selection, cut search and stopping rules; the second discriminant coordinate in two-class QDA nodes remains open ([LDA/QDA notes](discriminant-notes.md)).
 - [ ] Nonconstant simultaneous lower/upper quantile models.
 - [ ] Poisson/logistic statistical inference and specialized estimated-probability/treatment behavior.
 - [ ] Survival: event/time validation, proportional hazards, restricted mean event time and survival predictions. Parked by user decision (2026-10-25) while native Poisson split points were unexplained; reference15 matches them, so the remaining work is the baseline schedule ([survival notes](survival-notes.md)).
