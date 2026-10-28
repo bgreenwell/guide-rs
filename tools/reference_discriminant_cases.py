@@ -80,6 +80,16 @@ F_P = {1e-6: 29.921420828403722, 0.10: 2.794088637670471, 0.12: 2.49014778239402
        0.30: 1.0936627458815595, 0.90: 0.015929667069233898}
 
 
+def tree(name, n, shifts, *, classes, seed, missing=()):
+    """A depth-4 LDA tree with minimum node size 10. Every node has at most
+    2 * 10 + 101 rows, so GUIDE's cut grid holds every interior position and
+    the unresolved coordinate sign can only matter through exact ties."""
+    value = make(name, n, shifts, classes=classes, seed=seed, missing=missing, min_node=10)
+    value["name"] = "lda-tree-" + name
+    value["depth"] = 4
+    return value
+
+
 def cases():
     result = {}
 
@@ -103,4 +113,10 @@ def cases():
     # below 0.8/3 (0.24 in, 0.30 out); none keeps those below 0.8/4 (0.19 in, 0.24 out).
     add(exact("relaxed-one", [F_P[1e-6], F_P[0.12], F_P[0.24], F_P[0.30], F_P[0.90]]))
     add(exact("relaxed-none", [F_P[0.10], F_P[0.15], F_P[0.19], F_P[0.24], F_P[0.90]]))
+    for i, (classes, shifts) in enumerate([(2, [0.9, 0.9, 0.0, 0.0]), (3, [0.9, 0.9, 0.0, 0.0]),
+                                           (2, [0.7, 0.5, 0.3, 0.0, 0.0]), (3, [0.6, 0.6, 0.3, 0.0])]):
+        for seed in (21, 22):
+            add(tree(f"c{classes}-d{i}-s{seed}", 100, shifts, classes=classes, seed=seed))
+    add(tree("missing", 110, [0.9, 0.7, 0.3, 0.0], classes=3, seed=23, missing=(0, 1)))
+    add(tree("four", 120, [0.9, 0.6, 0.6, 0.0], classes=4, seed=24))
     return result

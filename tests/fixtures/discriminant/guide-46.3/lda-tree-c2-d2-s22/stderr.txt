@@ -1,0 +1,3 @@
+Warning: Floating invalid operation occurred
+Warning: Floating divide by zero occurred
+Warning: Floating overflow occurred

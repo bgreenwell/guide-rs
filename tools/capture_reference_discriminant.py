@@ -30,7 +30,8 @@ def inputs(value, version):
              "1 (model fitting)", '"report.out"', "1 (single tree)", "1 (classification)",
              "4 (LDA node models)", "3 (no pruning)", '"data.dsc"',
              "1 (estimated priors)", "1 (unit costs)", "1 (default split count)",
-             "1 (default depth)", "2 (explicit minimum node size)", str(value["min_node"]),
+             *(["2 (explicit depth)", str(value["depth"])] if "depth" in value else ["1 (default depth)"]),
+             "2 (explicit minimum node size)", str(value["min_node"]),
              "0 (no LaTeX)", "2 (store coefficients)", '"coefficients.txt"',
              "2 (store fitted values)", '"fitted.txt"', "1 (skip R export)", "2 (no plot code)"]
     return {
@@ -52,6 +53,8 @@ def parse_result(stdout, files, version, value):
         raise ValueError("runtime version mismatch")
     if "LDA node models" not in report:
         raise ValueError("report is not an LDA fit")
+    if "depth" in value:
+        return parse_tree(files, value)
     if not re.search(r"Number of terminal nodes of final tree:\s+1\b", report):
         raise ValueError("root was split; case is not a single node")
     coefficients = []
@@ -89,6 +92,20 @@ def parse_result(stdout, files, version, value):
         raise ValueError("leaf priors not found")
     stats["priors"] = {t[0]: number(t[1]) for t in (l.split() for l in m.group(1).splitlines()) if t}
     return {"coefficients": coefficients, "fitted": fitted, "leaf": stats}
+
+
+def parse_tree(files, value):
+    """Per-row terminal nodes and predictions, and each node's columns."""
+    rows = [l.split() for l in files["fitted.txt"].splitlines()[1:] if l.split()]
+    if len(rows) != len(value["rows"]):
+        raise ValueError("fitted values do not cover every row")
+    nodes = {}
+    for line in files["coefficients.txt"].splitlines()[1:]:
+        t = line.split()
+        if t:
+            nodes.setdefault(t[0], []).append(t[1])
+    return {"leaves": [int(r[1]) for r in rows], "predicted": [r[-1].strip('"') for r in rows],
+            "node_columns": nodes}
 
 
 def capture(binary, version, source_url, value, output):

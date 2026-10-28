@@ -535,6 +535,7 @@ mod tests {
             let mut dirs: Vec<_> = std::fs::read_dir(root.join(version))
                 .unwrap()
                 .map(|e| e.unwrap().path())
+                .filter(|p| p.file_name().unwrap().to_str().unwrap().starts_with("lda-leaf-"))
                 .collect();
             dirs.sort();
             for dir in dirs {

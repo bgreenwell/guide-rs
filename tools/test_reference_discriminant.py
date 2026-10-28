@@ -48,6 +48,9 @@ class DiscriminantCaptureTests(unittest.TestCase):
             with self.subTest(case=name):
                 a, b = (json.loads((BASE / f"guide-{v}" / name / "manifest.json").read_text())["result"]
                         for v in ("46.2", "46.3"))
+                if "depth" in cases()[name]:
+                    self.assertEqual(a, b)
+                    continue
                 self.assertEqual([c["variable"] for c in a["coefficients"]],
                                  [c["variable"] for c in b["coefficients"]])
                 self.assertEqual([f["predicted"] for f in a["fitted"]], [f["predicted"] for f in b["fitted"]])
@@ -65,8 +68,12 @@ class DiscriminantCaptureTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "every row"):
             parse_result(f["stdout.txt"], {**f, "fitted.txt": short}, "46.3", value)
 
-    def test_cases_cannot_split(self):
+    def test_single_node_cases_cannot_split(self):
         for name, value in cases().items():
+            if "depth" in value:
+                # Tree cases keep every node within GUIDE's exhaustive cut range.
+                self.assertLessEqual(len(value["rows"]), 2 * value["min_node"] + 101)
+                continue
             with self.subTest(case=name):
                 self.assertLess(len(value["rows"]), 2.5 * value["min_node"])
                 self.assertLessEqual(value["min_node"], len(value["rows"]) // 2)
