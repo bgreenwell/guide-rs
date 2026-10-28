@@ -3,6 +3,9 @@
 Working skeleton for a **Journal of Statistical Software (JSS)** article.
 `manuscript/` is independent of Cargo and excluded from the Rust package.
 The draft contains explicit TODOs, not completed analyses or submission claims.
+The paper leads with the Rust implementation, library API, and CLI. The
+scikit-learn-compatible Python wrapper follows as a convenient interface to
+the same core.
 
 ## Files and building
 
@@ -88,14 +91,17 @@ These are project choices, not additional journal rules:
    Treat wider coverage and experimental boosting as scope decisions.
 2. Develop the statistical motivation and software design together. Explain why
    separating variable selection from split search helps users and what the
-   Rust core and Python interfaces make practical.
+   Rust library and CLI make practical. Present those interfaces first, then
+   show the Python wrapper's convenience for existing estimator workflows.
 3. Choose a substantive real-data application with distributable inputs. Record
-   provenance, preprocessing, evaluation splits, and interpretation.
+   provenance, preprocessing, evaluation splits, and interpretation. Lead the
+   worked analysis with the CLI and follow with a concise Python equivalent.
 4. Plan fair capability and empirical comparisons. Pin comparator versions,
    tuning budgets, seeds, metrics, and hardware/thread settings. Cite original
    GUIDE work separately from this implementation.
-5. Add a commented replication entry point (for example `replicate.py`) and
-   locked dependencies when analyses exist. Have it generate figures, tables,
+5. Add a commented replication entry point that runs the CLI analysis and
+   Python wrapper examples, with locked dependencies when analyses exist.
+   Have it generate figures, tables,
    and example output; include those outputs in LaTeX instead of transcribing
    results. State expected runtime and commands in this README.
 6. Archive the eventual software and replication release, then fill in

@@ -7,18 +7,17 @@
 \author{Brandon Greenwell\\Affiliation to be confirmed}
 \Plainauthor{Brandon Greenwell}
 \title{\pkg{guide-rs}: GUIDE-Style Classification and Regression Trees
-  in \proglang{Rust} and \proglang{Python}}
-\Plaintitle{guide-rs: GUIDE-Style Classification and Regression Trees in Rust and Python}
-\Shorttitle{GUIDE-Style Trees in \proglang{Rust} and \proglang{Python}}
+  in \proglang{Rust}}
+\Plaintitle{guide-rs: GUIDE-Style Classification and Regression Trees in Rust}
+\Shorttitle{GUIDE-Style Trees in \proglang{Rust}}
 \Abstract{
   \pkg{guide-rs} is an experimental implementation of GUIDE-style
-  classification and regression trees, with a \proglang{Rust} library,
-  a command-line interface, and \proglang{Python} estimators.
-  This working manuscript outlines the statistical methods, software design,
-  validation, and applications to be documented for a software paper.
-  \todo{Replace this paragraph with the completed paper's contribution,
-  supported scope, application, and evidence. No empirical results are
-  reported in this skeleton.}
+  classification and regression trees written in \proglang{Rust}.
+  Its library and command-line interface support programmatic integration
+  and reproducible statistical analyses. A complementary \proglang{Python}
+  wrapper provides a convenient scikit-learn-compatible estimator interface.
+  \todo{Complete the abstract with the supported scope, application, and
+  evidence. This skeleton reports no empirical results.}
 }
 \Keywords{recursive partitioning, variable selection, model-based trees,
   reproducible research, \proglang{Rust}, \proglang{Python}}
@@ -37,8 +36,10 @@
 
 GUIDE (generalized, unbiased, interaction detection and estimation) provides
 the methodological foundation for this implementation \citep{Loh:2002}.
-\pkg{guide-rs} implements a subset of GUIDE-style methods and exposes them
-through interfaces for statistical analysis and software integration.
+\pkg{guide-rs} implements a subset of GUIDE-style methods in a
+\proglang{Rust} library, with a command-line interface for statistical
+analysis and automation. A complementary \proglang{Python} wrapper makes
+the implementation accessible through familiar estimator workflows.
 
 \todo{Explain the practical need, intended users, and software contribution.
 Credit the original GUIDE methods and software. Position this implementation
@@ -47,8 +48,7 @@ State the paper's supported scope without claiming full GUIDE equivalence.}
 
 \section{Statistical methods}\label{sec:methods}
 
-\todo{Define the statistical procedure and its assumptions before discussing
-the numerical implementation.}
+\todo{Specify the statistical procedure and its assumptions.}
 
 \subsection{Variable selection and split search}
 \todo{Describe association-based variable selection, interaction tests,
@@ -69,15 +69,19 @@ prediction. Describe the pure \proglang{Rust} core, shared validation,
 saved models, deterministic seeds, and parallel computation. Explain
 design decisions in terms of their benefit to statistical users.}
 
-\subsection[Python workflow]{\proglang{Python} workflow}
-\todo{Provide an executable example of loading data, fitting, tuning,
-predicting, and inspecting a tree with \code{GuideRegressor} or
-\code{GuideClassifier}. Introduce each code block in prose. Use
-\code{CodeInput} and \code{CodeOutput} environments for executed examples.}
+\subsection[Rust library]{\proglang{Rust} library}
+\todo{Demonstrate the primary library API: data construction, configuration,
+fitting, prediction, and model persistence. Explain application integration
+and validation errors; leave API inventories to the software documentation.}
 
-\subsection[Command-line and Rust interfaces]{Command-line and \proglang{Rust} interfaces}
-\todo{Provide short examples illustrating when these interfaces are useful.
-Keep detailed API inventories in the software documentation.}
+\subsection{Command-line workflow}
+\todo{Demonstrate a scripted CSV/JSON workflow: fit, inspect, save, and predict.
+Explain code in prose; use \code{CodeInput} and \code{CodeOutput} for examples.}
+
+\subsection[Python convenience wrapper]{\proglang{Python} convenience wrapper}
+\todo{Demonstrate convenient fitting, prediction, and tuning with
+\code{GuideRegressor} or \code{GuideClassifier}. Explain how the
+scikit-learn-compatible wrapper delegates to the core and shares validation.}
 
 \section{Validation and software comparisons}\label{sec:validation}
 
@@ -97,7 +101,9 @@ simulation study or unsupported claims of universal unbiasedness.}
 
 \todo{Choose a non-trivial, redistributable real dataset and a substantive
 question. Document provenance and preprocessing, then show the complete
-analysis, interpretation, and held-out evaluation. Generate every reported
+analysis through the CLI, with interpretation and held-out evaluation.
+Follow with a concise illustration of the equivalent estimator workflow
+through the \proglang{Python} wrapper. Generate every reported
 number, table, and figure from the replication workflow.}
 
 \section{Discussion}\label{sec:discussion}
