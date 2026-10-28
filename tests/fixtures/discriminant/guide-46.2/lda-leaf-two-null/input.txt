@@ -1,0 +1,22 @@
+GUIDE (46.x single-node LDA reference)
+46.2 (version)
+1 (model fitting)
+"report.out"
+1 (single tree)
+1 (classification)
+4 (LDA node models)
+3 (no pruning)
+"data.dsc"
+1 (estimated priors)
+1 (unit costs)
+1 (default split count)
+1 (default depth)
+2 (explicit minimum node size)
+20
+0 (no LaTeX)
+2 (store coefficients)
+"coefficients.txt"
+2 (store fitted values)
+"fitted.txt"
+1 (skip R export)
+2 (no plot code)

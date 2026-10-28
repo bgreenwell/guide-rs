@@ -51,6 +51,10 @@ Multiple-linear squared-error fits with numeric fitting columns use the verified
 
 Stepwise leaves are an experimental, opt-in compatibility option with known native selection and fallback differences; see [the recorded decision](linear-validation.md#stepwise-decision-2026-10-23).
 
+## LDA node models
+
+Classification trees can use GUIDE's linear discriminant node models with `fit.node_model` set to `{"kind": "lda"}`. Each node selects numeric features by one-way ANOVA F p-values, splits on its first discriminant coordinate and classifies its rows with an LDA leaf; missing values take node means, with a missing-value indicator for each feature that has missing training values. Features must be numeric with role `fit` or `both`; exclude other columns. A node splits only with at least 2.5 times `min_samples_leaf` rows, and children have more than `min_samples_leaf` rows; GUIDE's default for this model is 10. `significance_level`, `interactions`, `linear_splits`, `min_gain` and `max_split_candidates` do not apply. Unequal class costs, `mtry`, ensembles, boosting and importance are not supported. Native GUIDE trees can still differ when rows have every selected column missing; see [the LDA notes](discriminant-notes.md).
+
 ## Poisson, classification and quantile options
 
 - **Poisson:** `data.offset` names a positive exposure, not its logarithm. Models fitted with exposures require them again at prediction time.

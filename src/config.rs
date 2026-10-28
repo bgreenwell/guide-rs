@@ -74,6 +74,12 @@ pub enum NodeModel {
         max_variables: usize,
         backward: bool,
     },
+    /// Classification only: GUIDE's linear discriminant node models. Each
+    /// node selects numeric fit columns, splits on its first discriminant
+    /// coordinate and classifies with an LDA leaf. Split selection, priors
+    /// and stopping follow GUIDE 46.3; `significance_level`, `interactions`,
+    /// `linear_splits`, `min_gain` and `max_split_candidates` do not apply.
+    Lda,
 }
 
 /// Held-out loss of classification trees: it chooses the cross-validation or
@@ -261,6 +267,9 @@ impl FitOptions {
             _ => {}
         }
         if let Task::Regression { loss } = &self.task {
+            if self.node_model == NodeModel::Lda {
+                return Err(invalid("lda node models require classification"));
+            }
             if self.class_priors.is_some() || self.class_costs.is_some() {
                 return Err(invalid("class priors and costs require classification"));
             }
@@ -284,9 +293,15 @@ impl FitOptions {
                     ));
                 }
             }
-        } else if self.node_model != NodeModel::Constant {
+        } else if !matches!(self.node_model, NodeModel::Constant | NodeModel::Lda) {
             return Err(invalid(
-                "classification currently supports constant node models only",
+                "classification supports constant and lda node models",
+            ));
+        } else if self.node_model == NodeModel::Lda
+            && (self.class_costs.is_some() || self.mtry.is_some())
+        {
+            return Err(invalid(
+                "lda node models do not support unequal class costs or per-node feature sampling",
             ));
         }
         if let NodeModel::Polynomial { degree } = self.node_model

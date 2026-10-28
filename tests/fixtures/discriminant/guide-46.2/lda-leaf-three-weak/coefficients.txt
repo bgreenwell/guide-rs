@@ -1,0 +1,3 @@
+    node   variable       mean              crimcoefs1       crimcoefs2
+       1   x0           10.368075        0.92579780E-01  -0.70801847E-01
+       1   x1           10.335108        0.71983209E-01   0.85809283E-01

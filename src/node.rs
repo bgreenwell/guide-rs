@@ -106,6 +106,8 @@ pub enum LeafModel {
     Score {
         value: f64,
     },
+    /// A linear discriminant (LDA) classification leaf.
+    Discriminant(crate::Discriminant),
 }
 impl LeafModel {
     pub(crate) fn scalar(&self, row: &[Value], offset: f64, loss: &Loss) -> f64 {
@@ -121,6 +123,7 @@ impl LeafModel {
             Self::Classification {
                 predicted_class, ..
             } => *predicted_class as f64,
+            Self::Discriminant(d) => d.predict(row) as f64,
             Self::Constant { value } => {
                 if matches!(loss, Loss::Poisson) {
                     value * offset
@@ -158,6 +161,24 @@ impl LeafModel {
             }
         }
     }
+    /// The class probabilities of `row` under a classification leaf.
+    pub(crate) fn class_probabilities(&self, row: &[Value]) -> Option<std::borrow::Cow<'_, [f64]>> {
+        match self {
+            Self::Classification { probabilities, .. } => Some(probabilities.as_slice().into()),
+            Self::Discriminant(d) => Some(d.posteriors(row).into()),
+            _ => None,
+        }
+    }
+    /// The class a classification leaf predicts for `row`.
+    pub(crate) fn predicted_class(&self, row: &[Value]) -> Option<usize> {
+        match self {
+            Self::Classification {
+                predicted_class, ..
+            } => Some(*predicted_class),
+            Self::Discriminant(d) => Some(d.predict(row)),
+            _ => None,
+        }
+    }
     pub(crate) fn regression_loss(&self, row: &[Value], offset: f64, y: f64, loss: &Loss) -> f64 {
         if let (
             Self::Quantiles { lower, upper },
@@ -191,6 +212,8 @@ pub(crate) struct Context<'a> {
     pub root_samples: usize,
     /// Missing-value flag column of each feature, if any.
     pub flags: Vec<Option<usize>>,
+    /// Candidate columns of LDA node models, fixed by the training rows.
+    pub discriminant_columns: Vec<crate::discriminant::Column>,
     split_cost_weights: Vec<f64>,
     class_frequencies: Vec<f64>,
     /// Fewest rows for a linear node or leaf model.
@@ -433,6 +456,11 @@ impl<'a> Context<'a> {
             class_priors,
             root_samples: ids.len(),
             flags: crate::flag_columns(&data.schema),
+            discriminant_columns: if options.node_model == NodeModel::Lda {
+                crate::discriminant::candidate_columns(data, ids)
+            } else {
+                vec![]
+            },
             split_cost_weights,
             class_frequencies,
             linear_min_samples,
@@ -493,7 +521,8 @@ impl<'a> Context<'a> {
         };
         let constant = LeafModel::Constant { value };
         match self.options.node_model {
-            NodeModel::Constant => constant,
+            // LDA leaves are classification models, fitted during growth.
+            NodeModel::Constant | NodeModel::Lda => constant,
             NodeModel::Linear => {
                 if linear_min_samples.is_some_and(|minimum| ids.len() < minimum) {
                     constant
@@ -952,11 +981,8 @@ impl<'a> Context<'a> {
             .sum()
     }
     pub fn row_loss(&self, model: &LeafModel, i: usize) -> f64 {
-        if let LeafModel::Classification {
-            predicted_class, ..
-        } = model
-        {
-            self.costs[self.y[i] as usize][*predicted_class]
+        if let Some(predicted) = model.predicted_class(&self.data.rows[i]) {
+            self.costs[self.y[i] as usize][predicted]
         } else if matches!(
             model,
             LeafModel::Linear {
@@ -984,6 +1010,7 @@ impl<'a> Context<'a> {
         if let LeafModel::Classification { probabilities, .. } = model {
             self.gini(probabilities, ids.len())
         } else {
+            // Including LDA leaves, whose impurity is their misclassification cost.
             self.risk(model, ids)
         }
     }

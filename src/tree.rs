@@ -67,11 +67,19 @@ pub enum Split {
         period: f64,
         missing_left: bool,
     },
+    /// A cut on a node's first discriminant coordinate, the weighted sum of
+    /// `terms`; missing values take the node means stored in the terms.
+    Discriminant {
+        terms: Vec<Term>,
+        coefficients: Vec<f64>,
+        threshold: f64,
+    },
 }
 impl Split {
     pub fn feature(&self) -> usize {
         match self {
             Self::Linear { features, .. } => features[0],
+            Self::Discriminant { terms, .. } => terms[0].feature,
             Self::Numeric { feature, .. }
             | Self::Categorical { feature, .. }
             | Self::Missing { feature, .. }
@@ -81,6 +89,18 @@ impl Split {
     pub fn goes_left(&self, row: &[Value]) -> bool {
         let v = &row[self.feature()];
         match self {
+            Self::Discriminant {
+                terms,
+                coefficients,
+                threshold,
+            } => {
+                terms
+                    .iter()
+                    .zip(coefficients)
+                    .map(|(t, a)| a * t.value(row))
+                    .sum::<f64>()
+                    <= *threshold
+            }
             Self::Linear {
                 features,
                 coefficients,
@@ -363,20 +383,20 @@ impl FittedModel {
         } else {
             let mut p = vec![0.0; self.classes.len()];
             for t in &self.trees {
-                if let LeafModel::Classification { probabilities, .. } = &t.root.leaf(row).model {
-                    for (a, b) in p.iter_mut().zip(probabilities) {
+                if let Some(probabilities) = t.root.leaf(row).model.class_probabilities(row) {
+                    for (a, b) in p.iter_mut().zip(probabilities.iter()) {
                         *a += b / self.trees.len() as f64;
                     }
                 }
             }
             let c = if self.ensemble.is_none() {
-                let LeafModel::Classification {
-                    predicted_class, ..
-                } = &self.trees[0].root.leaf(row).model
-                else {
-                    unreachable!()
-                };
-                *predicted_class
+                // Validated classification trees hold classification leaves.
+                self.trees[0]
+                    .root
+                    .leaf(row)
+                    .model
+                    .predicted_class(row)
+                    .unwrap()
             } else {
                 // Validated classification models have at least one class.
                 (0..p.len())
@@ -571,6 +591,16 @@ pub(crate) fn validate_supported(data: &Dataset, options: &FitOptions) -> Result
             )));
         }
     }
+    if options.node_model == NodeModel::Lda
+        && data.schema.iter().any(|s| {
+            !matches!(s.role, Role::Excluded)
+                && (!matches!(s.feature_type, FeatureType::Numeric) || !s.role.fits())
+        })
+    {
+        return Err(invalid(
+            "lda node models use numeric features with role fit or both; exclude other features",
+        ));
+    }
     if options.node_model != NodeModel::Constant && !data.schema.iter().any(|s| s.role.fits()) {
         return Err(invalid(
             "nonconstant node models require at least one feature with role fit or both",
@@ -597,6 +627,11 @@ pub(crate) fn validate_node(
         return Err(invalid("invalid node statistics"));
     }
     match &n.model {
+        LeafModel::Discriminant(d) => {
+            if options.node_model != NodeModel::Lda || !d.is_valid(schema, classes) {
+                return Err(invalid("invalid lda leaf"));
+            }
+        }
         LeafModel::Quantiles { lower, upper } => {
             if classes != 0
                 || !lower.is_finite()
@@ -699,6 +734,26 @@ pub(crate) fn validate_node(
     }
     match (&n.split, &n.left, &n.right) {
         (None, None, None) => {}
+        (
+            Some(Split::Discriminant {
+                terms,
+                coefficients,
+                threshold,
+            }),
+            Some(l),
+            Some(r),
+        ) => {
+            if options.node_model != NodeModel::Lda
+                || !crate::discriminant::valid_terms(terms, schema)
+                || coefficients.len() != terms.len()
+                || coefficients.iter().any(|x| !x.is_finite())
+                || !threshold.is_finite()
+            {
+                return Err(invalid("invalid discriminant split"));
+            }
+            validate_node(l, schema, classes, options, depth + 1)?;
+            validate_node(r, schema, classes, options, depth + 1)?;
+        }
         (Some(s), Some(l), Some(r)) => {
             if s.feature() >= schema.len() || !schema[s.feature()].role.splits() {
                 return Err(invalid("split feature outside schema"));
@@ -784,6 +839,9 @@ pub(crate) fn grow(
     rng: &mut ChaCha8Rng,
     mode: SelectionMode,
 ) -> Node {
+    if ctx.options.node_model == NodeModel::Lda {
+        return crate::discriminant::grow(ctx, ids, depth, next_id);
+    }
     let model = ctx.fit_leaf(ids);
     let risk = ctx.risk(&model, ids) / ctx.root_weight;
     let impurity = ctx.impurity(&model, ids);
@@ -1004,7 +1062,10 @@ pub(crate) fn grow(
                 Split::Linear { missing_left, .. } | Split::Periodic { missing_left, .. } => {
                     *missing_left = left.len() >= right.len()
                 }
-                Split::Numeric { .. } | Split::Categorical { .. } | Split::Missing { .. } => {}
+                Split::Numeric { .. }
+                | Split::Categorical { .. }
+                | Split::Missing { .. }
+                | Split::Discriminant { .. } => {}
             }
         }
         let l = grow(ctx, &left, depth + 1, next_id, rng, mode);

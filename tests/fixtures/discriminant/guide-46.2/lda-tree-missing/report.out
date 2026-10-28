@@ -1,0 +1,251 @@
+             GGG   U   U  I  DDDD   EEEE
+            G   G  U   U  I  D   D  E
+            G      U   U  I  D   D  E
+            G  GG  U   U  I  D   D  EEE
+            G   G  U   U  I  D   D  E
+            G   G  U   U  I  D   D  E
+             GGG    UUU   I  DDDD   EEEE
+   
+ GUIDE Classification and Regression Trees and Forests
+ Version 46.2 (Build date: April 27, 2026)         
+ Compiled with NAG Fortran 7.2 on macOS Tahoe 26.4.1 for Apple ARM processors    
+ Copyright (c) 1997-2023 Wei-Yin Loh. All rights reserved.
+ This software is based upon work partially supported by the U.S. Army Research Office,
+ National Science Foundation, National Institutes of Health,
+ Bureau of Labor Statistics, USDA Economic Research Service, and Eli Lilly.
+  
+ This job was started on 10/27/26 at 21:46
+  
+ Classification tree
+ Linear discriminant splits and LDA node models
+ No pruning
+ DSC file: data.dsc
+ Training sample file: data.txt
+ Missing value code: NA
+ Records in data file start on line 2
+ D variable is y
+ Number of records in data file: 110
+ Length of longest entry in data file: 7
+ Missing values found among non-categorical variables
+ Number of classes: 3
+ Training sample class proportions of D variable y:
+ Class  #Cases     Proportion
+ k0         37     0.33636364
+ k1         37     0.33636364
+ k2         36     0.32727273
+  
+ Summary information for training sample of size 110
+ d=dependent, b=split and fit cat variable using indicator variables,
+ c=split-only categorical, i=fit-only categorical (via indicators),
+ s=split-only numerical, n=split and fit numerical, f=fit-only numerical,
+ m=missing-value flag variable, p=periodic variable, w=weight
+                                                     #Codes/           
+                                                     Levels/           
+  Column  Name               Minimum      Maximum    Periods   #Missing
+       1  x0            n   7.6719E+00    13.96                   16
+       2  x1            n   8.3059E+00    12.93                   15
+       3  x2            n    8.343        13.06    
+       4  x3            n    8.152        12.87    
+       5  y             d                                  3
+   =================== Constructed variables ===================
+       6  x0.NA         f    0.000        1.000    
+       7  x1.NA         f    0.000        1.000    
+  
+ Numbers of N, F, S, and P below exclude constant variables
+      Total  #cases w/   #missing
+     #cases    miss. D  ord. vals   #X-var   #N-var   #F-var   #S-var
+        110          0         31        0        4        2        0
+     #P-var   #M-var   #B-var   #C-var   #I-var
+          0        0        0        0        0
+ Number of missing-value indicators created: 2
+ Number of cases used for training: 110
+ Number of cases excluded due to 0 W or missing D variable: 0
+  
+ Estimated priors
+ Unit misclassification costs
+ Max number of splits: 100
+ Maximum number of split levels: 4
+ Minimum node sample size: 10
+  
+ Structure of final tree. Each terminal node is marked with a T.
+  
+ Node cost is node misclassification cost divided by number of cases in node
+        Node    Total  Misclassification
+       label    cases  cost
+           1      110  4.909E-01
+           2       51  3.922E-01
+           4T      23  3.043E-01
+           5       28  3.571E-01
+          10T      14  2.143E-01
+          11T      14  2.143E-01
+           3       59  3.559E-01
+           6T      12  1.667E-01
+           7       47  2.766E-01
+          14T      18  2.778E-01
+          15       29  2.414E-01
+          30T      11  0.000E+00
+          31T      18  2.778E-01
+  
+ Number of terminal nodes of final tree: 7
+ Total number of nodes of final tree: 13
+  
+ Classification tree with linear discriminant splits and LDA node models
+  
+ Node 1: D1 <= -1.0992685
+   Node 2: D2 <= 0.56685282
+     Node 4: 7/23 misclassified
+   Node 2: D2 > 0.56685282
+     Node 5: D5 <= -2.0732095
+       Node 10: 3/14 misclassified
+     Node 5: D5 > -2.0732095
+       Node 11: 3/14 misclassified
+ Node 1: D1 > -1.0992685
+   Node 3: D3 <= -1.8816902
+     Node 6: 2/12 misclassified
+   Node 3: D3 > -1.8816902
+     Node 7: D7 <= -1.8828011
+       Node 14: 5/18 misclassified
+     Node 7: D7 > -1.8828011
+       Node 15: D15 <= 1.2132584
+         Node 30: 0/11 misclassified
+       Node 15: D15 > 1.2132584
+         Node 31: 5/18 misclassified
+ 
+ ***************************************************************
+ Predictor means below are means of cases with no missing values.
+  
+Node 1: Intermediate node
+ A case goes into Node 2 if D1 <= -1.0992685 where the coefficients of D1 are:
+ Variable             Mean           Crimcoefs1
+ x0               10.799086      -0.61194126E-01             
+ x1               10.606018      -0.40905832E-01             
+ ----------------------------
+Node 2: Intermediate node
+ A case goes into Node 4 if D2 <= 0.56685282 where the coefficients of D2 are:
+ Variable             Mean           Crimcoefs1
+ x0               11.813253       0.12994373                 
+ x3               10.108978      -0.94463632E-01             
+ ----------------------------
+Node 4: Terminal node
+ Cases classified by LDA using 2 crimcoords
+ Variable         Mean          Crimcoefs1     Crimcoefs2
+ x2              10.3582       -0.113046       0.126071    
+ x1.NA          0.434783E-01    0.660615       0.794837    
+  
+ Class    Crimmean1    Crimmean2       Prior
+ k0       -1.15405        1.28702       0.260870    
+ k1      -0.940892        1.35562       0.217391    
+ k2       -1.22022        1.36081       0.521739    
+ Variance 0.361744E-01   0.488374E-01
+ ----------------------------
+Node 5: Intermediate node
+ A case goes into Node 10 if D5 <= -2.0732095 where the coefficients of D5 are:
+ Variable             Mean           Crimcoefs1
+ x1               11.206696      -0.18681013                 
+ x0.NA           0.10714286       0.48425205                 
+ ----------------------------
+Node 10: Terminal node
+ Cases classified by LDA using 1st crimcoord with coefs below:
+ Variable         Mean          Crimcoefs1
+ x0              12.3689        0.298440    
+ x2              10.6602       -0.175570    
+  
+ Class    Crimmean1        Prior
+ k1        1.72652         0.35696
+ k2        1.87156         0.64001
+ Variance  0.776980E-01
+ ----------------------------
+Node 11: Terminal node
+ Cases classified by LDA using 2 crimcoords
+ Variable         Mean          Crimcoefs1     Crimcoefs2
+ x0              11.9673        0.334007       0.313688    
+ x1              10.6766       -0.234167       0.260010    
+  
+ Class    Crimmean1    Crimmean2       Prior
+ k0        1.40387        6.47461       0.142857    
+ k1        1.66406        6.53452       0.500000    
+ k2        1.30052        6.54589       0.357143    
+ Variance 0.540233E-01   0.902235E-01
+ ----------------------------
+Node 3: Intermediate node
+ A case goes into Node 6 if D3 <= -1.8816902 where the coefficients of D3 are:
+ Variable             Mean           Crimcoefs1
+ x0               9.8677082      -0.10281101                 
+ x2               10.185014      -0.75519355E-01             
+ ----------------------------
+Node 6: Terminal node
+ Cases classified by LDA using 2 crimcoords
+ Variable         Mean          Crimcoefs1     Crimcoefs2
+ x0              10.9536       -0.582239      -0.391197    
+ x1.NA          0.833333E-01   -0.641844       0.827078    
+  
+ Class    Crimmean1    Crimmean2       Prior
+ k0       -6.58078       -4.42152       0.166667    
+ k1       -6.26950       -4.21237       0.500000    
+ k2       -6.59872       -4.11900       0.333333    
+ Variance 0.762340E-01   0.975339E-01
+ ----------------------------
+Node 7: Intermediate node
+ A case goes into Node 14 if D7 <= -1.8828011 where the coefficients of D7 are:
+ Variable             Mean           Crimcoefs1
+ x1               10.095681      -0.11380519                 
+ x2               9.9902979      -0.66470287E-01             
+ x0.NA           0.21276596      -0.21906846                 
+ ----------------------------
+Node 14: Terminal node
+ Cases classified by LDA using 2 crimcoords
+ Variable         Mean          Crimcoefs1     Crimcoefs2
+ x2              10.4700        0.327501      -0.621228E-01
+ x3              10.0787        0.648381E-01   0.204538    
+  
+ Class    Crimmean1    Crimmean2       Prior
+ k0        4.01329        1.53701       0.277778    
+ k1        4.22642        1.38017       0.500000    
+ k2        3.84477        1.32314       0.222222    
+ Variance 0.375712E-01   0.587446E-01
+ ----------------------------
+Node 15: Intermediate node
+ A case goes into Node 30 if D15 <= 1.2132584 where the coefficients of D15 are:
+ Variable             Mean           Crimcoefs1
+ x0               9.4460414       0.12604104                 
+ x1.NA           0.31034483       0.34443793                 
+ ----------------------------
+Node 30: Terminal node
+ Cases classified by LDA using 1st crimcoord with coefs below:
+ Variable         Mean          Crimcoefs1
+ x0              8.78296       -0.347813    
+ x3              9.57180        0.232209    
+  
+ Class    Crimmean1        Prior
+ k0      -0.739560         0.81384
+ k1       -1.24892         0.18321
+ Variance  0.639383E-01
+ ----------------------------
+Node 31: Terminal node
+ Cases classified by LDA using 2 crimcoords
+ Variable         Mean          Crimcoefs1     Crimcoefs2
+ x2              9.70726       -0.298154      -0.264096    
+ x1.NA          0.500000       -0.130606       0.514056    
+  
+ Class    Crimmean1    Crimmean2       Prior
+ k0       -2.95569       -2.32742       0.722222    
+ k1       -2.77709       -2.24995       0.166667    
+ k2       -3.25842       -2.25647       0.111111    
+ Variance 0.480857E-01   0.653143E-01
+ ----------------------------
+ 
+ Classification matrix for training sample:
+ Predicted      True class
+ class             k0        k1        k2
+ k0                27         4         2
+ k1                 3        27         3
+ k2                 7         6        31
+ Total             37        37        36
+ 
+ Number of cases used for tree construction: 110
+ Number misclassified: 25
+ Resubstitution estimate of mean misclassification cost: 0.22727273
+ 
+ Observed and fitted values are stored in fitted.txt
+ Discriminant coefficients are stored in coefficients.txt
+ Elapsed time in seconds: 0.65090E-02
