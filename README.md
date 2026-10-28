@@ -56,6 +56,7 @@ let predictions = model.predict(&data.rows)?;
 - [Coverage and remaining work](docs/coverage.md)
 - [Validation record](docs/validation.md) and [upstream reference provenance](docs/reference-upstream.md)
 - [Roadmap](docs/roadmap.md)
+- [JSS manuscript skeleton and writing guide](manuscript/README.md)
 - Python: [documentation site](https://bgreenwell.github.io/guide-rs/), [package README](python/README.md) and [example notebooks](python/examples/)
 - API reference: `cargo doc --open`
 

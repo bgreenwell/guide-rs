@@ -1,0 +1,127 @@
+\documentclass[article]{jss}
+
+% Working skeleton: replace every TODO before submission.
+% Leave publication metadata (volume, issue, DOI, dates) to the editors.
+\newcommand{\todo}[1]{\textbf{TODO:} #1}
+
+\author{Brandon Greenwell\\Affiliation to be confirmed}
+\Plainauthor{Brandon Greenwell}
+\title{\pkg{guide-rs}: GUIDE-Style Classification and Regression Trees
+  in \proglang{Rust} and \proglang{Python}}
+\Plaintitle{guide-rs: GUIDE-Style Classification and Regression Trees in Rust and Python}
+\Shorttitle{GUIDE-Style Trees in \proglang{Rust} and \proglang{Python}}
+\Abstract{
+  \pkg{guide-rs} is an experimental implementation of GUIDE-style
+  classification and regression trees, with a \proglang{Rust} library,
+  a command-line interface, and \proglang{Python} estimators.
+  This working manuscript outlines the statistical methods, software design,
+  validation, and applications to be documented for a software paper.
+  \todo{Replace this paragraph with the completed paper's contribution,
+  supported scope, application, and evidence. No empirical results are
+  reported in this skeleton.}
+}
+\Keywords{recursive partitioning, variable selection, model-based trees,
+  reproducible research, \proglang{Rust}, \proglang{Python}}
+\Plainkeywords{recursive partitioning, variable selection, model-based trees,
+  reproducible research, Rust, Python}
+\Address{
+  Brandon Greenwell\\
+  Affiliation and postal address to be confirmed\\
+  E-mail: \email{greenwell.brandon@gmail.com}\\
+  URL: \url{https://github.com/bgreenwell/guide-rs}
+}
+
+\begin{document}
+
+\section{Introduction}\label{sec:introduction}
+
+GUIDE (generalized, unbiased, interaction detection and estimation) provides
+the methodological foundation for this implementation \citep{Loh:2002}.
+\pkg{guide-rs} implements a subset of GUIDE-style methods and exposes them
+through interfaces for statistical analysis and software integration.
+
+\todo{Explain the practical need, intended users, and software contribution.
+Credit the original GUIDE methods and software. Position this implementation
+against both competing and complementary software across languages.
+State the paper's supported scope without claiming full GUIDE equivalence.}
+
+\section{Statistical methods}\label{sec:methods}
+
+\todo{Define the statistical procedure and its assumptions before discussing
+the numerical implementation.}
+
+\subsection{Variable selection and split search}
+\todo{Describe association-based variable selection, interaction tests,
+and subsequent split-point search. Specify the implemented tests, stopping
+rules, and treatment of numeric, categorical, and missing predictors.
+Distinguish published methods from implementation choices.}
+
+\subsection{Node models and pruning}
+\todo{Specify the response families and node models covered by the paper,
+their fitting objectives, and pruning procedures. Begin with constant
+classification and regression and multiple-linear least-squares leaves;
+expand the scope only when the corresponding evidence is ready.}
+
+\section{Software design and interfaces}\label{sec:software}
+
+\todo{Explain the flow from data and configuration through fitting to
+prediction. Describe the pure \proglang{Rust} core, shared validation,
+saved models, deterministic seeds, and parallel computation. Explain
+design decisions in terms of their benefit to statistical users.}
+
+\subsection[Python workflow]{\proglang{Python} workflow}
+\todo{Provide an executable example of loading data, fitting, tuning,
+predicting, and inspecting a tree with \code{GuideRegressor} or
+\code{GuideClassifier}. Introduce each code block in prose. Use
+\code{CodeInput} and \code{CodeOutput} environments for executed examples.}
+
+\subsection[Command-line and Rust interfaces]{Command-line and \proglang{Rust} interfaces}
+\todo{Provide short examples illustrating when these interfaces are useful.
+Keep detailed API inventories in the software documentation.}
+
+\section{Validation and software comparisons}\label{sec:validation}
+
+\todo{Summarize frozen native comparisons, independent numerical checks,
+and statistical selection experiments for the pinned release. Separate
+agreement with native GUIDE from independently established correctness.
+Report known differences and the precise scope of each conclusion.}
+
+\todo{Compare relevant capabilities and workflows with native GUIDE,
+conventional CART implementations, and conditional inference and model-based
+trees such as \pkg{partykit} \citep{Hothorn+Zeileis:2015}.
+Prespecify any empirical comparisons, tuning budgets, metrics, and runtime
+conditions. Report uncertainty and limitations; avoid an extensive
+simulation study or unsupported claims of universal unbiasedness.}
+
+\section{An applied example}\label{sec:application}
+
+\todo{Choose a non-trivial, redistributable real dataset and a substantive
+question. Document provenance and preprocessing, then show the complete
+analysis, interpretation, and held-out evaluation. Generate every reported
+number, table, and figure from the replication workflow.}
+
+\section{Discussion}\label{sec:discussion}
+
+\todo{Summarize the demonstrated contribution, appropriate use cases,
+limitations, and future work. Separate supported features from experimental
+extensions. Do not imply support for unimplemented GUIDE families.}
+
+\section*{Computational details}
+
+\todo{Record the software release and commit, algorithm revision,
+\proglang{Rust} and \proglang{Python} versions, dependencies, operating
+system, hardware where relevant, seeds, and thread settings. Give the
+installation and replication commands and an archival release identifier.
+The repository is \url{https://github.com/bgreenwell/guide-rs}.}
+
+\section*{Acknowledgments}
+
+\todo{Confirm authorship, affiliations, funding, and acknowledgments.
+Add any required disclosures.}
+
+\bibliography{refs}
+
+% Optional appendices go after the bibliography, beginning on a new page.
+% Use descriptive section titles, not a section titled only "Appendix".
+
+\end{document}
