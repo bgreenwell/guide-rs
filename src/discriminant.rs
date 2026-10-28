@@ -5,13 +5,9 @@
 //! coordinates. The rules follow black-box probes of GUIDE 46.3; see
 //! `docs/discriminant-notes.md`.
 use crate::node::{Context, Term};
-use crate::{Dataset, FeatureType, stats};
+use crate::{Dataset, FeatureType, lapack, stats};
 use crate::{LeafModel, Node, Split};
 use serde::{Deserialize, Serialize};
-
-/// Relative residual sum of squares below which a selected column is treated
-/// as a linear combination of columns selected before it and dropped.
-const COLLINEAR_TOLERANCE: f64 = 1e-10;
 
 /// A candidate column of the node design.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -130,7 +126,7 @@ impl Discriminant {
     pub(crate) fn is_valid(&self, schema: &[crate::FeatureSchema], classes: usize) -> bool {
         let dimensions = self.coefficients.len();
         valid_terms(&self.terms, schema)
-            && (1..=2).contains(&dimensions)
+            && dimensions >= 1
             && self
                 .coefficients
                 .iter()
@@ -180,16 +176,18 @@ pub(crate) fn valid_terms(terms: &[Term], schema: &[crate::FeatureSchema]) -> bo
         })
 }
 
-/// Columns kept by a node: ranked by one-way ANOVA F p-value, then counted by
+/// Columns kept by a node: ranked by the one-way ANOVA F p-value of their
+/// observed values (`ranking`, with missing values as NaN), then counted by
 /// GUIDE's thresholds. With K candidates and m of them below 0.4/K, the node
 /// keeps m when m >= 2; otherwise it keeps those below 0.8/(K-2) (m = 1) or
-/// 0.8/(K-1) (m = 0), and at least two. Columns that are linear combinations
-/// of columns ranked before them are then dropped.
-pub(crate) fn select(design: &[Vec<f64>], labels: &[usize], classes: usize) -> Vec<usize> {
-    let log_p: Vec<(usize, f64)> = design
+/// 0.8/(K-1) (m = 0), and at least two. A column without a defined F
+/// statistic counts toward K with p = 1. When three or more are kept, those
+/// that `lsq` flags as linearly dependent are dropped (see `dependent`).
+pub(crate) fn select(ranking: &[Vec<f64>], labels: &[usize], classes: usize) -> Vec<usize> {
+    let log_p: Vec<(usize, f64)> = ranking
         .iter()
         .enumerate()
-        .filter_map(|(j, x)| anova_log_p(x, labels, classes).map(|p| (j, p)))
+        .map(|(j, x)| (j, anova_log_p(x, labels, classes).unwrap_or(0.0)))
         .collect();
     let mut ranked = log_p.clone();
     ranked.sort_by(|a, b| a.1.total_cmp(&b.1));
@@ -208,34 +206,121 @@ pub(crate) fn select(design: &[Vec<f64>], labels: &[usize], classes: usize) -> V
         };
         below(relaxed).max(2)
     };
-    let mut kept: Vec<usize> = vec![];
-    let mut basis: Vec<Vec<f64>> = vec![];
-    for &(j, _) in &ranked[..count] {
-        let mean = stats::mean(&design[j]);
-        let mut r: Vec<f64> = design[j].iter().map(|x| x - mean).collect();
-        let scale: f64 = r.iter().map(|x| x * x).sum();
-        for q in &basis {
-            let dot: f64 = r.iter().zip(q).map(|(a, b)| a * b).sum();
-            for (a, b) in r.iter_mut().zip(q) {
-                *a -= dot * b;
-            }
-        }
-        let rss: f64 = r.iter().map(|x| x * x).sum();
-        if rss > COLLINEAR_TOLERANCE * scale {
-            let norm = rss.sqrt();
-            basis.push(r.iter().map(|x| x / norm).collect());
-            kept.push(j);
-        }
+    let mut kept: Vec<usize> = ranked[..count].iter().map(|&(j, _)| j).collect();
+    kept.sort_unstable();
+    if kept.len() >= 3 {
+        let columns: Vec<&[f64]> = kept.iter().map(|&j| ranking[j].as_slice()).collect();
+        let flags = dependent(&columns);
+        kept = kept
+            .into_iter()
+            .zip(flags)
+            .filter_map(|(j, flag)| (!flag).then_some(j))
+            .collect();
     }
     kept
 }
 
-/// Natural log of the one-way ANOVA F-test p-value, or None for a column that
-/// is constant in the node or a node without residual degrees of freedom.
+/// GUIDE's `lin_depend`: Alan Miller's `lsq` (AS 274) Givens updates of an
+/// intercept and `columns` (in candidate order, one row at a time), then
+/// `tolset` with tolerance 10 epsilon and `sing`. GUIDE passes the raw values
+/// with missing ones coded as `-huge(1d0)`; the resulting overflows decide
+/// which of those columns are flagged, so the arithmetic is kept as is.
+fn dependent(columns: &[&[f64]]) -> Vec<bool> {
+    let ncol = columns.len() + 1;
+    let vsmall = 10.0 * f64::MIN_POSITIVE;
+    let mut d = vec![0.0; ncol];
+    let mut rhs = vec![0.0; ncol];
+    let mut r = vec![0.0; ncol * (ncol - 1) / 2];
+    // Position in `r` of row i's first off-diagonal element (0-based).
+    let row_start: Vec<usize> = (0..ncol)
+        .map(|i| (0..i).map(|k| ncol - k - 1).sum())
+        .collect();
+    let includ =
+        |d: &mut [f64], rhs: &mut [f64], r: &mut [f64], weight: f64, x: &mut [f64], y: f64| {
+            let (mut w, mut y) = (weight, y);
+            let mut next = 0;
+            for i in 0..ncol {
+                if w.abs() < vsmall {
+                    return;
+                }
+                let xi = x[i];
+                if xi.abs() < vsmall {
+                    next += ncol - i - 1;
+                } else {
+                    let di = d[i];
+                    let wxi = w * xi;
+                    let dpi = di + wxi * xi;
+                    let cbar = di / dpi;
+                    let sbar = wxi / dpi;
+                    w *= cbar;
+                    d[i] = dpi;
+                    for xk in &mut x[i + 1..] {
+                        let old = *xk;
+                        *xk = old - xi * r[next];
+                        r[next] = cbar * r[next] + sbar * old;
+                        next += 1;
+                    }
+                    let yk = y;
+                    y = yk - xi * rhs[i];
+                    rhs[i] = cbar * rhs[i] + sbar * yk;
+                }
+            }
+        };
+    for i in 0..columns[0].len() {
+        let mut x: Vec<f64> = std::iter::once(1.0)
+            .chain(
+                columns
+                    .iter()
+                    .map(|c| if c[i].is_nan() { -f64::MAX } else { c[i] }),
+            )
+            .collect();
+        includ(&mut d, &mut rhs, &mut r, 1.0, &mut x, (i + 1) as f64);
+    }
+    // tolset(10 * epsilon).
+    let eps = 10.0 * f64::EPSILON;
+    let work: Vec<f64> = d.iter().map(|v| v.abs().sqrt()).collect();
+    let tol: Vec<f64> = (0..ncol)
+        .map(|col| {
+            let mut total = work[col];
+            for row in 0..col {
+                total += r[row_start[row] + col - row - 1].abs() * work[row];
+            }
+            eps * total
+        })
+        .collect();
+    // sing.
+    let mut flags = vec![false; ncol];
+    for row in 0..ncol {
+        if work[row] <= tol[row] {
+            flags[row] = true;
+            if row + 1 < ncol {
+                let pos = row_start[row];
+                let mut x = vec![0.0; ncol];
+                x[row + 1..].copy_from_slice(&r[pos..pos + ncol - row - 1]);
+                let (y, weight) = (rhs[row], d[row]);
+                r[pos..pos + ncol - row - 1].fill(0.0);
+                d[row] = 0.0;
+                rhs[row] = 0.0;
+                includ(&mut d, &mut rhs, &mut r, weight, &mut x, y);
+            }
+        }
+    }
+    flags[1..].to_vec()
+}
+
+/// Natural log of the one-way ANOVA F-test p-value over the non-NaN entries
+/// of `x`, or None when the column is constant there or has fewer than two
+/// classes or no residual degrees of freedom.
 fn anova_log_p(x: &[f64], labels: &[usize], classes: usize) -> Option<f64> {
+    let (x, labels): (Vec<f64>, Vec<usize>) = x
+        .iter()
+        .zip(labels)
+        .filter(|(v, _)| !v.is_nan())
+        .map(|(&v, &c)| (v, c))
+        .unzip();
     let mut sum = vec![0.0; classes];
     let mut count = vec![0usize; classes];
-    for (&v, &c) in x.iter().zip(labels) {
+    for (&v, &c) in x.iter().zip(&labels) {
         sum[c] += v;
         count[c] += 1;
     }
@@ -244,7 +329,7 @@ fn anova_log_p(x: &[f64], labels: &[usize], classes: usize) -> Option<f64> {
     if groups < 2 || n <= groups {
         return None;
     }
-    let mean = stats::mean(x);
+    let mean = stats::mean(&x);
     let between: f64 = (0..classes)
         .filter(|&c| count[c] > 0)
         .map(|c| {
@@ -254,7 +339,7 @@ fn anova_log_p(x: &[f64], labels: &[usize], classes: usize) -> Option<f64> {
         .sum();
     let within: f64 = x
         .iter()
-        .zip(labels)
+        .zip(&labels)
         .map(|(&v, &c)| {
             let m = sum[c] / count[c] as f64;
             (v - m) * (v - m)
@@ -268,10 +353,19 @@ fn anova_log_p(x: &[f64], labels: &[usize], classes: usize) -> Option<f64> {
 }
 
 /// Discriminant coordinates of `design` (one column per variable): the
-/// generalized eigenvectors of the between-class scatter against the total
-/// scatter, in decreasing eigenvalue order, scaled so that `a'Ta = 1`. The
-/// columns must be linearly independent. Signs are arbitrary.
-pub(crate) fn coordinates(design: &[Vec<f64>], labels: &[usize], classes: usize) -> Vec<Vec<f64>> {
+/// generalized eigenvectors of the between-class scatter B against the total
+/// scatter T, with their eigenvalues, in decreasing order, scaled so that
+/// `a'Ta = 1`. Both are empty when T is singular.
+///
+/// GUIDE rotates both matrices into the right singular vectors V of T and
+/// solves `(V'BV) z = lambda (V'TV) z` with LAPACK's `dsygvx`; the
+/// coefficients are `V z`. The signs this produces decide which end of the
+/// coordinate the cut grid counts from, so the same routines are used here.
+pub(crate) fn coordinates(
+    design: &[Vec<f64>],
+    labels: &[usize],
+    classes: usize,
+) -> (Vec<f64>, Vec<Vec<f64>>) {
     let p = design.len();
     let n = labels.len();
     let means: Vec<f64> = design.iter().map(|x| stats::mean(x)).collect();
@@ -300,38 +394,61 @@ pub(crate) fn coordinates(design: &[Vec<f64>], labels: &[usize], classes: usize)
                 .sum();
         }
     }
-    // Whiten by T^{-1/2} = Q diag(1/sqrt(l)) Q', then diagonalize the whitened B.
-    let (values, vectors) = stats::symmetric_eigen(&total);
-    let root_inverse: Vec<Vec<f64>> = (0..p)
-        .map(|a| {
-            (0..p)
-                .map(|b| {
-                    (0..p)
-                        .map(|k| vectors[k][a] * vectors[k][b] / values[k].sqrt())
-                        .sum()
-                })
-                .collect()
-        })
-        .collect();
-    let product = |x: &[Vec<f64>], y: &[Vec<f64>]| -> Vec<Vec<f64>> {
-        (0..p)
+    let (_, vt) = lapack::right_singular_vectors(&total);
+    // V'MV with V' = vt.
+    let rotate = |m: &[Vec<f64>]| -> Vec<Vec<f64>> {
+        let mv: Vec<Vec<f64>> = (0..p)
             .map(|a| {
                 (0..p)
-                    .map(|b| (0..p).map(|k| x[a][k] * y[k][b]).sum())
+                    .map(|j| (0..p).map(|k| m[a][k] * vt[j][k]).sum())
+                    .collect()
+            })
+            .collect();
+        (0..p)
+            .map(|i| {
+                (0..p)
+                    .map(|j| (0..p).map(|k| vt[i][k] * mv[k][j]).sum())
                     .collect()
             })
             .collect()
     };
-    let whitened = product(&product(&root_inverse, &between), &root_inverse);
-    let (_, directions) = stats::symmetric_eigen(&whitened);
-    directions
+    let Some((values, z)) = lapack::generalized_eigen(&rotate(&between), &rotate(&total)) else {
+        return (vec![], vec![]);
+    };
+    let vectors = z
         .iter()
-        .map(|v| {
+        .rev()
+        .map(|z| {
             (0..p)
-                .map(|a| (0..p).map(|b| root_inverse[a][b] * v[b]).sum())
+                .map(|a| (0..p).map(|k| vt[k][a] * z[k]).sum())
                 .collect()
         })
-        .collect()
+        .collect();
+    (values.into_iter().rev().collect(), vectors)
+}
+
+/// GUIDE's number of coordinates for a node with eigenvalues `values`
+/// (decreasing) in a problem with `classes` classes: one with two classes;
+/// otherwise the leading eigenvalues, at least two, whose sum first exceeds
+/// 95% of the sum of the positive ones, capped at `classes - 1`.
+fn dimensions(values: &[f64], classes: usize) -> usize {
+    if classes == 2 || values.len() < 2 {
+        return 1.min(values.len());
+    }
+    let total: f64 = values.iter().rev().filter(|&&v| v > 0.0).sum();
+    let mut sum = values[0];
+    let mut count = 1;
+    for &v in &values[1..] {
+        if v < 0.0 {
+            break;
+        }
+        sum += v;
+        count += 1;
+        if sum > 0.95 * total {
+            break;
+        }
+    }
+    count.min(classes - 1).max(2)
 }
 
 /// Fits an LDA leaf to rows `ids` with class `labels` (indices below
@@ -357,31 +474,33 @@ pub(crate) fn fit(
         .iter()
         .map(|t| ids.iter().map(|&i| t.value(&data.rows[i])).collect())
         .collect();
-    let mut kept = select(&design, labels, classes);
+    let ranking: Vec<Vec<f64>> = terms
+        .iter()
+        .map(|t| {
+            ids.iter()
+                .map(|&i| {
+                    let row = &data.rows[i];
+                    if !t.missing_indicator && row[t.feature].is_missing() {
+                        f64::NAN
+                    } else {
+                        t.value(row)
+                    }
+                })
+                .collect()
+        })
+        .collect();
+    let mut kept = select(&ranking, labels, classes);
     if kept.is_empty() {
         return None;
     }
     kept.sort_unstable();
     let design: Vec<Vec<f64>> = kept.iter().map(|&j| design[j].clone()).collect();
-    let dimensions = if present.len() == 2 {
-        1
-    } else {
-        kept.len().min(2)
-    };
-    // GUIDE's coordinate signs follow no rule found so far (see
-    // docs/discriminant-notes.md). They matter because the cut grid counts
-    // from the low end; here the last column's coefficient is positive.
-    let coefficients: Vec<Vec<f64>> = coordinates(&design, labels, classes)
-        .into_iter()
-        .take(dimensions)
-        .map(|a| {
-            if a[a.len() - 1] < 0.0 {
-                a.iter().map(|x| -x).collect()
-            } else {
-                a
-            }
-        })
-        .collect();
+    let (values, vectors) = coordinates(&design, labels, classes);
+    if vectors.is_empty() {
+        return None;
+    }
+    let dimensions = dimensions(&values, classes);
+    let coefficients: Vec<Vec<f64>> = vectors.into_iter().take(dimensions).collect();
     let projected: Vec<Vec<f64>> = coefficients
         .iter()
         .map(|a| {
@@ -448,9 +567,10 @@ fn node_term(data: &Dataset, ids: &[usize], column: Column) -> Term {
 }
 
 /// The LDA leaf of rows `ids`, or a constant leaf when LDA does not apply.
-/// Search-time child leaves (`search`) classify with the node's raw class
-/// probabilities as priors; fitted leaves use GUIDE's corrected priors.
-fn leaf(ctx: &Context<'_>, ids: &[usize], search: bool) -> LeafModel {
+/// It classifies with the node's class proportions as priors; GUIDE prints
+/// priors corrected toward the root's, but its predictions follow the raw
+/// proportions.
+fn leaf(ctx: &Context<'_>, ids: &[usize]) -> LeafModel {
     let mut counts = vec![0.0; ctx.classes.len()];
     let labels: Vec<usize> = ids.iter().map(|&i| ctx.y[i] as usize).collect();
     for &c in &labels {
@@ -458,9 +578,6 @@ fn leaf(ctx: &Context<'_>, ids: &[usize], search: bool) -> LeafModel {
     }
     let mut priors = counts.clone();
     ctx.class_probabilities(&mut priors);
-    if !search {
-        ctx.correct_zero_posteriors(&mut priors);
-    }
     fit(
         ctx.data,
         ids,
@@ -498,7 +615,7 @@ fn cut_sizes(n: usize, s: usize) -> Vec<usize> {
 /// search leaves, misclassify fewest training rows; ties go to the most even
 /// split, then the smaller left child.
 pub(crate) fn grow(ctx: &Context<'_>, ids: &[usize], depth: usize, next_id: &mut usize) -> Node {
-    let model = leaf(ctx, ids, false);
+    let model = leaf(ctx, ids);
     let risk = ctx.risk(&model, ids);
     let mut node = Node {
         id: *next_id,
@@ -536,7 +653,7 @@ pub(crate) fn grow(ctx: &Context<'_>, ids: &[usize], depth: usize, next_id: &mut
         || (),
         |_, &i| {
             let (left, right) = sorted.split_at(i);
-            ctx.risk(&leaf(ctx, left, true), left) + ctx.risk(&leaf(ctx, right, true), right)
+            ctx.risk(&leaf(ctx, left), left) + ctx.risk(&leaf(ctx, right), right)
         },
     );
     let n = ids.len();
@@ -654,7 +771,7 @@ mod tests {
             }
         };
 
-        // Selected variables, node means and coefficients up to sign.
+        // Selected variables, node means and coefficients, signs included.
         let native = result["coefficients"].as_array().unwrap();
         let mut ours: Vec<String> = model.terms.iter().map(term_name).collect();
         let mut theirs: Vec<String> = native
@@ -664,7 +781,6 @@ mod tests {
         ours.sort();
         theirs.sort();
         assert_eq!(ours, theirs, "{dir:?}: selected variables");
-        let mut signs = vec![];
         for (k, a) in model.coefficients.iter().enumerate() {
             let pairs: Vec<(f64, f64)> = model
                 .terms
@@ -679,18 +795,12 @@ mod tests {
                 })
                 .collect();
             let scale = pairs.iter().map(|p| p.1.abs()).fold(0.0, f64::max);
-            let sign = if pairs.iter().map(|p| p.0 * p.1).sum::<f64>() < 0.0 {
-                -1.0
-            } else {
-                1.0
-            };
             for (ours, theirs) in pairs {
                 assert!(
-                    close(sign * ours, theirs, 1e-6, scale),
+                    close(ours, theirs, 1e-6, scale),
                     "{dir:?}: coordinate {k} coefficient {ours} vs {theirs}"
                 );
             }
-            signs.push(sign);
         }
         for t in model.terms.iter().filter(|t| !t.missing_indicator) {
             let row = native
@@ -701,12 +811,12 @@ mod tests {
         }
 
         // Leaf statistics on each coordinate.
-        for (k, sign) in signs.iter().enumerate() {
+        for k in 0..model.coefficients.len() {
             let stats = &result["leaf"][format!("coordinate{}", k + 1)];
             let spread = model.variances[k].sqrt();
             for (c, name) in classes.iter().enumerate() {
                 let theirs = &stats[*name];
-                let mean = model.class_means[c].as_ref().unwrap()[k] * sign;
+                let mean = model.class_means[c].as_ref().unwrap()[k];
                 assert!(
                     close(mean, theirs["mean"].as_f64().unwrap(), 5e-6, spread),
                     "{dir:?}: class {name} mean on coordinate {k}"
@@ -723,12 +833,11 @@ mod tests {
         // Every training row's coordinates and predicted class.
         for (i, row) in result["fitted"].as_array().unwrap().iter().enumerate() {
             let z = model.coordinates(&data.rows[i]);
-            for (k, sign) in signs.iter().enumerate() {
+            for (k, &ours) in z.iter().enumerate() {
                 let theirs = row["coordinates"][k].as_f64().unwrap();
                 assert!(
-                    close(z[k] * sign, theirs, 5e-4, 0.0),
-                    "{dir:?}: row {i} coordinate {k}: {} vs {theirs}",
-                    z[k] * sign
+                    close(ours, theirs, 5e-4, 0.0),
+                    "{dir:?}: row {i} coordinate {k}: {ours} vs {theirs}"
                 );
             }
             assert_eq!(
@@ -765,11 +874,22 @@ mod tests {
     }
 
     #[test]
-    fn selection_drops_collinear_columns() {
+    fn selection_drops_columns_lsq_flags() {
         let labels = [0, 0, 0, 1, 1, 1];
         let x = vec![1.0, 2.0, 3.0, 6.0, 7.0, 9.0];
-        let design = vec![x.clone(), x.iter().map(|v| 2.0 * v + 1.0).collect()];
-        assert_eq!(select(&design, &labels, 2), vec![0]);
+        let z = vec![0.5, 1.0, 0.7, 3.1, 2.8, 3.5];
+        let design = vec![
+            x.clone(),
+            x.iter().map(|v| 2.0 * v + 1.0).collect(),
+            z.clone(),
+        ];
+        assert_eq!(select(&design, &labels, 2), vec![0, 2]);
+        // As in GUIDE, a missing value (coded -huge) overflows the Givens
+        // updates and the column is flagged.
+        let mut gappy = x.clone();
+        gappy[1] = f64::NAN;
+        let w = vec![0.2, 0.9, 0.4, 2.2, 3.0, 2.6];
+        assert_eq!(select(&[gappy, z, w], &labels, 2), vec![1, 2]);
     }
 
     #[test]
@@ -779,7 +899,7 @@ mod tests {
             vec![1.0, 2.0, 1.5, 4.0, 5.0, 4.2, 8.0, 7.5, 9.0],
             vec![3.0, 1.0, 2.0, 2.5, 3.5, 1.0, 0.5, 2.0, 1.0],
         ];
-        for a in coordinates(&design, &labels, 3) {
+        for a in coordinates(&design, &labels, 3).1 {
             let z: Vec<f64> = (0..9)
                 .map(|i| a[0] * design[0][i] + a[1] * design[1][i])
                 .collect();

@@ -9,6 +9,7 @@ mod discriminant;
 mod ensemble;
 mod export;
 mod importance;
+mod lapack;
 mod node;
 mod pruning;
 mod quantile;

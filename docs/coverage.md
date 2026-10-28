@@ -80,8 +80,8 @@ Carried over from the 2026-10-23 repository review; fixed items (log-scale selec
 ## Remaining checklist: missing statistical capabilities
 
 - [ ] Classification kernel and nearest-neighbor node models.
-- [x] Classification LDA node models on numeric features: per-node selection, discriminant-coordinate splits, LDA leaves and GUIDE's stopping rules, validated against 24 single-node and 20 tree captures ([LDA/QDA notes](discriminant-notes.md)).
-- [ ] GUIDE's discriminant coordinate signs, which decide LDA cuts in nodes larger than `2s + 101` rows, and its cut search with missing values.
+- [x] Classification LDA node models on numeric features: per-node selection, discriminant-coordinate splits, LDA leaves and GUIDE's stopping rules, with GUIDE's LAPACK coordinate signs; all 24 single-node and 20 tree captures match ([LDA/QDA notes](discriminant-notes.md)).
+- [ ] LDA cuts between rows whose selected columns are all missing, which native separates by rounding (77 of 90 synthetic missing-value trees match).
 - [ ] Classification QDA and bivariate QDA node models, categorical (dummy) LDA columns and linear splits with constant nodes (46.3 option 7). The two-class QDA null coordinate remains unidentified.
 - [ ] Nonconstant simultaneous lower/upper quantile models.
 - [ ] Poisson/logistic statistical inference and specialized estimated-probability/treatment behavior.

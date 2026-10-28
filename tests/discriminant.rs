@@ -248,16 +248,6 @@ fn compare_tree(dir: &std::path::Path) -> (bool, bool) {
     (ours == theirs, predicted == native)
 }
 
-/// Native trees that guide-rs does not reproduce, with the documented reason
-/// (docs/discriminant-notes.md). Every other capture must match exactly.
-const KNOWN_TREE_DIFFERENCES: [(&str, &str); 2] = [
-    // A 35-row node ties at 17 and 18 rows, equally balanced; the smaller-left
-    // tie-break then depends on GUIDE's unresolved coordinate sign.
-    ("lda-tree-c2-d0-s21", "coordinate sign"),
-    // How GUIDE fits search-time children with missing values is unresolved.
-    ("lda-tree-missing", "missing values in the cut search"),
-];
-
 #[test]
 fn lda_trees_reproduce_native_captures() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/discriminant");
@@ -275,18 +265,10 @@ fn lda_trees_reproduce_native_captures() {
             .collect();
         dirs.sort();
         assert_eq!(dirs.len(), 10);
-        let mut differing = vec![];
         for dir in dirs {
-            let name = dir.file_name().unwrap().to_str().unwrap().to_string();
             let (leaves, predictions) = compare_tree(&dir);
-            if !(leaves && predictions) {
-                differing.push(name);
-            }
+            assert!(leaves, "{version} {dir:?}: leaf partition");
+            assert!(predictions, "{version} {dir:?}: training predictions");
         }
-        let known: Vec<String> = KNOWN_TREE_DIFFERENCES
-            .iter()
-            .map(|(n, _)| n.to_string())
-            .collect();
-        assert_eq!(differing, known, "{version}");
     }
 }
