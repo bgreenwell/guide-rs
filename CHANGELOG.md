@@ -6,8 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-27
+
 ### Added
 
+- Experimental GUIDE classification and regression trees targeting GUIDE 46.3, with a CLI and Rust API
 - `--threads` CLI option and `n_jobs` estimator parameter set the threads used for parallel fits
 - Python package (`import guide`) with scikit-learn tree and forest estimators, feature roles and importance scores
 - Python estimators accept periodic features, missing-value flags, logistic and dual-quantile losses, stepwise leaves, prediction truncation and validation pruning
@@ -51,9 +54,3 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 - Blank lines in CSV input no longer cause a field-count error
 - Bagged ensembles reject cross-validation pruning on bootstrap samples instead of under-pruning
-
-## [0.1.0] - 2026-10-24
-
-### Added
-
-- Initial experimental implementation of GUIDE-style classification and regression trees targeting GUIDE 46.3
