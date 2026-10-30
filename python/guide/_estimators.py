@@ -449,6 +449,16 @@ class _Regression(_Guide):
 
 
 class _Classification(_Guide):
+    def _fits_features(self):
+        return self._node_model()["kind"] != "constant"
+
+    def _node_model(self):
+        # Forest classifiers have no node_model parameter.
+        node_model = getattr(self, "node_model", "constant")
+        if node_model in ("constant", "lda"):
+            return {"kind": node_model}
+        raise ValueError(f"node_model must be 'constant' or 'lda', got {node_model!r}")
+
     def _prepare(self, X, y, sample_weight):
         columns, y = self._columns(X, y, reset=True)
         check_classification_targets(y)
@@ -456,7 +466,7 @@ class _Classification(_Guide):
         names = [str(c) for c in self.classes_]
         if len(set(names)) != len(names):
             raise ValueError("class labels must have distinct string forms")
-        options = self._options({"kind": "classification"}, {"kind": "constant"})
+        options = self._options({"kind": "classification"}, self._node_model())
         options["linear_splits"] = self.linear_splits
         if self.pruning_loss != "misclassification":
             options["pruning_loss"] = self.pruning_loss
@@ -647,6 +657,15 @@ class GuideClassifier(ClassifierMixin, _SingleTree, _Classification):
 
     Parameters
     ----------
+    node_model : {"constant", "lda"}, default="constant"
+        Model fitted in each node. ``"lda"`` grows GUIDE's linear
+        discriminant trees: each node selects numeric features, splits on its
+        first discriminant coordinate and classifies with an LDA leaf, and
+        numeric features default to the ``"both"`` role. Every feature must
+        then be numeric with role ``"fit"`` or ``"both"`` (exclude others
+        with ``feature_roles``), and ``class_costs`` is not supported. GUIDE's
+        default ``min_samples_leaf`` for it is 10; a node splits only with at
+        least 2.5 times that many rows.
     linear_splits : bool, default=False
         Also test bivariate discriminant splits.
     class_priors : array-like of shape (n_classes,), default=None
@@ -673,6 +692,7 @@ class GuideClassifier(ClassifierMixin, _SingleTree, _Classification):
     def __init__(
         self,
         *,
+        node_model="constant",
         max_depth=10,
         min_samples_leaf=2,
         min_gain=1e-12,
@@ -695,6 +715,7 @@ class GuideClassifier(ClassifierMixin, _SingleTree, _Classification):
         n_jobs=None,
         random_state=0,
     ):
+        self.node_model = node_model
         self.max_depth = max_depth
         self.min_samples_leaf = min_samples_leaf
         self.min_gain = min_gain
@@ -1120,8 +1141,9 @@ def importance(estimator, X, y, *, sample_weight=None, permutations=300, max_dep
     Scores come from unpruned trees of depth ``max_depth`` grown with the
     configuration of ``estimator``, which must be an unfitted or fitted
     :class:`GuideRegressor` (constant leaves, squared-error loss) or
-    :class:`GuideClassifier` (default priors and costs). The estimator itself
-    is not modified. ``permutations`` response permutations estimate each
+    :class:`GuideClassifier` (default priors and costs). The trees have
+    constant nodes, so an LDA classifier is scored like a constant one. The
+    estimator itself is not modified. ``permutations`` response permutations estimate each
     score's null mean for the bias adjustment; they run on ``estimator.n_jobs``
     threads.
 
