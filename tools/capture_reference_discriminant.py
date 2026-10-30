@@ -24,7 +24,8 @@ def sha(raw):
 
 def inputs(value, version):
     names = value["features"] + ["y"]
-    records = [[("NA" if v is None else repr(v)) for v in row] + [t]
+    categorical = set(value.get("categorical", ()))
+    records = [[("NA" if v is None else v if isinstance(v, str) else repr(v)) for v in row] + [t]
                for row, t in zip(value["rows"], value["targets"])]
     lines = ["GUIDE (46.x single-node LDA reference)", f"{version} (version)",
              "1 (model fitting)", '"report.out"', "1 (single tree)", "1 (classification)",
@@ -37,7 +38,8 @@ def inputs(value, version):
     return {
         "input.txt": "\n".join(lines) + "\n",
         "data.dsc": "data.txt\nNA\n2\n" + "".join(
-            f"{i} {n} {'d' if n == 'y' else 'n'}\n" for i, n in enumerate(names, 1)),
+            f"{i} {n} {'d' if n == 'y' else 'c' if n in categorical else 'n'}\n"
+            for i, n in enumerate(names, 1)),
         "data.txt": " ".join(names) + "\n" + "".join(" ".join(r) + "\n" for r in records),
         "case.json": json.dumps(value, indent=2) + "\n",
     }
@@ -73,9 +75,10 @@ def parse_result(stdout, files, version, value):
         raise ValueError("fitted values do not cover every row")
     block = report.split("Node 1: Terminal node", 1)[1]
     stats = {}
-    old = re.search(r"Class\s+Crimmean1(.*?)\n(.*?)\n\s*Variance\s+(.*?)\n", block, re.S)
+    old = re.search(r"Class\s+Crimmean1?(.*?)\n(.*?)\n\s*Variance\s+(.*?)\n", block, re.S)
     if old:
-        # 46.2 prints one table of coordinate means and priors, then pooled variances.
+        # 46.2 prints one table of coordinate means and priors, then pooled
+        # variances; 46.3 does too for a leaf with one coordinate.
         variances = [number(x) for x in old.group(3).split()]
         rows = [l.split() for l in old.group(2).splitlines() if l.split()]
         for k, v in enumerate(variances, 1):

@@ -1087,7 +1087,7 @@ mod tests {
                 checked += 1;
             }
         }
-        assert_eq!(checked, 24);
+        assert_eq!(checked, 28);
     }
 
     #[test]

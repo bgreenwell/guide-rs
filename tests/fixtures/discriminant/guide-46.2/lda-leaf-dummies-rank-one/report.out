@@ -1,0 +1,113 @@
+             GGG   U   U  I  DDDD   EEEE
+            G   G  U   U  I  D   D  E
+            G      U   U  I  D   D  E
+            G  GG  U   U  I  D   D  EEE
+            G   G  U   U  I  D   D  E
+            G   G  U   U  I  D   D  E
+             GGG    UUU   I  DDDD   EEEE
+   
+ GUIDE Classification and Regression Trees and Forests
+ Version 46.2 (Build date: April 27, 2026)         
+ Compiled with NAG Fortran 7.2 on macOS Tahoe 26.4.1 for Apple ARM processors    
+ Copyright (c) 1997-2023 Wei-Yin Loh. All rights reserved.
+ This software is based upon work partially supported by the U.S. Army Research Office,
+ National Science Foundation, National Institutes of Health,
+ Bureau of Labor Statistics, USDA Economic Research Service, and Eli Lilly.
+  
+ This job was started on 10/30/26 at 17:43
+  
+ Classification tree
+ Linear discriminant splits and LDA node models
+ No pruning
+ DSC file: data.dsc
+ Training sample file: data.txt
+ Missing value code: NA
+ Records in data file start on line 2
+ D variable is y
+ C variables changed to B
+ Number of records in data file: 60
+ Length of longest entry in data file: 7
+ Number of classes: 2
+ Training sample class proportions of D variable y:
+ Class  #Cases     Proportion
+ k0         30     0.50000000
+ k1         30     0.50000000
+  
+ Summary information for training sample of size 60
+ d=dependent, b=split and fit cat variable using indicator variables,
+ c=split-only categorical, i=fit-only categorical (via indicators),
+ s=split-only numerical, n=split and fit numerical, f=fit-only numerical,
+ m=missing-value flag variable, p=periodic variable, w=weight
+                                                  #Codes/           
+                                                  Levels/           
+  Column  Name            Minimum      Maximum    Periods   #Missing
+       1  x0         n    7.329        12.24    
+       2  g          b                                  2
+       3  x1         n    7.410        13.14    
+       4  h          b                                  2
+       5  g2         b                                  2
+       6  y          d                                  2
+   =================== Constructed variables ===================
+       7  g.b        f    0.000        1.000    
+       8  h.lo       f    0.000        1.000    
+       9  g2.b       f    0.000        1.000    
+  
+ Numbers of N, F, S, and P below exclude constant variables
+      Total  #cases w/   #missing
+     #cases    miss. D  ord. vals   #X-var   #N-var   #F-var   #S-var
+         60          0          0        0        2        3        0
+     #P-var   #M-var   #B-var   #C-var   #I-var
+          0        0        3        0        0
+ Number of dummy variables created: 3
+ Number of cases used for training: 60
+  
+ Estimated priors
+ Unit misclassification costs
+ Max number of splits: 100
+ Maximum number of split levels: 5
+ Minimum node sample size: 30
+ Tree has no splits
+  
+ Structure of final tree. Each terminal node is marked with a T.
+  
+ Node cost is node misclassification cost divided by number of cases in node
+        Node    Total  Misclassification
+       label    cases  cost
+           1T      60  1.667E-01
+  
+ Number of terminal nodes of final tree: 1
+ Total number of nodes of final tree: 1
+  
+ Classification tree with linear discriminant splits and LDA node models
+  
+ Node 1: 10/60 misclassified
+ 
+ ***************************************************************
+  
+Node 1: Terminal node
+ Cases classified by LDA using 1st crimcoord with coefs below:
+ Variable      Mean          Crimcoefs1
+ g.b         0.500000       -0.707107    
+ g2.b        0.500000       -0.707107    
+  
+ Class    Crimmean1        Prior
+ k0      -0.235702         0.50000
+ k1       -1.17851         0.50000
+ Variance  0.287356    
+ Split point on Crimcoord1 (if node is split) is -0.17976931E+309
+ ----------------------------
+ 
+ Classification matrix for training sample:
+ Predicted      True class
+ class             k0        k1
+ k0                25         5
+ k1                 5        25
+ Total             30        30
+ 
+ Number of cases used for tree construction: 60
+ Number misclassified: 10
+ Resubstitution estimate of mean misclassification cost: 0.16666667
+ 
+ Observed and fitted values are stored in fitted.txt
+ Discriminant coefficients are stored in coefficients.txt
+ Elapsed time in seconds: 0.24280E-02

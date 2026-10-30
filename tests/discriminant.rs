@@ -276,7 +276,7 @@ fn lda_trees_reproduce_native_captures() {
             })
             .collect();
         dirs.sort();
-        assert_eq!(dirs.len(), 10);
+        assert_eq!(dirs.len(), 12);
         for dir in dirs {
             let (leaves, predictions) = compare_tree(&dir);
             assert!(leaves, "{version} {dir:?}: leaf partition");
