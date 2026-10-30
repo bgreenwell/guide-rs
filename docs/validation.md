@@ -2,6 +2,10 @@
 
 Local environment: Apple Silicon macOS, Rust 1.99.1. The runtime implementation is pure Rust; R is used only as an independent test oracle. GitHub Actions runs the ordinary suite on Linux, macOS and Windows plus the independent R job; all passed from a clean checkout on 2026-10-25. R prediction-function export was excluded from product scope on 2026-10-24 and removed from the code on 2026-10-25. Historical export checks below remain a record of earlier work; independent R numerical/statistical validation remains in scope.
 
+## LDA weights, P variables, wide nodes and pruning, 2026-10-30
+
+Synthetic checks against GUIDE 46.3 for both `lda` and `lda_splits`: weighted rows (12 of 12 trees match), a periodic variable excluded in guide-rs and ignored by native (12 of 12), nodes with more variables than rows (12 of 12), and fixed-size pruning (22 of 24). The two pruning differences come from the documented tie order of the weakest-link path (parent before child), which native resolves child first; see [the LDA notes](discriminant-notes.md). No code changed.
+
 ## LDA splits with constant leaves, 2026-10-30
 
 `node_model: lda_splits` implements GUIDE 46.3 option 7 (46.2 option 6): LDA-node column selection and coordinates, cuts by count-weighted Gini over every cut leaving at least the minimum node size on each side, and constant leaves. Probes against native trees ruled out misclassification-scored cuts (0 of 16 synthetic trees) and fixed the candidate set. Six new captures (`lda-splits-tree-numeric`, `-missing` and `-categorical`, both versions, which agree) match exactly, as do all 80 fresh synthetic trees with 2 to 5 classes, 120 to 500 rows, minimum node sizes 2 to 20 and up to 15% missing values. Existing fits are unchanged.
