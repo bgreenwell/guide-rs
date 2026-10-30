@@ -111,7 +111,7 @@ pub fn importance(
             | Task::Regression {
                 loss: Loss::SquaredError
             }
-    ) || options.node_model != NodeModel::Constant
+    ) || !matches!(options.node_model, NodeModel::Constant | NodeModel::Lda)
     {
         return Err(invalid(
             "importance currently supports constant classification and squared-error regression trees",
@@ -125,7 +125,10 @@ pub fn importance(
             "importance requires at least 2 permutations and depth 1..16",
         ));
     }
+    // Scores come from constant-node trees whatever the fitted node model, so
+    // an LDA classifier is scored like a constant one.
     let mut opt = options.clone();
+    opt.node_model = NodeModel::Constant;
     opt.max_depth = importance.max_depth;
     opt.pruning = Pruning::None;
     opt.mtry = None;
