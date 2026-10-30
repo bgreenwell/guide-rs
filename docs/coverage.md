@@ -1,6 +1,6 @@
 # GUIDE 46.3 coverage and remaining work
 
-Updated **2026-10-27**, through algorithm revision **`guide-rs-0.1-experimental-reference19`**.
+Updated **2026-10-30**, through algorithm revision **`guide-rs-0.1-experimental-reference20`**.
 
 **guide-rs is a working subset of GUIDE, not a full replacement.** Its strongest native validation is for constant classification/regression, multiple-linear squared-error trees, and pruning. Other implemented losses and ensembles have narrower independent checks. No complete subsystem is certified equivalent to every GUIDE option.
 
@@ -81,7 +81,7 @@ Carried over from the 2026-10-23 repository review; fixed items (log-scale selec
 
 - [ ] Classification kernel and nearest-neighbor node models.
 - [x] Classification LDA node models on numeric features: per-node selection, discriminant-coordinate splits, LDA leaves and GUIDE's stopping rules, with GUIDE's LAPACK coordinate signs; all 24 single-node and 20 tree captures match ([LDA/QDA notes](discriminant-notes.md)).
-- [ ] LDA cuts between rows whose selected columns are all missing, which native separates by rounding (77 of 90 synthetic missing-value trees match).
+- [ ] LDA trees with missing values: 128 of 135 synthetic trees match native; the remaining cuts differ in nodes whose candidate children hold one-case classes.
 - [ ] Classification QDA and bivariate QDA node models, categorical (dummy) LDA columns and linear splits with constant nodes (46.3 option 7). The two-class QDA null coordinate remains unidentified.
 - [ ] Nonconstant simultaneous lower/upper quantile models.
 - [ ] Poisson/logistic statistical inference and specialized estimated-probability/treatment behavior.
