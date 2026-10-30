@@ -12,6 +12,10 @@ adheres to [Semantic Versioning](https://semver.org/).
 - `node_model="lda"` in the Python `GuideClassifier`
 - Importance scores for LDA classification configurations, computed with constant-node trees
 
+### Fixed
+
+- Classification leaves with tied class counts predict the class GUIDE predicts
+
 ## [0.1.0] - 2026-10-27
 
 ### Added

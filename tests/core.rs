@@ -166,6 +166,42 @@ fn zero_posterior_correction_keeps_cost_based_class_decision() {
     assert_eq!(labels, ["0", "0", "1", "1"]);
 }
 #[test]
+fn tied_leaf_counts_predict_the_class_with_the_larger_corrected_posterior() {
+    // A native GUIDE 46.3 probe: the left leaf holds two c1 and two c2 rows
+    // and no c0. GUIDE breaks the tie by the zero-posterior-corrected
+    // probabilities, which favor c2, the class with the larger prior.
+    let mut csv = String::from("x,y\n1,c1\n2,c1\n1.5,c2\n2.5,c2\n9,c2\n9.5,c2\n");
+    for i in 0..10 {
+        csv.push_str(&format!("{},c0\n", 5.0 + 0.3 * i as f64));
+    }
+    let d = dataset_from_csv(
+        &csv,
+        &CsvOptions {
+            target: "y".into(),
+            ..Default::default()
+        },
+        &Task::Classification,
+    )
+    .unwrap();
+    let o = FitOptions {
+        task: Task::Classification,
+        max_depth: 1,
+        min_samples_leaf: 2,
+        ..options()
+    };
+    let m = FittedModel::fit(&d, &o).unwrap();
+    let labels: Vec<String> = m
+        .predict(&d.rows[..4])
+        .unwrap()
+        .into_iter()
+        .map(|p| match p {
+            Prediction::Classification { label, .. } => label,
+            other => panic!("{other:?}"),
+        })
+        .collect();
+    assert_eq!(labels, ["c2", "c2", "c2", "c2"]);
+}
+#[test]
 fn zero_gain_splits_follow_min_gain() {
     // Every cut leaves both child means at 5, but the residual signs still
     // associate with x. GUIDE splits anyway; a positive min_gain does not.

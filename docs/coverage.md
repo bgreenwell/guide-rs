@@ -1,6 +1,6 @@
 # GUIDE 46.3 coverage and remaining work
 
-Updated **2026-10-30**, through algorithm revision **`guide-rs-0.1-experimental-reference21`**.
+Updated **2026-10-30**, through algorithm revision **`guide-rs-0.1-experimental-reference22`**.
 
 **guide-rs is a working subset of GUIDE, not a full replacement.** Its strongest native validation is for constant classification/regression, multiple-linear squared-error trees, and pruning. Other implemented losses and ensembles have narrower independent checks. No complete subsystem is certified equivalent to every GUIDE option.
 
