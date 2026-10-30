@@ -9,6 +9,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 - `lda` node model for classification: GUIDE's linear discriminant splits and leaves on numeric features
+- `node_model="lda"` in the Python `GuideClassifier`
+- Importance scores for LDA classification configurations, computed with constant-node trees
 
 ## [0.1.0] - 2026-10-27
 

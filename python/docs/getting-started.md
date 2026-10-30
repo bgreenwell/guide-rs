@@ -25,6 +25,8 @@ plot_tree(model)
 
 The estimators follow the scikit-learn API, so they work in pipelines, `clone`, grid search and cross-validation.
 
+`GuideClassifier(node_model="lda", min_samples_leaf=10)` grows GUIDE's linear discriminant trees instead: each node splits on a discriminant coordinate of its own selected numeric features and classifies with an LDA leaf. All features must be numeric; exclude others with `feature_roles`.
+
 ## Inputs
 
 - **Categorical features** are used natively. DataFrame columns with object, string, categorical or boolean dtypes are categorical; for arrays, name them with `categorical_features`.
