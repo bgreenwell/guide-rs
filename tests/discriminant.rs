@@ -266,6 +266,31 @@ fn compare_tree(dir: &std::path::Path) -> (bool, bool) {
 }
 
 #[test]
+fn lda_split_trees_reproduce_native_captures() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/discriminant");
+    for version in ["guide-46.2", "guide-46.3"] {
+        let mut dirs: Vec<_> = std::fs::read_dir(root.join(version))
+            .unwrap()
+            .map(|e| e.unwrap().path())
+            .filter(|p| {
+                p.file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .starts_with("lda-splits-tree-")
+            })
+            .collect();
+        dirs.sort();
+        assert_eq!(dirs.len(), 3);
+        for dir in dirs {
+            let (leaves, predictions) = compare_tree(&dir);
+            assert!(leaves, "{version} {dir:?}: leaf partition");
+            assert!(predictions, "{version} {dir:?}: training predictions");
+        }
+    }
+}
+
+#[test]
 fn lda_trees_reproduce_native_captures() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/discriminant");
     for version in ["guide-46.2", "guide-46.3"] {

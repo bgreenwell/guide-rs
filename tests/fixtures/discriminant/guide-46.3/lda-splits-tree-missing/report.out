@@ -1,0 +1,301 @@
+             GGG   U   U  I  DDDD   EEEE
+            G   G  U   U  I  D   D  E
+            G      U   U  I  D   D  E
+            G  GG  U   U  I  D   D  EEE
+            G   G  U   U  I  D   D  E
+            G   G  U   U  I  D   D  E
+             GGG    UUU   I  DDDD   EEEE
+   
+ GUIDE Classification and Regression Trees and Forests
+ Version 46.3 (Build date: July 11, 2026)          
+ Compiled with NAG Fortran 7.2 on macOS Tahoe 26.4.1 for Apple ARM processors    
+ Copyright (c) 1997-2023 Wei-Yin Loh. All rights reserved.
+ This software is based upon work partially supported by the U.S. Army Research Office,
+ National Science Foundation, National Institutes of Health,
+ Bureau of Labor Statistics, USDA Economic Research Service, and Eli Lilly.
+  
+ This job was started on 10/30/26 at 18:01
+  
+ Classification tree
+ Linear discriminant splits and constant node models
+ No pruning
+ DSC file: data.dsc
+ Training sample file: data.txt
+ Missing value code: NA
+ Records in data file start on line 2
+ D variable is y
+ Number of records in data file: 150
+ Length of longest entry in data file: 7
+ Missing values found among non-categorical variables
+ Number of classes: 3
+ Training sample class proportions of D variable y:
+ Class  #Cases     Proportion
+ k0         50     0.33333333
+ k1         50     0.33333333
+ k2         50     0.33333333
+  
+ Summary information for training sample of size 150
+ d=dependent, b=split and fit cat variable using indicator variables,
+ c=split-only categorical, i=fit-only categorical (via indicators),
+ s=split-only numerical, n=split and fit numerical, f=fit-only numerical,
+ m=missing-value flag variable, p=periodic variable, w=weight
+                                                     #Codes/           
+                                                     Levels/           
+  Column  Name               Minimum      Maximum    Periods   #Missing
+       1  x0            n   7.4250E+00    13.61                   22
+       2  x1            n   8.0347E+00    14.42                   21
+       3  x2            n    6.421        12.86    
+       4  x3            n    7.663        12.67    
+       5  y             d                                  3
+   =================== Constructed variables ===================
+       6  x0.NA         f    0.000        1.000    
+       7  x1.NA         f    0.000        1.000    
+  
+ Numbers of N, F, S, and P below exclude constant variables
+      Total  #cases w/   #missing
+     #cases    miss. D  ord. vals   #X-var   #N-var   #F-var   #S-var
+        150          0         43        0        4        2        0
+     #P-var   #M-var   #B-var   #C-var   #I-var
+          0        0        0        0        0
+ Number of missing-value indicators created: 2
+ Number of cases used for training: 150
+ Number of cases excluded due to 0 W or missing D variable: 0
+  
+ Estimated priors
+ Unit misclassification costs
+ Split values for N and S variables based on exhaustive search
+ Maximum number of interaction splits: 100
+ Maximum number of split levels: 4
+ Minimum node sample size: 5
+  
+ Structure of final tree. Each terminal node is marked with a T.
+  
+ Node cost is node misclassification cost divided by number of cases in node
+        Node    Total  Misclassification
+       label    cases  cost
+           1      150  6.667E-01
+           2       95  5.474E-01
+           4       41  2.683E-01
+           8       33  1.818E-01
+          16T      27  1.481E-01
+          17T       6  3.355E-01
+           9T       8  3.769E-01
+           5       54  5.370E-01
+          10       35  4.000E-01
+          20T      15  4.667E-01
+          21T      20  3.000E-01
+          11       19  4.211E-01
+          22T      12  5.833E-01
+          23T       7  1.463E-01
+           3       55  4.000E-01
+           6       39  5.641E-01
+          12T      10  5.000E-01
+          13       29  5.172E-01
+          26T      24  4.167E-01
+          27T       5  4.018E-01
+           7T      16  0.000E+00
+  
+ Number of terminal nodes of final tree: 11
+ Total number of nodes of final tree: 21
+  
+ Classification tree with linear discriminant splits
+  
+ Node 1: D1 <= -0.97808107
+   Node 2: D2 <= -1.5874709
+     Node 4: D4 <= -0.80564709
+       Node 8: D8 <= -0.82144236
+         Node 16: 4/27 misclassified
+       Node 8: D8 > -0.82144236
+         Node 17: 2/6 misclassified
+     Node 4: D4 > -0.80564709
+       Node 9: 3/8 misclassified
+   Node 2: D2 > -1.5874709
+     Node 5: D5 <= -1.2628315
+       Node 10: D10 <= -0.64201567
+         Node 20: 7/15 misclassified
+       Node 10: D10 > -0.64201567
+         Node 21: 6/20 misclassified
+     Node 5: D5 > -1.2628315
+       Node 11: D11 <= -4.4575787
+         Node 22: 7/12 misclassified
+       Node 11: D11 > -4.4575787
+         Node 23: 1/7 misclassified
+ Node 1: D1 > -0.97808107
+   Node 3: D3 <= -1.2488145
+     Node 6: D6 <= -2.1485305
+       Node 12: 5/10 misclassified
+     Node 6: D6 > -2.1485305
+       Node 13: D13 <= -2.5854398
+         Node 26: 10/24 misclassified
+       Node 13: D13 > -2.5854398
+         Node 27: 2/5 misclassified
+   Node 3: D3 > -1.2488145
+     Node 7: 0/16 misclassified
+ 
+ ***************************************************************
+ Predictor means below are means of cases with no missing values.
+  
+Node 1: Intermediate node
+ A case goes into Node 2 if D1 <= -0.97808107 where the coefficients of D1 are:
+ Variable             Mean           Crimcoefs1
+ x1               10.736022      -0.67787925E-01             
+ x2               10.385117      -0.26667751E-01             
+ ----------------------------
+Node 2: Intermediate node
+ A case goes into Node 4 if D2 <= -1.5874709 where the coefficients of D2 are:
+ Variable             Mean           Crimcoefs1
+ x0               11.122649      -0.77462653E-01             
+ x1               11.423455      -0.62181510E-01             
+ ----------------------------
+Node 4: Intermediate node
+ A case goes into Node 8 if D4 <= -0.80564709 where the coefficients of D4 are:
+ Variable             Mean           Crimcoefs1
+ x0               12.052706      -0.14500709                 
+ x3               10.131110       0.78715578E-01             
+ ----------------------------
+Node 8: Intermediate node
+ A case goes into Node 16 if D8 <= -0.82144236 where the coefficients of D8 are:
+ Variable             Mean           Crimcoefs1
+ x0               12.344556      -0.17911857                 
+ x3               9.9264455       0.12152873                 
+ ----------------------------
+Node 16: Terminal node
+ Class      Number   Posterior
+ k0             1  0.3704E-01
+ k1             3  0.1111E+00
+ k2            23  0.8519E+00
+ Predicted class is k2
+ Number of training cases misclassified = 4
+ ----------------------------
+Node 17: Terminal node
+ Class      Number   Posterior
+ k0             0  0.2208E-02
+ k1             2  0.3333E+00
+ k2             4  0.6645E+00
+ Predicted class is k2
+ Number of training cases misclassified = 2
+ ----------------------------
+Node 9: Terminal node
+ Class      Number   Posterior
+ k0             0  0.2208E-02
+ k1             5  0.6231E+00
+ k2             3  0.3747E+00
+ Predicted class is k1
+ Number of training cases misclassified = 3
+ ----------------------------
+Node 5: Intermediate node
+ A case goes into Node 10 if D5 <= -1.2628315 where the coefficients of D5 are:
+ Variable             Mean           Crimcoefs1
+ x0               10.458322      -0.12577815                 
+ x1.NA           0.18518519       0.19958546                 
+ ----------------------------
+Node 10: Intermediate node
+ A case goes into Node 20 if D10 <= -0.64201567 where the coefficients of D10 are:
+ Variable             Mean           Crimcoefs1
+ x3               9.5654143      -0.68107896E-01             
+ x0.NA           0.14285714       0.43525830                 
+ ----------------------------
+Node 20: Terminal node
+ Class      Number   Posterior
+ k0             0  0.2208E-02
+ k1             7  0.4658E+00
+ k2             8  0.5320E+00
+ Predicted class is k2
+ Number of training cases misclassified = 7
+ ----------------------------
+Node 21: Terminal node
+ Class      Number   Posterior
+ k0             5  0.2500E+00
+ k1            14  0.7000E+00
+ k2             1  0.5000E-01
+ Predicted class is k1
+ Number of training cases misclassified = 6
+ ----------------------------
+Node 11: Intermediate node
+ A case goes into Node 22 if D11 <= -4.4575787 where the coefficients of D11 are:
+ Variable             Mean           Crimcoefs1
+ x1               11.327933      -0.41894153                 
+ x2               10.321547       0.25697984E-01             
+ ----------------------------
+Node 22: Terminal node
+ Class      Number   Posterior
+ k0             5  0.4167E+00
+ k1             3  0.2500E+00
+ k2             4  0.3333E+00
+ Predicted class is k0
+ Number of training cases misclassified = 7
+ ----------------------------
+Node 23: Terminal node
+ Class      Number   Posterior
+ k0             6  0.8537E+00
+ k1             1  0.1441E+00
+ k2             0  0.2208E-02
+ Predicted class is k0
+ Number of training cases misclassified = 1
+ ----------------------------
+Node 3: Intermediate node
+ A case goes into Node 6 if D3 <= -1.2488145 where the coefficients of D3 are:
+ Variable             Mean           Crimcoefs1
+ x0               10.502675      -0.12490643                 
+ x0.NA           0.20000000       0.52948642E-01             
+ ----------------------------
+Node 6: Intermediate node
+ A case goes into Node 12 if D6 <= -2.1485305 where the coefficients of D6 are:
+ Variable             Mean           Crimcoefs1
+ x0               11.220989      -0.18392984                 
+ x0.NA           0.28205128       0.23772799                 
+ ----------------------------
+Node 12: Terminal node
+ Class      Number   Posterior
+ k0             5  0.5000E+00
+ k1             1  0.1000E+00
+ k2             4  0.4000E+00
+ Predicted class is k0
+ Number of training cases misclassified = 5
+ ----------------------------
+Node 13: Intermediate node
+ A case goes into Node 26 if D13 <= -2.5854398 where the coefficients of D13 are:
+ Variable             Mean           Crimcoefs1
+ x1               9.7006172      -0.28204971                 
+ x0.NA           0.37931034      -0.12204887                 
+ ----------------------------
+Node 26: Terminal node
+ Class      Number   Posterior
+ k0            10  0.4161E+00
+ k1            14  0.5817E+00
+ k2             0  0.2208E-02
+ Predicted class is k1
+ Number of training cases misclassified = 10
+ ----------------------------
+Node 27: Terminal node
+ Class      Number   Posterior
+ k0             2  0.3996E+00
+ k1             0  0.2208E-02
+ k2             3  0.5982E+00
+ Predicted class is k2
+ Number of training cases misclassified = 2
+ ----------------------------
+Node 7: Terminal node
+ Class      Number   Posterior
+ k0            16  0.9956E+00
+ k1             0  0.2208E-02
+ k2             0  0.2208E-02
+ Predicted class is k0
+ Number of training cases misclassified = 0
+ ----------------------------
+ 
+ Classification matrix for training sample:
+ Predicted      True class
+ class             k0        k1        k2
+ k0                32         5         8
+ k1                15        33         4
+ k2                 3        12        38
+ Total             50        50        50
+ 
+ Number of cases used for tree construction: 150
+ Number misclassified: 47
+ Resubstitution estimate of mean misclassification cost: 0.31333333
+ 
+ Observed and fitted values are stored in fitted.txt
+ Discriminant coefficients are stored in coefficients.txt
+ Elapsed time in seconds: 0.40540E-02

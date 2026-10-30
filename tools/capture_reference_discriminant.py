@@ -27,10 +27,17 @@ def inputs(value, version):
     categorical = set(value.get("categorical", ()))
     records = [[("NA" if v is None else v if isinstance(v, str) else repr(v)) for v in row] + [t]
                for row, t in zip(value["rows"], value["targets"])]
+    if value.get("constant_leaves"):
+        # Linear discriminant splits with constant leaves: code 7 in 46.3 and
+        # 6 in 46.2, without the split-count prompt.
+        model = [f"{7 if version == '46.3' else 6} (linear splits, constant nodes)"]
+        count = []
+    else:
+        model, count = ["4 (LDA node models)"], ["1 (default split count)"]
     lines = ["GUIDE (46.x single-node LDA reference)", f"{version} (version)",
              "1 (model fitting)", '"report.out"', "1 (single tree)", "1 (classification)",
-             "4 (LDA node models)", "3 (no pruning)", '"data.dsc"',
-             "1 (estimated priors)", "1 (unit costs)", "1 (default split count)",
+             *model, "3 (no pruning)", '"data.dsc"',
+             "1 (estimated priors)", "1 (unit costs)", *count,
              *(["2 (explicit depth)", str(value["depth"])] if "depth" in value else ["1 (default depth)"]),
              "2 (explicit minimum node size)", str(value["min_node"]),
              "0 (no LaTeX)", "2 (store coefficients)", '"coefficients.txt"',
@@ -53,8 +60,9 @@ def parse_result(stdout, files, version, value):
     report = files["report.out"]
     if f"Version {version}" not in stdout:
         raise ValueError("runtime version mismatch")
-    if "LDA node models" not in report:
-        raise ValueError("report is not an LDA fit")
+    kind = "constant node models" if value.get("constant_leaves") else "LDA node models"
+    if kind not in report:
+        raise ValueError(f"report is not a fit with {kind}")
     if "depth" in value:
         return parse_tree(files, value)
     if not re.search(r"Number of terminal nodes of final tree:\s+1\b", report):
