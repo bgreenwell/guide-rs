@@ -44,6 +44,15 @@ Batch mode still validates its inputs: depth must exceed 1 and minimum node size
 - **46.2.** LDA trees, coefficients and predictions on iris are identical to 46.3. QDA differs: 46.2 writes `NA` for the second coordinate of two-class nodes, chooses a different root cut (-0.0875 against -0.0840) and grows a different tree. 46.2 is not a regression reference for QDA.
 - **Not observed.** The "crimcoords switched in node" messages of manual section 5.2 (46.1) appeared in no 46.3 or 46.2 run.
 
+## Linear splits with constant leaves (option 7)
+
+46.3 option 7 (46.2 option 6) grows trees whose nodes select columns and compute discriminant coordinates exactly as LDA nodes do (iris root coefficients agree to all printed digits), but whose leaves are constant: class counts, zero-posterior-corrected posteriors and the predicted class, as in simple classification trees. The batch file has no split-count prompt, and the report says "Linear discriminant splits and constant node models". Defaults are depth 6 and minimum node size 2.
+
+- **Cut criterion.** The cut minimizes the count-weighted Gini impurity of the two children (iris root: 100/50 rather than the 75/75 split that ties on misclassifications). Children fitted as LDA or constant leaves and scored by misclassifications reproduced none of 16 synthetic trees; Gini, with the candidates and tie rules below, reproduces all.
+- **Candidates.** Every cut leaving at least the minimum node size s on each side, including children of exactly s rows (unlike LDA trees, whose grid excludes the end sizes), for nodes of any size; ties go to the most even split, then the smaller left child. Nodes split only with at least 2.5 s rows, as for LDA.
+- **Tied leaves.** Leaves with tied class counts predict the class with the larger zero-posterior-corrected posterior (also in simple trees; see [validation](validation.md)).
+- **Agreement.** 80 of 80 synthetic depth-4 trees (2 to 5 classes, 120 to 500 rows, minimum node sizes 2 to 20, with and without missing values) and the three frozen trees (`lda-splits-tree-*`, both versions) reproduce native's predictions.
+
 ## Open questions
 
 - **The second coordinate in two-class nodes.** It is a null vector of B, and 46.3 QDA depends on it. With two selected variables it is unique up to sign and matches native in 319 of 319 leaves. With three or more, the LAPACK port matches native's vector in 2 of 164 nodes: the null space is degenerate, so the vector depends on rounding in `V'BV` and on `dstein`'s random starts, and the port does not yet reproduce GUIDE's arithmetic there. It decides QDA cuts as well as leaves: QDA cuts match native in 20 of 20 nodes where no candidate child depends on it (or on a one-case class), and in 226 of 265 otherwise. LDA predictions do not depend on it.

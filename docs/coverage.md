@@ -83,7 +83,8 @@ Carried over from the 2026-10-23 repository review; fixed items (log-scale selec
 - [x] Classification LDA node models on numeric and categorical features: per-node selection, discriminant-coordinate splits, LDA leaves and GUIDE's stopping rules, with GUIDE's LAPACK coordinate signs; all 28 single-node and 24 tree captures match ([LDA/QDA notes](discriminant-notes.md)).
 - [ ] LDA trees with missing values: 128 of 135 synthetic trees match native; the remaining cuts differ in nodes whose candidate children hold one-case classes.
 - [ ] LDA trees with categorical features: 50 of 60 synthetic trees match native; the rest cut degenerate coordinates whose near-zero coefficients are rounding noise.
-- [ ] Classification QDA and bivariate QDA node models and linear splits with constant nodes (46.3 option 7). The two-class QDA null coordinate remains unidentified.
+- [x] Linear discriminant splits with constant leaves (46.3 option 7, `lda_splits`); all 3 tree captures match with both versions, and 80 of 80 synthetic trees.
+- [ ] Classification QDA and bivariate QDA node models. The two-class QDA null coordinate remains unidentified.
 - [ ] Nonconstant simultaneous lower/upper quantile models.
 - [ ] Poisson/logistic statistical inference and specialized estimated-probability/treatment behavior.
 - [ ] Survival: event/time validation, proportional hazards, restricted mean event time and survival predictions. Parked by user decision (2026-10-25) while native Poisson split points were unexplained; reference15 matches them, so the remaining work is the baseline schedule ([survival notes](survival-notes.md)).

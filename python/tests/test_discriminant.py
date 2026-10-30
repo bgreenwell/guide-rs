@@ -28,7 +28,7 @@ def test_lda_reproduces_native_captures(directory):
     for name in case.get("categorical", []):
         X[name] = X[name].astype("category")
     model = GuideClassifier(
-        node_model="lda",
+        node_model="lda_splits" if case.get("constant_leaves") else "lda",
         max_depth=case.get("depth", 1),
         min_samples_leaf=case["min_node"],
         pruning="none",
@@ -69,6 +69,15 @@ def test_lda_fits_categorical_features_as_dummies():
     assert model._schema[-1]["role"] == "both"
     with pytest.raises(ValueError, match="role fit or both"):
         GuideClassifier(node_model="lda", feature_roles={"group": "split"}).fit(X, y)
+
+
+def test_lda_splits_classify_with_constant_leaves():
+    data = pd.read_csv(IRIS)
+    X, y = data.drop(columns="Species"), data["Species"]
+    model = GuideClassifier(node_model="lda_splits", max_depth=6, pruning="none").fit(X, y)
+    assert model.score(X, y) > 0.95
+    fitted = model.to_json()
+    assert '"discriminant"' in fitted and '"classification"' in fitted
 
 
 def test_lda_rejects_unsupported_options():

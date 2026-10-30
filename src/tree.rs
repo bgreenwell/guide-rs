@@ -591,7 +591,7 @@ pub(crate) fn validate_supported(data: &Dataset, options: &FitOptions) -> Result
             )));
         }
     }
-    if options.node_model == NodeModel::Lda
+    if options.node_model.discriminant_splits()
         && data.schema.iter().any(|s| {
             !matches!(s.role, Role::Excluded)
                 && (matches!(s.feature_type, FeatureType::Periodic { .. }) || !s.role.fits())
@@ -743,7 +743,7 @@ pub(crate) fn validate_node(
             Some(l),
             Some(r),
         ) => {
-            if options.node_model != NodeModel::Lda
+            if !options.node_model.discriminant_splits()
                 || !crate::discriminant::valid_terms(terms, schema)
                 || coefficients.len() != terms.len()
                 || coefficients.iter().any(|x| !x.is_finite())
@@ -839,7 +839,7 @@ pub(crate) fn grow(
     rng: &mut ChaCha8Rng,
     mode: SelectionMode,
 ) -> Node {
-    if ctx.options.node_model == NodeModel::Lda {
+    if ctx.options.node_model.discriminant_splits() {
         return crate::discriminant::grow(ctx, ids, depth, next_id);
     }
     let model = ctx.fit_leaf(ids);

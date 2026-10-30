@@ -213,6 +213,11 @@ fn compare_tree(dir: &std::path::Path) -> (bool, bool) {
         offsets: vec![],
     };
     let options = FitOptions {
+        node_model: if case["constant_leaves"] == true {
+            NodeModel::LdaSplits
+        } else {
+            NodeModel::Lda
+        },
         max_depth: case["depth"].as_u64().unwrap() as usize,
         min_samples_leaf: case["min_node"].as_u64().unwrap() as usize,
         ..lda()

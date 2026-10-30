@@ -25,7 +25,7 @@ plot_tree(model)
 
 The estimators follow the scikit-learn API, so they work in pipelines, `clone`, grid search and cross-validation.
 
-`GuideClassifier(node_model="lda", min_samples_leaf=10)` grows GUIDE's linear discriminant trees instead: each node splits on a discriminant coordinate of its own selected features (categorical ones as level dummies) and classifies with an LDA leaf. Periodic features must be excluded with `feature_roles`.
+`GuideClassifier(node_model="lda", min_samples_leaf=10)` grows GUIDE's linear discriminant trees instead: each node splits on a discriminant coordinate of its own selected features (categorical ones as level dummies) and classifies with an LDA leaf. Periodic features must be excluded with `feature_roles`. `node_model="lda_splits"` keeps these splits but chooses cuts by Gini impurity and predicts with constant leaves, GUIDE's linear-split option.
 
 ## Inputs
 

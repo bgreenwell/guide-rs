@@ -456,7 +456,7 @@ impl<'a> Context<'a> {
             class_priors,
             root_samples: ids.len(),
             flags: crate::flag_columns(&data.schema),
-            discriminant_columns: if options.node_model == NodeModel::Lda {
+            discriminant_columns: if options.node_model.discriminant_splits() {
                 crate::discriminant::candidate_columns(data, ids)
             } else {
                 vec![]
@@ -522,7 +522,7 @@ impl<'a> Context<'a> {
         let constant = LeafModel::Constant { value };
         match self.options.node_model {
             // LDA leaves are classification models, fitted during growth.
-            NodeModel::Constant | NodeModel::Lda => constant,
+            NodeModel::Constant | NodeModel::Lda | NodeModel::LdaSplits => constant,
             NodeModel::Linear => {
                 if linear_min_samples.is_some_and(|minimum| ids.len() < minimum) {
                     constant

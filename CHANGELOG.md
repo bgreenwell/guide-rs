@@ -11,6 +11,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 - `lda` node model for classification: GUIDE's linear discriminant splits and leaves on numeric and categorical features
 - `node_model="lda"` in the Python `GuideClassifier`
 - Importance scores for LDA classification configurations, computed with constant-node trees
+- `lda_splits` node model for classification: GUIDE's linear discriminant splits with constant leaves
 
 ### Fixed
 
