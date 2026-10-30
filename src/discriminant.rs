@@ -178,35 +178,21 @@ pub(crate) fn valid_terms(terms: &[Term], schema: &[crate::FeatureSchema]) -> bo
 
 /// Columns kept by a node: ranked by the one-way ANOVA F p-value of their
 /// observed values (`ranking`, with missing values as NaN), then counted by
-/// GUIDE's thresholds. With K candidates and m of them below 0.4/K, the node
-/// keeps m when m >= 2; otherwise it keeps those below 0.8/(K-2) (m = 1) or
-/// 0.8/(K-1) (m = 0), and at least two. A column without a defined F
-/// statistic counts toward K with p = 1. When three or more are kept, those
-/// that `lsq` flags as linearly dependent are dropped (see `dependent`).
+/// GUIDE's thresholds. With K candidates, J of them with p < 1, and m below
+/// 0.4/J, the node keeps m when m >= 2; otherwise it keeps those below
+/// 0.8/(K-2) (m = 1) or 0.8/(K-1) (m = 0), and at least two. A column with
+/// F = 0 or no defined F statistic has p = 1: it counts toward K but not J.
+/// Equal p-values are ordered as GUIDE's unstable sort leaves them. When
+/// three or more are kept, those that `lsq` flags as linearly dependent are
+/// dropped (see `dependent`).
 pub(crate) fn select(ranking: &[Vec<f64>], labels: &[usize], classes: usize) -> Vec<usize> {
-    let log_p: Vec<(usize, f64)> = ranking
+    let mut p: Vec<f64> = ranking
         .iter()
-        .enumerate()
-        .map(|(j, x)| (j, anova_log_p(x, labels, classes).unwrap_or(0.0)))
+        .map(|x| anova_log_p(x, labels, classes).map_or(1.0, f64::exp))
         .collect();
-    let mut ranked = log_p.clone();
-    ranked.sort_by(|a, b| a.1.total_cmp(&b.1));
-    let k = ranked.len();
-    let below = |t: f64| ranked.iter().filter(|(_, p)| *p < t.ln()).count();
-    let significant = below(0.4 / k as f64);
-    let count = if significant >= 2 {
-        significant
-    } else if k <= 2 {
-        k
-    } else {
-        let relaxed = if significant == 1 {
-            0.8 / (k - 2) as f64
-        } else {
-            0.8 / (k - 1) as f64
-        };
-        below(relaxed).max(2)
-    };
-    let mut kept: Vec<usize> = ranked[..count].iter().map(|&(j, _)| j).collect();
+    let mut ranked: Vec<usize> = (0..p.len()).collect();
+    slatec_sort(&mut p, &mut ranked);
+    let mut kept = ranked[..kept_count(&p)].to_vec();
     kept.sort_unstable();
     if kept.len() >= 3 {
         let columns: Vec<&[f64]> = kept.iter().map(|&j| ranking[j].as_slice()).collect();
@@ -218,6 +204,159 @@ pub(crate) fn select(ranking: &[Vec<f64>], labels: &[usize], classes: usize) -> 
             .collect();
     }
     kept
+}
+
+/// How many of the columns with p-values `p` a node keeps before the
+/// dependence check (see `select`).
+fn kept_count(p: &[f64]) -> usize {
+    let k = p.len();
+    let below = |t: f64| p.iter().filter(|&&p| p < t).count();
+    let significant = below(0.4 / below(1.0).max(1) as f64);
+    if significant >= 2 {
+        significant
+    } else if k <= 2 {
+        k
+    } else {
+        let relaxed = if significant == 1 {
+            0.8 / (k - 2) as f64
+        } else {
+            0.8 / (k - 1) as f64
+        };
+        below(relaxed).max(2)
+    }
+}
+
+/// SLATEC's `DSORT` with `KFLAG = 2` (Singleton's quicksort, ACM 347):
+/// sorts `x` ascending and permutes `y` alongside. GUIDE ranks columns and
+/// orders cut candidates with it, and since it is not stable, equal keys end
+/// up in its order rather than their original one.
+fn slatec_sort<T: Copy>(x: &mut [f64], y: &mut [T]) {
+    let n = x.len();
+    if n <= 1 {
+        return;
+    }
+    // 1-based indices into x and y, as in the Fortran.
+    macro_rules! xs {
+        ($i:expr) => {
+            x[$i - 1]
+        };
+    }
+    macro_rules! ys {
+        ($i:expr) => {
+            y[$i - 1]
+        };
+    }
+    let (mut il, mut iu) = ([0usize; 21], [0usize; 21]);
+    let (mut m, mut i, mut j, mut r) = (1usize, 1usize, n, 0.375f64);
+    'outer: loop {
+        // Label 110: start partitioning [i, j].
+        if i != j {
+            r = if r <= 0.5898437 {
+                r + 3.90625e-2
+            } else {
+                r - 0.21875
+            };
+        }
+        loop {
+            if i == j {
+                // Label 150: take the next saved segment.
+                m -= 1;
+                if m == 0 {
+                    return;
+                }
+                i = il[m - 1];
+                j = iu[m - 1];
+            } else {
+                // Label 120: partition [i, j] around a central element.
+                let mut k = i;
+                let ij = i + ((j - i) as f64 * r) as usize;
+                let mut t = xs!(ij);
+                let mut ty = ys!(ij);
+                if xs!(i) > t {
+                    xs!(ij) = xs!(i);
+                    xs!(i) = t;
+                    t = xs!(ij);
+                    ys!(ij) = ys!(i);
+                    ys!(i) = ty;
+                    ty = ys!(ij);
+                }
+                let mut l = j;
+                if xs!(j) < t {
+                    xs!(ij) = xs!(j);
+                    xs!(j) = t;
+                    t = xs!(ij);
+                    ys!(ij) = ys!(j);
+                    ys!(j) = ty;
+                    ty = ys!(ij);
+                    if xs!(i) > t {
+                        xs!(ij) = xs!(i);
+                        xs!(i) = t;
+                        t = xs!(ij);
+                        ys!(ij) = ys!(i);
+                        ys!(i) = ty;
+                    }
+                }
+                loop {
+                    l -= 1;
+                    while xs!(l) > t {
+                        l -= 1;
+                    }
+                    k += 1;
+                    while xs!(k) < t {
+                        k += 1;
+                    }
+                    if k > l {
+                        break;
+                    }
+                    x.swap(l - 1, k - 1);
+                    y.swap(l - 1, k - 1);
+                }
+                if l - i > j - k {
+                    il[m - 1] = i;
+                    iu[m - 1] = l;
+                    i = k;
+                } else {
+                    il[m - 1] = k;
+                    iu[m - 1] = j;
+                    j = l;
+                }
+                m += 1;
+            }
+            // Label 160: partition again, without updating r, if the
+            // segment has two or more elements.
+            if j > i {
+                continue;
+            }
+            if i == 1 {
+                continue 'outer;
+            }
+            // Insertion sort of the short segment [i, j]; x(i - 1) bounds it.
+            i -= 1;
+            loop {
+                i += 1;
+                if i == j {
+                    break;
+                }
+                let t = xs!(i + 1);
+                let ty = ys!(i + 1);
+                if xs!(i) <= t {
+                    continue;
+                }
+                let mut k = i;
+                loop {
+                    xs!(k + 1) = xs!(k);
+                    ys!(k + 1) = ys!(k);
+                    k -= 1;
+                    if t >= xs!(k) {
+                        break;
+                    }
+                }
+                xs!(k + 1) = t;
+                ys!(k + 1) = ty;
+            }
+            // Back to label 150 with i == j.
+        }
+    }
 }
 
 /// GUIDE's `lin_depend`: Alan Miller's `lsq` (AS 274) Givens updates of an
@@ -637,15 +776,15 @@ pub(crate) fn grow(ctx: &Context<'_>, ids: &[usize], depth: usize, next_id: &mut
     if depth >= ctx.options.max_depth || 2 * ids.len() < 5 * s || risk == 0.0 {
         return node;
     }
-    let mut order: Vec<(f64, usize)> = ids
+    let mut z: Vec<f64> = ids
         .iter()
-        .map(|&i| (d.coordinates(&ctx.data.rows[i])[0], i))
+        .map(|&i| d.coordinates(&ctx.data.rows[i])[0])
         .collect();
-    order.sort_by(|a, b| a.0.total_cmp(&b.0));
-    let sorted: Vec<usize> = order.iter().map(|&(_, i)| i).collect();
+    let mut sorted = ids.to_vec();
+    slatec_sort(&mut z, &mut sorted);
     let sizes: Vec<usize> = cut_sizes(ids.len(), s)
         .into_iter()
-        .filter(|&i| order[i - 1].0 < order[i].0)
+        .filter(|&i| z[i - 1] < z[i])
         .collect();
     let errors = crate::tree::ordered_map(
         &sizes,
@@ -664,7 +803,7 @@ pub(crate) fn grow(ctx: &Context<'_>, ids: &[usize], depth: usize, next_id: &mut
     }) else {
         return node;
     };
-    let (below, above) = (order[best - 1].0, order[best].0);
+    let (below, above) = (z[best - 1], z[best]);
     let mid = below / 2.0 + above / 2.0;
     let split = Split::Discriminant {
         terms: d.terms.clone(),
@@ -871,6 +1010,44 @@ mod tests {
             }
         }
         assert_eq!(checked, 24);
+    }
+
+    #[test]
+    fn kept_count_thresholds_exclude_p_one_columns_from_significance() {
+        // Native GUIDE 46.3 selections (traced) where columns with p = 1
+        // count toward the relaxed thresholds but not the first one.
+        assert_eq!(kept_count(&[0.0337, 0.0742, 0.1456, 0.1864, 0.196, 1.0]), 2);
+        assert_eq!(kept_count(&[0.0197, 0.0754, 0.1066, 0.1205, 1.0, 1.0]), 2);
+        assert_eq!(kept_count(&[0.04, 0.097, 0.1352, 0.7555, 1.0, 1.0]), 2);
+        assert_eq!(kept_count(&[0.0359, 0.1346, 0.3668, 0.6429, 1.0, 1.0]), 2);
+        assert_eq!(kept_count(&[0.0667, 0.1286, 0.1764, 0.9313, 0.947, 1.0]), 3);
+        assert_eq!(
+            kept_count(&[0.0455, 0.0843, 0.1411, 0.1884, 0.2743, 1.0]),
+            4
+        );
+    }
+
+    #[test]
+    fn slatec_sort_orders_ties_as_guide_does() {
+        // A traced native call: the two p = 1 columns come out reversed.
+        let mut p = [0.971431, 1.0, 0.982294, 0.490022, 1.0, 0.0352652];
+        let mut columns = [1, 2, 3, 4, 5, 6];
+        slatec_sort(&mut p, &mut columns);
+        assert_eq!(columns, [6, 4, 1, 3, 5, 2]);
+        assert!(p.windows(2).all(|w| w[0] <= w[1]));
+    }
+
+    #[test]
+    fn slatec_sort_sorts_long_inputs_with_ties() {
+        let mut x: Vec<f64> = (0..500).map(|i| ((i * 7919) % 97) as f64).collect();
+        let mut y: Vec<usize> = (0..500).collect();
+        let original = x.clone();
+        slatec_sort(&mut x, &mut y);
+        assert!(x.windows(2).all(|w| w[0] <= w[1]));
+        assert!(y.iter().zip(&x).all(|(&i, &v)| original[i] == v));
+        let mut seen = y.clone();
+        seen.sort_unstable();
+        assert_eq!(seen, (0..500).collect::<Vec<_>>());
     }
 
     #[test]
