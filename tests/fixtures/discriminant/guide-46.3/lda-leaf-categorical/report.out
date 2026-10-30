@@ -1,0 +1,134 @@
+             GGG   U   U  I  DDDD   EEEE
+            G   G  U   U  I  D   D  E
+            G      U   U  I  D   D  E
+            G  GG  U   U  I  D   D  EEE
+            G   G  U   U  I  D   D  E
+            G   G  U   U  I  D   D  E
+             GGG    UUU   I  DDDD   EEEE
+   
+ GUIDE Classification and Regression Trees and Forests
+ Version 46.3 (Build date: July 11, 2026)          
+ Compiled with NAG Fortran 7.2 on macOS Tahoe 26.4.1 for Apple ARM processors    
+ Copyright (c) 1997-2023 Wei-Yin Loh. All rights reserved.
+ This software is based upon work partially supported by the U.S. Army Research Office,
+ National Science Foundation, National Institutes of Health,
+ Bureau of Labor Statistics, USDA Economic Research Service, and Eli Lilly.
+  
+ This job was started on 10/30/26 at 17:42
+  
+ Classification tree
+ Linear splits and LDA node models
+ No pruning
+ DSC file: data.dsc
+ Training sample file: data.txt
+ Missing value code: NA
+ Records in data file start on line 2
+ D variable is y
+ C variables changed to B
+ Number of records in data file: 80
+ Length of longest entry in data file: 7
+ Missing values found among categorical variables
+ Separate categories will be created for missing categorical variables
+ Missing values found among non-categorical variables
+ Number of classes: 3
+ Training sample class proportions of D variable y:
+ Class  #Cases     Proportion
+ k0         27     0.33750000
+ k1         27     0.33750000
+ k2         26     0.32500000
+  
+ Summary information for training sample of size 80
+ d=dependent, b=split and fit cat variable using indicator variables,
+ c=split-only categorical, i=fit-only categorical (via indicators),
+ s=split-only numerical, n=split and fit numerical, f=fit-only numerical,
+ m=missing-value flag variable, p=periodic variable, w=weight
+                                                     #Codes/           
+                                                     Levels/           
+  Column  Name               Minimum      Maximum    Periods   #Missing
+       1  x0            n    7.663        13.97    
+       2  g             b                                  4       8
+       3  x1            n   7.6995E+00    13.14                    7
+       4  h             b                                  2
+       5  y             d                                  3
+   =================== Constructed variables ===================
+       6  g.a           f    0.000        1.000    
+       7  g.b           f    0.000        1.000    
+       8  g.c           f    0.000        1.000    
+       9  g.d           f    0.000        1.000    
+      10  h.lo          f    0.000        1.000    
+      11  x1.NA         f    0.000        1.000    
+  
+ Numbers of N, F, S, and P below exclude constant variables
+      Total  #cases w/   #missing
+     #cases    miss. D  ord. vals   #X-var   #N-var   #F-var   #S-var
+         80          0          7        0        2        6        0
+     #P-var   #M-var   #B-var   #C-var   #I-var
+          0        0        2        0        0
+ Number of dummy variables (excl. missing-value indicators) created: 5
+ Number of missing-value indicators created: 1
+ Number of cases used for training: 80
+ Number of cases excluded due to 0 W or missing D variable: 0
+  
+ Estimated priors
+ Unit misclassification costs
+ Maximum number of splits: 100
+ Maximum number of split levels: 5
+ Minimum node sample size: 40
+ Tree has no splits
+  
+ Structure of final tree. Each terminal node is marked with a T.
+  
+ Node cost is node misclassification cost divided by number of cases in node
+        Node    Total  Misclassification
+       label    cases  cost
+           1T      80  1.750E-01
+  
+ Number of terminal nodes of final tree: 1
+ Total number of nodes of final tree: 1
+  
+ Classification tree with linear splits and LDA node models
+  
+ Node 1: 14/80 misclassified
+ 
+ ***************************************************************
+ Predictor means below are means of cases with no missing values.
+  
+Node 1: Terminal node
+ Cases classified by LDA using 2 crimcoords
+ Variable         Mean          Crimcoefs1     Crimcoefs2
+ x0              10.7832        0.157629E-01  -0.334222E-01
+ g.a            0.275000       -0.806182E-01   0.422817E-01
+ g.b            0.300000        0.195062       0.457649E-01
+ g.c            0.262500        0.781592E-02  -0.156671    
+  
+ Class  Crim1Mean       Crim1Variance
+ k0      0.106634        0.405559E-02
+ k1      0.329706        0.405559E-02
+ k2      0.188033        0.405559E-02
+ 
+ Class  Crim2Mean       Crim2Variance
+ k0     -0.304805        0.601411E-02
+ k1     -0.335166        0.601411E-02
+ k2     -0.492856        0.601411E-02
+ 
+ Class  Prior
+ k0       0.3375000
+ k1       0.3375000
+ k2       0.3250000
+ ----------------------------
+ 
+ Classification matrix for training sample:
+ Predicted      True class
+ class             k0        k1        k2
+ k0                23         2         4
+ k1                 1        22         1
+ k2                 3         3        21
+ Total             27        27        26
+ 
+ Number of cases used for tree construction: 80
+ Number misclassified: 14
+ Resubstitution estimate of mean misclassification cost: 0.17500000
+ 
+ Observed and fitted values are stored in fitted.txt
+ Discriminant coefficients are stored in coefficients.txt
+ Elapsed time in seconds: 0.33080E-02

@@ -1,0 +1,3 @@
+    node   variable       mean              crimcoefs1       crimcoefs2
+       1   g.b         0.50000000       -0.70710678                NA
+       1   g2.b        0.50000000       -0.70710678                NA

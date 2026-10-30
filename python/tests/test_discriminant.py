@@ -24,7 +24,9 @@ def test_lda_reproduces_native_captures(directory):
     # native's training predictions from the same settings.
     case = json.loads((directory / "case.json").read_text())
     result = json.loads((directory / "manifest.json").read_text())["result"]
-    X = np.array([[np.nan if v is None else v for v in row] for row in case["rows"]])
+    X = pd.DataFrame(case["rows"], columns=case["features"])
+    for name in case.get("categorical", []):
+        X[name] = X[name].astype("category")
     model = GuideClassifier(
         node_model="lda",
         max_depth=case.get("depth", 1),
@@ -58,14 +60,15 @@ def test_lda_importance_scores_with_constant_trees():
     assert lda["scores"] == constant["scores"]
 
 
-def test_lda_requires_numeric_fit_features():
+def test_lda_fits_categorical_features_as_dummies():
     data = pd.read_csv(IRIS)
     X, y = data.drop(columns="Species"), data["Species"]
     X = X.assign(group=np.where(X["Sepal.Length"] > 5.8, "a", "b"))
-    with pytest.raises(ValueError, match="role fit or both"):
-        GuideClassifier(node_model="lda").fit(X, y)
-    model = GuideClassifier(node_model="lda", feature_roles={"group": "excluded"}).fit(X, y)
+    model = GuideClassifier(node_model="lda").fit(X, y)
     assert model.score(X, y) > 0.9
+    assert model._schema[-1]["role"] == "both"
+    with pytest.raises(ValueError, match="role fit or both"):
+        GuideClassifier(node_model="lda", feature_roles={"group": "split"}).fit(X, y)
 
 
 def test_lda_rejects_unsupported_options():

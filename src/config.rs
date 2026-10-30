@@ -75,7 +75,8 @@ pub enum NodeModel {
         backward: bool,
     },
     /// Classification only: GUIDE's linear discriminant node models. Each
-    /// node selects numeric fit columns, splits on its first discriminant
+    /// node selects fit columns (numeric values, categorical level dummies
+    /// and missing-value indicators), splits on its first discriminant
     /// coordinate and classifies with an LDA leaf. Split selection, priors
     /// and stopping follow GUIDE 46.3; `significance_level`, `interactions`,
     /// `linear_splits`, `min_gain` and `max_split_candidates` do not apply.

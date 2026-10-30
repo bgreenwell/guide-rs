@@ -90,6 +90,46 @@ def tree(name, n, shifts, *, classes, seed, missing=()):
     return value
 
 
+def categorical(name, n, *, classes, seed, missing=False, duplicate=False, depth=None,
+                min_node=None, shift=0.8, levels="abcd"):
+    """Numeric x0 (class shift) and x1 (noise) with categorical g (four levels,
+    class-related) and h (two levels, noise), in the order x0, g, x1, h.
+    `missing` blanks every ninth g and every eleventh x1; `duplicate` appends
+    g2, a copy of g, so their dummies coincide; with a binary g and no x0
+    shift only those two are kept and T has rank one."""
+    rng = random.Random(seed)
+    labels = [f"k{i % classes}" for i in range(n)]
+    rng.shuffle(labels)
+    names = ["x0", "g", "x1", "h"]
+    rows = []
+    for i, label in enumerate(labels):
+        c = int(label[1:])
+        g = levels[(c + (rng.random() < 0.3) * rng.randrange(len(levels))) % len(levels)]
+        row = [round(rng.gauss(0.0, 1.0) + shift * c + 10.0, 4), g,
+               round(rng.gauss(0.0, 1.0) + 10.0, 4), rng.choice(["lo", "hi"])]
+        if missing:
+            if (i + 1) % 9 == 0:
+                row[1] = None
+            if (i + 4) % 11 == 0:
+                row[2] = None
+        rows.append(row)
+    if duplicate:
+        names.append("g2")
+        for row in rows:
+            row.append(row[1])
+    value = {
+        "name": name,
+        "features": names,
+        "categorical": [v for v in names if v.startswith(("g", "h"))],
+        "rows": rows,
+        "targets": labels,
+        "min_node": min_node if min_node is not None else n // 2,
+    }
+    if depth is not None:
+        value["depth"] = depth
+    return value
+
+
 def cases():
     result = {}
 
@@ -119,4 +159,12 @@ def cases():
             add(tree(f"c{classes}-d{i}-s{seed}", 100, shifts, classes=classes, seed=seed))
     add(tree("missing", 110, [0.9, 0.7, 0.3, 0.0], classes=3, seed=23, missing=(0, 1)))
     add(tree("four", 120, [0.9, 0.6, 0.6, 0.0], classes=4, seed=24))
+    # Categorical columns as level dummies: the first sorted level is the
+    # reference, or missing values when the feature has any.
+    add(categorical("lda-leaf-categorical", 80, classes=3, seed=31, missing=True))
+    add(categorical("lda-leaf-dummies-rank-one", 60, classes=2, seed=32, duplicate=True,
+                    shift=0.0, levels="ab"))
+    add(categorical("lda-tree-categorical", 120, classes=3, seed=33, depth=4, min_node=10))
+    add(categorical("lda-tree-categorical-missing", 120, classes=3, seed=34, missing=True,
+                    depth=4, min_node=10))
     return result
