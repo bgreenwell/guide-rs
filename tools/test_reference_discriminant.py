@@ -71,8 +71,10 @@ class DiscriminantCaptureTests(unittest.TestCase):
     def test_single_node_cases_cannot_split(self):
         for name, value in cases().items():
             if "depth" in value:
-                # Tree cases keep every node within GUIDE's exhaustive cut range.
-                self.assertLessEqual(len(value["rows"]), 2 * value["min_node"] + 101)
+                # LDA tree cases keep every node within GUIDE's exhaustive cut
+                # range; constant-leaf trees search every cut anyway.
+                if not value.get("constant_leaves"):
+                    self.assertLessEqual(len(value["rows"]), 2 * value["min_node"] + 101)
                 continue
             with self.subTest(case=name):
                 self.assertLess(len(value["rows"]), 2.5 * value["min_node"])

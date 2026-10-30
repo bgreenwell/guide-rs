@@ -111,7 +111,7 @@ pub fn importance(
             | Task::Regression {
                 loss: Loss::SquaredError
             }
-    ) || !matches!(options.node_model, NodeModel::Constant | NodeModel::Lda)
+    ) || !(options.node_model == NodeModel::Constant || options.node_model.discriminant_splits())
     {
         return Err(invalid(
             "importance currently supports constant classification and squared-error regression trees",

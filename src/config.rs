@@ -81,6 +81,17 @@ pub enum NodeModel {
     /// and stopping follow GUIDE 46.3; `significance_level`, `interactions`,
     /// `linear_splits`, `min_gain` and `max_split_candidates` do not apply.
     Lda,
+    /// Classification only: GUIDE's linear discriminant splits with constant
+    /// leaves (46.3 option 7). Nodes split on the first discriminant
+    /// coordinate as with `Lda`, but classify with the node's class
+    /// proportions.
+    LdaSplits,
+}
+impl NodeModel {
+    /// Whether nodes split on discriminant coordinates (`Lda`, `LdaSplits`).
+    pub fn discriminant_splits(&self) -> bool {
+        matches!(self, Self::Lda | Self::LdaSplits)
+    }
 }
 
 /// Held-out loss of classification trees: it chooses the cross-validation or
@@ -268,7 +279,7 @@ impl FitOptions {
             _ => {}
         }
         if let Task::Regression { loss } = &self.task {
-            if self.node_model == NodeModel::Lda {
+            if self.node_model.discriminant_splits() {
                 return Err(invalid("lda node models require classification"));
             }
             if self.class_priors.is_some() || self.class_costs.is_some() {
@@ -294,11 +305,13 @@ impl FitOptions {
                     ));
                 }
             }
-        } else if !matches!(self.node_model, NodeModel::Constant | NodeModel::Lda) {
+        } else if !matches!(self.node_model, NodeModel::Constant)
+            && !self.node_model.discriminant_splits()
+        {
             return Err(invalid(
-                "classification supports constant and lda node models",
+                "classification supports constant, lda and lda_splits node models",
             ));
-        } else if self.node_model == NodeModel::Lda
+        } else if self.node_model.discriminant_splits()
             && (self.class_costs.is_some() || self.mtry.is_some())
         {
             return Err(invalid(

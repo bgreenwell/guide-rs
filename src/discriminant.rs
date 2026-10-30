@@ -789,6 +789,15 @@ fn leaf(ctx: &Context<'_>, ids: &[usize]) -> LeafModel {
     .map_or_else(|| ctx.classification_leaf(counts), LeafModel::Discriminant)
 }
 
+/// The constant classification leaf of rows `ids`.
+fn constant_leaf(ctx: &Context<'_>, ids: &[usize]) -> LeafModel {
+    let mut counts = vec![0.0; ctx.classes.len()];
+    for &i in ids {
+        counts[ctx.y[i] as usize] += 1.0;
+    }
+    ctx.classification_leaf(counts)
+}
+
 /// GUIDE's cut sizes for a node of `n` rows and minimum node size `s`: every
 /// left size when there are at most 102 positions, otherwise 102 evenly
 /// indexed ones, in both cases without the end sizes `s` and `n - s`.
@@ -810,11 +819,20 @@ fn cut_sizes(n: usize, s: usize) -> Vec<usize> {
 /// Grows an LDA tree on rows `ids`. A node splits only with at least
 /// 2.5 times the minimum node size, below the depth limit, with two or more
 /// classes and with training errors under its own leaf. The split is a cut
-/// on the leaf's first discriminant coordinate whose two children, fitted as
-/// search leaves, misclassify fewest training rows; ties go to the most even
-/// split, then the smaller left child.
+/// on the node's first discriminant coordinate. With LDA leaves it is the
+/// grid cut whose two children, fitted as search leaves, misclassify fewest
+/// training rows; with constant leaves (`LdaSplits`) it is the cut, among
+/// all leaving at least the minimum node size on each side, with the least
+/// count-weighted Gini impurity. Ties go to the most even split, then the
+/// smaller left child.
 pub(crate) fn grow(ctx: &Context<'_>, ids: &[usize], depth: usize, next_id: &mut usize) -> Node {
-    let model = leaf(ctx, ids);
+    let constant_leaves = ctx.options.node_model == crate::NodeModel::LdaSplits;
+    let fitted = leaf(ctx, ids);
+    let model = if constant_leaves {
+        constant_leaf(ctx, ids)
+    } else {
+        fitted.clone()
+    };
     let risk = ctx.risk(&model, ids);
     let mut node = Node {
         id: *next_id,
@@ -830,7 +848,7 @@ pub(crate) fn grow(ctx: &Context<'_>, ids: &[usize], depth: usize, next_id: &mut
     };
     *next_id += 1;
     let s = ctx.options.min_samples_leaf;
-    let LeafModel::Discriminant(d) = &node.model else {
+    let LeafModel::Discriminant(d) = &fitted else {
         return node;
     };
     if depth >= ctx.options.max_depth || 2 * ids.len() < 5 * s || risk == 0.0 {
@@ -842,17 +860,26 @@ pub(crate) fn grow(ctx: &Context<'_>, ids: &[usize], depth: usize, next_id: &mut
         .collect();
     let mut sorted = ids.to_vec();
     slatec_sort(&mut z, &mut sorted);
-    let sizes: Vec<usize> = cut_sizes(ids.len(), s)
-        .into_iter()
-        .filter(|&i| z[i - 1] < z[i])
-        .collect();
+    // Constant-leaf trees search every cut leaving at least s rows on each
+    // side; LDA trees use GUIDE's grid.
+    let grid = if constant_leaves {
+        (s.max(1)..=ids.len().saturating_sub(s)).collect()
+    } else {
+        cut_sizes(ids.len(), s)
+    };
+    let sizes: Vec<usize> = grid.into_iter().filter(|&i| z[i - 1] < z[i]).collect();
     let errors = crate::tree::ordered_map(
         &sizes,
         ids.len() >= crate::tree::PARALLEL_MIN_ROWS,
         || (),
         |_, &i| {
             let (left, right) = sorted.split_at(i);
-            ctx.risk(&leaf(ctx, left), left) + ctx.risk(&leaf(ctx, right), right)
+            if constant_leaves {
+                ctx.impurity(&constant_leaf(ctx, left), left)
+                    + ctx.impurity(&constant_leaf(ctx, right), right)
+            } else {
+                ctx.risk(&leaf(ctx, left), left) + ctx.risk(&leaf(ctx, right), right)
+            }
         },
     );
     let n = ids.len();

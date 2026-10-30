@@ -456,7 +456,7 @@ impl<'a> Context<'a> {
             class_priors,
             root_samples: ids.len(),
             flags: crate::flag_columns(&data.schema),
-            discriminant_columns: if options.node_model == NodeModel::Lda {
+            discriminant_columns: if options.node_model.discriminant_splits() {
                 crate::discriminant::candidate_columns(data, ids)
             } else {
                 vec![]
@@ -522,7 +522,7 @@ impl<'a> Context<'a> {
         let constant = LeafModel::Constant { value };
         match self.options.node_model {
             // LDA leaves are classification models, fitted during growth.
-            NodeModel::Constant | NodeModel::Lda => constant,
+            NodeModel::Constant | NodeModel::Lda | NodeModel::LdaSplits => constant,
             NodeModel::Linear => {
                 if linear_min_samples.is_some_and(|minimum| ids.len() < minimum) {
                     constant
@@ -562,8 +562,17 @@ impl<'a> Context<'a> {
     /// The classification leaf for the given (unweighted) class counts.
     pub fn classification_leaf(&self, mut p: Vec<f64>) -> LeafModel {
         self.class_probabilities(&mut p);
+        let predicted_class = self.least_cost_class(&p);
+        LeafModel::Classification {
+            probabilities: p,
+            predicted_class,
+        }
+    }
+    /// The class with the least expected misclassification cost under
+    /// probabilities `p`, the first on ties.
+    fn least_cost_class(&self, p: &[f64]) -> usize {
         // Classification contexts always hold at least one class.
-        let predicted_class = (0..p.len())
+        (0..p.len())
             .min_by(|&a, &b| {
                 let cost = |j| {
                     p.iter()
@@ -573,11 +582,7 @@ impl<'a> Context<'a> {
                 };
                 cost(a).total_cmp(&cost(b)).then(a.cmp(&b))
             })
-            .unwrap();
-        LeafModel::Classification {
-            probabilities: p,
-            predicted_class,
-        }
+            .unwrap()
     }
     /// Turns unweighted class counts into prior-adjusted probabilities.
     pub fn class_probabilities(&self, p: &mut [f64]) {
@@ -587,7 +592,8 @@ impl<'a> Context<'a> {
             .zip(&self.class_frequencies)
         {
             *p = if *frequency > 0.0 {
-                *prior * (*p / frequency)
+                // GUIDE's evaluation order; its rounding decides near ties.
+                *prior * *p / frequency
             } else {
                 0.0
             };
@@ -1036,8 +1042,37 @@ impl<'a> Context<'a> {
     /// Apply GUIDE's zero-posterior correction after growth and pruning.
     /// Keeping raw probabilities during search preserves pure-node stopping.
     pub fn finalize_probabilities(&self, node: &mut crate::Node) {
-        if let LeafModel::Classification { probabilities, .. } = &mut node.model {
+        if let LeafModel::Classification {
+            probabilities,
+            predicted_class,
+        } = &mut node.model
+        {
+            let raw = probabilities.clone();
             self.correct_zero_posteriors(probabilities);
+            // GUIDE keeps the decision of the raw probabilities but breaks
+            // ties by the corrected ones. Prior-adjusted probabilities of equal
+            // counts can differ in the last bits, so ties are relative.
+            let cost = |p: &[f64], j: usize| {
+                p.iter()
+                    .enumerate()
+                    .map(|(i, v)| v * self.costs[i][j])
+                    .sum::<f64>()
+            };
+            let best = cost(&raw, *predicted_class);
+            let tied: Vec<usize> = (0..raw.len())
+                .filter(|&j| cost(&raw, j) - best <= 1e-12 * best.abs())
+                .collect();
+            if tied.len() > 1 {
+                *predicted_class = tied
+                    .iter()
+                    .copied()
+                    .min_by(|&a, &b| {
+                        cost(probabilities, a)
+                            .total_cmp(&cost(probabilities, b))
+                            .then(a.cmp(&b))
+                    })
+                    .unwrap_or(*predicted_class);
+            }
         }
         if let Some(left) = &mut node.left {
             self.finalize_probabilities(left);

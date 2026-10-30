@@ -458,15 +458,17 @@ class _Classification(_Guide):
         return self._node_model()["kind"] != "constant"
 
     def _fits_categorical(self):
-        # LDA nodes fit categorical features as level dummies, as GUIDE does.
-        return self._node_model()["kind"] == "lda"
+        # Discriminant splits use categorical features as level dummies, as
+        # GUIDE does.
+        return self._node_model()["kind"] != "constant"
 
     def _node_model(self):
         # Forest classifiers have no node_model parameter.
         node_model = getattr(self, "node_model", "constant")
-        if node_model in ("constant", "lda"):
+        if node_model in ("constant", "lda", "lda_splits"):
             return {"kind": node_model}
-        raise ValueError(f"node_model must be 'constant' or 'lda', got {node_model!r}")
+        raise ValueError(
+            f"node_model must be 'constant', 'lda' or 'lda_splits', got {node_model!r}")
 
     def _prepare(self, X, y, sample_weight):
         columns, y = self._columns(X, y, reset=True)
@@ -666,16 +668,19 @@ class GuideClassifier(ClassifierMixin, _SingleTree, _Classification):
 
     Parameters
     ----------
-    node_model : {"constant", "lda"}, default="constant"
+    node_model : {"constant", "lda", "lda_splits"}, default="constant"
         Model fitted in each node. ``"lda"`` grows GUIDE's linear
         discriminant trees: each node selects features, splits on its first
-        discriminant coordinate and classifies with an LDA leaf. Numeric
+        discriminant coordinate and classifies with an LDA leaf.
+        ``"lda_splits"`` splits the same way but cuts by Gini impurity and
+        classifies with constant leaves (GUIDE's option 7). Numeric
         features enter as values and categorical features as dummies of
         their levels, and both default to the ``"both"`` role; every feature
         must then have role ``"fit"`` or ``"both"`` (exclude others, such as
         periodic features, with ``feature_roles``). ``class_costs`` is not
-        supported. GUIDE's default ``min_samples_leaf`` for it is 10; a node
-        splits only with at least 2.5 times that many rows.
+        supported. A node splits only with at least 2.5 times
+        ``min_samples_leaf`` rows; GUIDE's default is 10 for ``"lda"`` and
+        2 for ``"lda_splits"``.
     linear_splits : bool, default=False
         Also test bivariate discriminant splits.
     class_priors : array-like of shape (n_classes,), default=None

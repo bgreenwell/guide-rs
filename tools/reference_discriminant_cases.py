@@ -167,4 +167,11 @@ def cases():
     add(categorical("lda-tree-categorical", 120, classes=3, seed=33, depth=4, min_node=10))
     add(categorical("lda-tree-categorical-missing", 120, classes=3, seed=34, missing=True,
                     depth=4, min_node=10))
+    # Linear discriminant splits with constant leaves (46.3 option 7).
+    for name, value in (
+            ("numeric", tree("", 150, [0.9, 0.6, 0.3, 0.0], classes=3, seed=41)),
+            ("missing", tree("", 150, [0.9, 0.7, 0.3, 0.0], classes=3, seed=42, missing=(0, 1))),
+            ("categorical", categorical("", 150, classes=3, seed=43, missing=True, depth=4))):
+        value.update(name="lda-splits-tree-" + name, min_node=5, constant_leaves=True)
+        add(value)
     return result
