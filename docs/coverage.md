@@ -1,6 +1,6 @@
 # GUIDE 46.3 coverage and remaining work
 
-Updated **2026-10-30**, through algorithm revision **`guide-rs-0.1-experimental-reference20`**.
+Updated **2026-10-30**, through algorithm revision **`guide-rs-0.1-experimental-reference21`**.
 
 **guide-rs is a working subset of GUIDE, not a full replacement.** Its strongest native validation is for constant classification/regression, multiple-linear squared-error trees, and pruning. Other implemented losses and ensembles have narrower independent checks. No complete subsystem is certified equivalent to every GUIDE option.
 
@@ -35,7 +35,7 @@ A checked box below means the stated capability exists with tests. It does **not
 | GUIDE family / manual chapters | guide-rs status | Principal remaining gap |
 |---|---|---|
 | Data, operation, missing flags (3, 5) | Modern CSV/JSON interfaces, missing handling and constant-node missing-value flags | Flags with linear node models (M-to-B conversion) and periodic parents |
-| Classification (4) | Constant-node and LDA trees, priors/costs, interactions, optional projected splits and high-cardinality multiclass search | Kernel, nearest-neighbor and QDA **node models**, categorical LDA columns and GUIDE's discriminant coordinate signs |
+| Classification (4) | Constant-node and LDA trees, priors/costs, interactions, optional projected splits and high-cardinality multiclass search | Kernel, nearest-neighbor and QDA **node models** and GUIDE's discriminant coordinate signs |
 | Least squares (6) | Constant/multiple-linear core has the strongest differential evidence; polynomial and stepwise subsets exist | Broader selection/default combinations, native polynomial rules, ANCOVA/all-subsets and population mean estimation |
 | Quantiles (7) | Constant/linear/polynomial single quantiles; dual constant quantiles | Nonconstant simultaneous quantiles and native growth/model-selection conventions |
 | Periodic predictors (8) | Circular split search and modulo prediction | Association rotation invariance and native routing/default validation |
@@ -80,9 +80,10 @@ Carried over from the 2026-10-23 repository review; fixed items (log-scale selec
 ## Remaining checklist: missing statistical capabilities
 
 - [ ] Classification kernel and nearest-neighbor node models.
-- [x] Classification LDA node models on numeric features: per-node selection, discriminant-coordinate splits, LDA leaves and GUIDE's stopping rules, with GUIDE's LAPACK coordinate signs; all 24 single-node and 20 tree captures match ([LDA/QDA notes](discriminant-notes.md)).
+- [x] Classification LDA node models on numeric and categorical features: per-node selection, discriminant-coordinate splits, LDA leaves and GUIDE's stopping rules, with GUIDE's LAPACK coordinate signs; all 28 single-node and 24 tree captures match ([LDA/QDA notes](discriminant-notes.md)).
 - [ ] LDA trees with missing values: 128 of 135 synthetic trees match native; the remaining cuts differ in nodes whose candidate children hold one-case classes.
-- [ ] Classification QDA and bivariate QDA node models, categorical (dummy) LDA columns and linear splits with constant nodes (46.3 option 7). The two-class QDA null coordinate remains unidentified.
+- [ ] LDA trees with categorical features: 50 of 60 synthetic trees match native; the rest cut degenerate coordinates whose near-zero coefficients are rounding noise.
+- [ ] Classification QDA and bivariate QDA node models and linear splits with constant nodes (46.3 option 7). The two-class QDA null coordinate remains unidentified.
 - [ ] Nonconstant simultaneous lower/upper quantile models.
 - [ ] Poisson/logistic statistical inference and specialized estimated-probability/treatment behavior.
 - [ ] Survival: event/time validation, proportional hazards, restricted mean event time and survival predictions. Parked by user decision (2026-10-25) while native Poisson split points were unexplained; reference15 matches them, so the remaining work is the baseline schedule ([survival notes](survival-notes.md)).

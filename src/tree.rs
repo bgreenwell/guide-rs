@@ -594,11 +594,11 @@ pub(crate) fn validate_supported(data: &Dataset, options: &FitOptions) -> Result
     if options.node_model == NodeModel::Lda
         && data.schema.iter().any(|s| {
             !matches!(s.role, Role::Excluded)
-                && (!matches!(s.feature_type, FeatureType::Numeric) || !s.role.fits())
+                && (matches!(s.feature_type, FeatureType::Periodic { .. }) || !s.role.fits())
         })
     {
         return Err(invalid(
-            "lda node models use numeric features with role fit or both; exclude other features",
+            "lda node models use numeric and categorical features with role fit or both; exclude other features",
         ));
     }
     if options.node_model != NodeModel::Constant && !data.schema.iter().any(|s| s.role.fits()) {

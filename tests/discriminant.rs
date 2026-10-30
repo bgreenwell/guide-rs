@@ -169,12 +169,21 @@ fn compare_tree(dir: &std::path::Path) -> (bool, bool) {
         .iter()
         .map(|n| n.as_str().unwrap().to_string())
         .collect();
+    let categorical = |n: &str| {
+        case["categorical"]
+            .as_array()
+            .is_some_and(|c| c.iter().any(|v| v == n))
+    };
     let data = Dataset {
         schema: names
             .iter()
             .map(|n| FeatureSchema {
                 name: n.clone(),
-                feature_type: FeatureType::Numeric,
+                feature_type: if categorical(n) {
+                    FeatureType::Categorical
+                } else {
+                    FeatureType::Numeric
+                },
                 role: Role::Both,
                 flags: None,
             })
@@ -187,7 +196,10 @@ fn compare_tree(dir: &std::path::Path) -> (bool, bool) {
                 r.as_array()
                     .unwrap()
                     .iter()
-                    .map(|v| v.as_f64().map_or(Value::Missing, Value::Number))
+                    .map(|v| match v {
+                        serde_json::Value::String(s) => Value::Text(s.clone()),
+                        v => v.as_f64().map_or(Value::Missing, Value::Number),
+                    })
                     .collect()
             })
             .collect(),

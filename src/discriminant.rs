@@ -10,24 +10,34 @@ use crate::{LeafModel, Node, Split};
 use serde::{Deserialize, Serialize};
 
 /// A candidate column of the node design.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Column {
     /// A numeric feature, with missing values imputed by the node mean.
     Numeric(usize),
+    /// The 0/1 indicator of one level of a categorical feature; missing and
+    /// unseen values are 0.
+    Dummy(usize, String),
     /// The 0/1 missing-value indicator of a numeric feature.
     Missing(usize),
 }
 
-/// The candidate columns of a training set: numeric fit features, then an
-/// indicator for each of them that has missing values. Columns constant over
-/// the training rows are left out, as GUIDE excludes constant variables.
+/// The candidate columns of a training set, in GUIDE's order: numeric fit
+/// features, then categorical fit features as dummies of their sorted
+/// levels, then an indicator for each numeric feature with missing values.
+/// A categorical feature with missing values gets a dummy for every level
+/// (missing is the reference); otherwise its first level is the reference.
+/// Columns constant over the training rows are left out, as GUIDE excludes
+/// constant variables.
 pub(crate) fn candidate_columns(data: &Dataset, ids: &[usize]) -> Vec<Column> {
-    let numeric: Vec<usize> = (0..data.schema.len())
-        .filter(|&j| {
-            matches!(data.schema[j].feature_type, FeatureType::Numeric)
-                && data.schema[j].role.fits()
-        })
-        .collect();
+    let fits = |j: usize, numeric: bool| {
+        data.schema[j].role.fits()
+            && match data.schema[j].feature_type {
+                FeatureType::Numeric => numeric,
+                FeatureType::Categorical => !numeric,
+                FeatureType::Periodic { .. } => false,
+            }
+    };
+    let numeric: Vec<usize> = (0..data.schema.len()).filter(|&j| fits(j, true)).collect();
     let mut columns = vec![];
     for &j in &numeric {
         let mut values = ids.iter().filter_map(|&i| data.rows[i][j].number());
@@ -35,6 +45,17 @@ pub(crate) fn candidate_columns(data: &Dataset, ids: &[usize]) -> Vec<Column> {
             && values.any(|x| x != first)
         {
             columns.push(Column::Numeric(j));
+        }
+    }
+    for j in (0..data.schema.len()).filter(|&j| fits(j, false)) {
+        let levels: std::collections::BTreeSet<String> = ids
+            .iter()
+            .filter_map(|&i| data.rows[i][j].label())
+            .collect();
+        let missing = ids.iter().any(|&i| data.rows[i][j].is_missing());
+        let skip = if missing { 0 } else { 1 };
+        if levels.len() + usize::from(missing) >= 2 {
+            columns.extend(levels.into_iter().skip(skip).map(|l| Column::Dummy(j, l)));
         }
     }
     for &j in &numeric {
@@ -161,15 +182,19 @@ impl Discriminant {
     }
 }
 
-/// Whether `terms` are raw numeric fit columns of `schema`, as LDA models use.
+/// Whether `terms` are raw fit columns of `schema` as LDA models use them:
+/// numeric values or their missing indicators, or categorical level dummies.
 pub(crate) fn valid_terms(terms: &[Term], schema: &[crate::FeatureSchema]) -> bool {
     !terms.is_empty()
         && terms.iter().all(|t| {
             t.feature < schema.len()
-                && matches!(schema[t.feature].feature_type, FeatureType::Numeric)
                 && schema[t.feature].role.fits()
+                && match schema[t.feature].feature_type {
+                    FeatureType::Numeric => t.category.is_none(),
+                    FeatureType::Categorical => t.category.is_some() && !t.missing_indicator,
+                    FeatureType::Periodic { .. } => false,
+                }
                 && t.power == 1
-                && t.category.is_none()
                 && t.center == 0.0
                 && t.scale == 1.0
                 && t.impute.is_finite()
@@ -184,7 +209,8 @@ pub(crate) fn valid_terms(terms: &[Term], schema: &[crate::FeatureSchema]) -> bo
 /// F = 0 or no defined F statistic has p = 1: it counts toward K but not J.
 /// Equal p-values are ordered as GUIDE's unstable sort leaves them. When
 /// three or more are kept, those that `lsq` flags as linearly dependent are
-/// dropped (see `dependent`).
+/// dropped (see `dependent`); if that leaves one, the two best-ranked
+/// columns are kept instead.
 pub(crate) fn select(ranking: &[Vec<f64>], labels: &[usize], classes: usize) -> Vec<usize> {
     let mut p: Vec<f64> = ranking
         .iter()
@@ -202,6 +228,11 @@ pub(crate) fn select(ranking: &[Vec<f64>], labels: &[usize], classes: usize) -> 
             .zip(flags)
             .filter_map(|(j, flag)| (!flag).then_some(j))
             .collect();
+        if kept.len() < 2 {
+            // GUIDE falls back to the two best-ranked columns.
+            kept = ranked[..2].to_vec();
+            kept.sort_unstable();
+        }
     }
     kept
 }
@@ -494,12 +525,18 @@ fn anova_log_p(x: &[f64], labels: &[usize], classes: usize) -> Option<f64> {
 /// Discriminant coordinates of `design` (one column per variable): the
 /// generalized eigenvectors of the between-class scatter B against the total
 /// scatter T, with their eigenvalues, in decreasing order, scaled so that
-/// `a'Ta = 1`. Both are empty when T is singular.
+/// `a'Ta = 1`. Both are empty when T is zero.
 ///
 /// GUIDE rotates both matrices into the right singular vectors V of T and
 /// solves `(V'BV) z = lambda (V'TV) z` with LAPACK's `dsygvx`; the
 /// coefficients are `V z`. The signs this produces decide which end of the
 /// coordinate the cut grid counts from, so the same routines are used here.
+/// T's rank counts the singular values above `p * epsilon` times the
+/// largest. At rank one GUIDE skips `dsygvx` and uses the first singular
+/// vector itself (unit length) as the only coordinate, as happens when two
+/// kept dummies of one categorical feature sum to one in the node. At a
+/// higher deficient rank the problem is solved in the leading singular
+/// vectors, a rule not yet confirmed against GUIDE.
 pub(crate) fn coordinates(
     design: &[Vec<f64>],
     labels: &[usize],
@@ -533,19 +570,31 @@ pub(crate) fn coordinates(
                 .sum();
         }
     }
-    let (_, vt) = lapack::right_singular_vectors(&total);
-    // V'MV with V' = vt.
+    let (singular, vt) = lapack::right_singular_vectors(&total);
+    if singular[0].is_nan() || singular[0] <= 0.0 {
+        return (vec![], vec![]);
+    }
+    let tolerance = p as f64 * f64::EPSILON * singular[0];
+    let rank = 1 + singular[1..].iter().take_while(|&&s| s > tolerance).count();
+    if rank == 1 {
+        let v = &vt[0];
+        let bv: f64 = (0..p)
+            .map(|a| (0..p).map(|b| v[a] * between[a][b] * v[b]).sum::<f64>())
+            .sum();
+        return (vec![bv / singular[0]], vec![v.clone()]);
+    }
+    // V'MV with V' = the first `rank` rows of vt.
     let rotate = |m: &[Vec<f64>]| -> Vec<Vec<f64>> {
         let mv: Vec<Vec<f64>> = (0..p)
             .map(|a| {
-                (0..p)
+                (0..rank)
                     .map(|j| (0..p).map(|k| m[a][k] * vt[j][k]).sum())
                     .collect()
             })
             .collect();
-        (0..p)
+        (0..rank)
             .map(|i| {
-                (0..p)
+                (0..rank)
                     .map(|j| (0..p).map(|k| vt[i][k] * mv[k][j]).sum())
                     .collect()
             })
@@ -559,7 +608,7 @@ pub(crate) fn coordinates(
         .rev()
         .map(|z| {
             (0..p)
-                .map(|a| (0..p).map(|k| vt[k][a] * z[k]).sum())
+                .map(|a| (0..rank).map(|k| vt[k][a] * z[k]).sum())
                 .collect()
         })
         .collect();
@@ -608,7 +657,7 @@ pub(crate) fn fit(
     if present.len() < 2 {
         return None;
     }
-    let terms: Vec<Term> = columns.iter().map(|&c| node_term(data, ids, c)).collect();
+    let terms: Vec<Term> = columns.iter().map(|c| node_term(data, ids, c)).collect();
     let design: Vec<Vec<f64>> = terms
         .iter()
         .map(|t| ids.iter().map(|&i| t.value(&data.rows[i])).collect())
@@ -619,7 +668,7 @@ pub(crate) fn fit(
             ids.iter()
                 .map(|&i| {
                     let row = &data.rows[i];
-                    if !t.missing_indicator && row[t.feature].is_missing() {
+                    if !t.missing_indicator && t.category.is_none() && row[t.feature].is_missing() {
                         f64::NAN
                     } else {
                         t.value(row)
@@ -681,10 +730,21 @@ pub(crate) fn fit(
 
 /// The raw term of a candidate column; numeric values are imputed by their
 /// mean over the node's observed values.
-fn node_term(data: &Dataset, ids: &[usize], column: Column) -> Term {
+fn node_term(data: &Dataset, ids: &[usize], column: &Column) -> Term {
     let (feature, missing_indicator) = match column {
-        Column::Numeric(j) => (j, false),
-        Column::Missing(j) => (j, true),
+        Column::Numeric(j) => (*j, false),
+        Column::Missing(j) => (*j, true),
+        Column::Dummy(j, level) => {
+            return Term {
+                feature: *j,
+                power: 1,
+                category: Some(level.clone()),
+                center: 0.0,
+                scale: 1.0,
+                impute: 0.0,
+                missing_indicator: false,
+            };
+        }
     };
     let observed: Vec<f64> = ids
         .iter()
@@ -847,12 +907,21 @@ mod tests {
             .iter()
             .map(|n| n.as_str().unwrap().to_string())
             .collect();
+        let categorical = |n: &str| {
+            case["categorical"]
+                .as_array()
+                .is_some_and(|c| c.iter().any(|v| v == n))
+        };
         let data = Dataset {
             schema: names
                 .iter()
                 .map(|n| FeatureSchema {
                     name: n.clone(),
-                    feature_type: FeatureType::Numeric,
+                    feature_type: if categorical(n) {
+                        FeatureType::Categorical
+                    } else {
+                        FeatureType::Numeric
+                    },
                     role: Role::Both,
                     flags: None,
                 })
@@ -865,7 +934,10 @@ mod tests {
                     r.as_array()
                         .unwrap()
                         .iter()
-                        .map(|v| v.as_f64().map_or(Value::Missing, Value::Number))
+                        .map(|v| match v {
+                            Json::String(s) => Value::Text(s.clone()),
+                            v => v.as_f64().map_or(Value::Missing, Value::Number),
+                        })
                         .collect()
                 })
                 .collect(),
@@ -905,6 +977,8 @@ mod tests {
             let base = &names[t.feature];
             if t.missing_indicator {
                 format!("{base}.NA")
+            } else if let Some(level) = &t.category {
+                format!("{base}.{level}")
             } else {
                 base.clone()
             }
@@ -941,7 +1015,11 @@ mod tests {
                 );
             }
         }
-        for t in model.terms.iter().filter(|t| !t.missing_indicator) {
+        for t in model
+            .terms
+            .iter()
+            .filter(|t| !t.missing_indicator && t.category.is_none())
+        {
             let row = native
                 .iter()
                 .find(|c| c["variable"] == term_name(t).as_str())
@@ -1010,6 +1088,46 @@ mod tests {
             }
         }
         assert_eq!(checked, 24);
+    }
+
+    #[test]
+    fn candidate_columns_follow_guide_order_and_reference_levels() {
+        let schema = |name: &str, feature_type| FeatureSchema {
+            name: name.into(),
+            feature_type,
+            role: Role::Both,
+            flags: None,
+        };
+        let text = |s: &str| Value::Text(s.into());
+        let data = Dataset {
+            schema: vec![
+                schema("g", FeatureType::Categorical),
+                schema("x", FeatureType::Numeric),
+                schema("h", FeatureType::Categorical),
+            ],
+            rows: vec![
+                vec![text("z"), Value::Number(1.0), text("p")],
+                vec![text("a"), Value::Missing, Value::Missing],
+                vec![text("m"), Value::Number(3.0), text("q")],
+            ],
+            targets: vec![],
+            weights: vec![],
+            offsets: vec![],
+        };
+        // Numeric columns, then dummies of sorted levels (the first level is
+        // the reference unless the feature has missing values), then
+        // missing-value indicators.
+        assert_eq!(
+            candidate_columns(&data, &[0, 1, 2]),
+            vec![
+                Column::Numeric(1),
+                Column::Dummy(0, "m".into()),
+                Column::Dummy(0, "z".into()),
+                Column::Dummy(2, "p".into()),
+                Column::Dummy(2, "q".into()),
+                Column::Missing(1),
+            ]
+        );
     }
 
     #[test]
