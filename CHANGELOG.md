@@ -12,6 +12,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 - `node_model="lda"` in the Python `GuideClassifier`
 - Importance scores for LDA classification configurations, computed with constant-node trees
 - `lda_splits` node model for classification: GUIDE's linear discriminant splits with constant leaves
+- Missing-value flags with polynomial, linear and stepwise node models
+- `alpha` for polynomial node models: insignificant highest powers are dropped at 0.05 by default, as GUIDE does
 
 ### Fixed
 
@@ -19,6 +21,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 - Trees without interaction tests stop insignificant nodes at depth 4 and below, as GUIDE does
 - Cuts below the root may leave exactly the minimum node size in the right child, as in GUIDE
 - Interaction and linear-split tests are skipped on data with about 317 or more split variables, as in GUIDE
+- Simple polynomial trees choose cuts and leaves as GUIDE does
 
 ## [0.1.0] - 2026-10-27
 

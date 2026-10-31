@@ -184,7 +184,20 @@ pub(crate) fn select(
         (crate::Loss::Quantile { .. }, _) => zero_residuals_to_smaller(ctx, ids, model, labels),
         _ => labels,
     };
-    select_with_labels(ctx, ids, &labels, features, mode)
+    let mut selection = select_with_labels(ctx, ids, &labels, features, mode);
+    // Simple polynomial trees stop when the node's polynomial fit leaves no
+    // candidate with any residual-sign association (native probes: such a
+    // node with a fitted slope is terminal, one fitted by a constant splits).
+    if mode == SelectionMode::Fit
+        && matches!(ctx.options.node_model, crate::NodeModel::Polynomial { .. })
+        && ctx.loss == crate::Loss::SquaredError
+        && !matches!(model, LeafModel::Constant { .. })
+        && selection.diagnostics.iter().all(|d| d.chi_square == 0.0)
+    {
+        selection.features.clear();
+        selection.pair = false;
+    }
+    selection
 }
 /// GUIDE 34.2 groups Poisson rows by whether their Anscombe residual,
 /// `1.5 (y^(2/3) - mu^(2/3)) / mu^(1/6)`, lies above the mean residual.

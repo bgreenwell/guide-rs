@@ -252,6 +252,50 @@ fn cuts_below_the_root_may_leave_the_minimum_on_the_right() {
     }
 }
 #[test]
+fn simple_polynomial_trees_follow_guide() {
+    // Native GUIDE 46.3 on this deterministic design (best simple
+    // polynomial of degree 1, insignificant powers dropped at 0.05, no
+    // pruning, depth 15, minimum node size 3) grows 13 leaves. It drops
+    // insignificant slopes, scores candidate children with full fits, cuts
+    // on its fixed grid and stops nodes whose fit leaves no association.
+    let x: Vec<Vec<f64>> = (0..60u64)
+        .map(|i| {
+            vec![
+                ((i * 37) % 60) as f64 / 20.0 - 1.5,
+                ((i * 53) % 60) as f64 / 30.0 - 1.0,
+            ]
+        })
+        .collect();
+    let y: Vec<f64> = x
+        .iter()
+        .enumerate()
+        .map(|(i, r)| {
+            2.0 * r[0] + if r[1] > 0.0 { 3.0 } else { 0.0 } + ((i * 7) % 11) as f64 / 30.0
+        })
+        .collect();
+    let mut d = data(x, y);
+    for s in &mut d.schema {
+        s.role = Role::Both;
+    }
+    let o = FitOptions {
+        node_model: NodeModel::Polynomial {
+            degree: 1,
+            alpha: 0.05,
+        },
+        max_depth: 15,
+        min_samples_leaf: 3,
+        min_gain: 0.0,
+        max_split_candidates: 0,
+        ..options()
+    };
+    let m = FittedModel::fit(&d, &o).unwrap();
+    assert_eq!(m.trees[0].root.leaves(), 13);
+    let p = values(m.predict(&d.rows[..5]).unwrap());
+    for (ours, native) in p.iter().zip([-2.93659, 3.85, 1.62221, 5.29873, 2.95873]) {
+        assert!((ours - native).abs() < 1e-5, "{ours} vs {native}");
+    }
+}
+#[test]
 fn zero_gain_splits_follow_min_gain() {
     // Every cut leaves both child means at 5, but the residual signs still
     // associate with x. GUIDE splits anyway; a positive min_gain does not.
@@ -504,7 +548,10 @@ fn polynomial_fit_and_imputation_are_serialized() {
     );
     d.schema[0].role = Role::Both;
     let mut o = options();
-    o.node_model = NodeModel::Polynomial { degree: 2 };
+    o.node_model = NodeModel::Polynomial {
+        degree: 2,
+        alpha: 0.05,
+    };
     o.max_depth = 0;
     let m = FittedModel::fit(&d, &o).unwrap();
     let p = values(

@@ -370,6 +370,44 @@ fn grouped_dots(columns: &[Vec<f64>], out: &mut [f64], weight: impl Fn(usize, f6
         }
     }
 }
+/// The inverse of a small symmetric positive definite matrix by Gauss-Jordan
+/// elimination with partial pivoting; None when it is singular.
+pub(crate) fn invert(matrix: &[Vec<f64>]) -> Option<Vec<Vec<f64>>> {
+    let n = matrix.len();
+    let mut a: Vec<Vec<f64>> = matrix
+        .iter()
+        .enumerate()
+        .map(|(i, row)| {
+            let mut r = row.clone();
+            r.extend((0..n).map(|j| if i == j { 1.0 } else { 0.0 }));
+            r
+        })
+        .collect();
+    let scale = matrix.iter().flatten().fold(0.0_f64, |m, v| m.max(v.abs()));
+    for c in 0..n {
+        let pivot = (c..n).max_by(|&x, &y| a[x][c].abs().total_cmp(&a[y][c].abs()))?;
+        if a[pivot][c].abs() <= 1e-12 * scale {
+            return None;
+        }
+        a.swap(c, pivot);
+        let d = a[c][c];
+        for v in &mut a[c] {
+            *v /= d;
+        }
+        for r in 0..n {
+            if r != c {
+                let f = a[r][c];
+                if f != 0.0 {
+                    let pivot_row = a[c].clone();
+                    for (v, p) in a[r].iter_mut().zip(&pivot_row) {
+                        *v -= f * p;
+                    }
+                }
+            }
+        }
+    }
+    Some(a.into_iter().map(|r| r[n..].to_vec()).collect())
+}
 pub fn least_squares(x: &[Vec<f64>], y: &[f64], weights: &[f64]) -> Option<Vec<f64>> {
     least_squares_ranked(x, y, weights).map(|(beta, _)| beta)
 }
