@@ -63,8 +63,14 @@ pub enum NodeModel {
     /// Multiple linear regression. Numeric squared-error designs use GUIDE's
     /// nominal-column/global-missing-flag sample thresholds before QR fitting.
     Linear,
+    /// The best simple polynomial in one numeric fit feature. With
+    /// squared-error loss, GUIDE drops the highest power while its two-sided
+    /// t-test has p > `alpha` (its "drop insignificant powers" option, at
+    /// 0.05 by default); `alpha = 1` keeps every power.
     Polynomial {
         degree: usize,
+        #[serde(default = "default_power_alpha")]
+        alpha: f64,
     },
     /// Experimental, opt-in grouped forward selection with optional backward elimination.
     /// Native GUIDE selection/fallback parity is incomplete; further parity work is deferred.
@@ -86,6 +92,9 @@ pub enum NodeModel {
     /// coordinate as with `Lda`, but classify with the node's class
     /// proportions.
     LdaSplits,
+}
+fn default_power_alpha() -> f64 {
+    0.05
 }
 impl NodeModel {
     /// Whether nodes split on discriminant coordinates (`Lda`, `LdaSplits`).
@@ -318,10 +327,13 @@ impl FitOptions {
                 "lda node models do not support unequal class costs or per-node feature sampling",
             ));
         }
-        if let NodeModel::Polynomial { degree } = self.node_model
-            && !(1..=6).contains(&degree)
-        {
-            return Err(invalid("polynomial degree must be between 1 and 6"));
+        if let NodeModel::Polynomial { degree, alpha } = self.node_model {
+            if !(1..=6).contains(&degree) {
+                return Err(invalid("polynomial degree must be between 1 and 6"));
+            }
+            if !alpha.is_finite() || alpha <= 0.0 || alpha > 1.0 {
+                return Err(invalid("polynomial alpha must be in (0, 1]"));
+            }
         }
         if let NodeModel::Stepwise { alpha, .. } = self.node_model {
             if !alpha.is_finite() || alpha <= 0.0 || alpha >= 1.0 {

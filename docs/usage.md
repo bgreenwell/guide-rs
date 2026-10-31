@@ -43,7 +43,7 @@ A flag column records why values of another feature are missing, like GUIDE's M 
 {"name": "income_reason", "feature_type": {"kind": "categorical"}, "role": "flag", "flags": "income"}
 ```
 
-Codes only matter where the parent is missing. Each code is a separate missing group for variable selection, and splits can send any subset of codes left, for example `income <= 50000; missing -> yes if income_reason in ["refused"]`. At prediction time, missing values with no code or an unseen code go right. Flags require constant node models and numeric or categorical parents, with at most 10 codes. See [the flag validation record](missing-flag-validation.md).
+Codes only matter where the parent is missing. Each code is a separate missing group for variable selection, and splits can send any subset of codes left, for example `income <= 50000; missing -> yes if income_reason in ["refused"]`. At prediction time, missing values with no code or an unseen code go right. Flags work with constant and polynomial node models, which use them for splitting only, and need numeric or categorical parents, with at most 10 codes. With linear and stepwise node models, flags become ordinary categorical features with role `both`, split on and fitted as dummies, as GUIDE reports ("M variables changed to B"); the saved model records them that way. See [the flag validation record](missing-flag-validation.md).
 
 ## Linear node models
 

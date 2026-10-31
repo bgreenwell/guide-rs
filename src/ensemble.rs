@@ -40,6 +40,8 @@ impl FittedModel {
     ) -> Result<Self> {
         options.validate()?;
         data.validate(&options.task)?;
+        let converted = crate::tree::flags_as_categories(data, options);
+        let data = converted.as_ref().unwrap_or(data);
         validate_supported(data, options)?;
         // GUIDE has disabled LDA in its forests since version 24.
         if options.node_model.discriminant_splits() {

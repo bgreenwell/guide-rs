@@ -265,6 +265,10 @@ impl FittedModel {
         if validation.is_some() && options.pruning != Pruning::Validation {
             return Err(invalid("a validation dataset requires validation pruning"));
         }
+        let converted = flags_as_categories(data, options);
+        let data = converted.as_ref().unwrap_or(data);
+        let converted_validation = validation.and_then(|v| flags_as_categories(v, options));
+        let validation = converted_validation.as_ref().or(validation);
         validate_supported(data, options)?;
         let ids = data.active_rows();
         let ctx = Context::new(data, options, &ids, None)?;
@@ -566,15 +570,38 @@ pub(crate) fn collect_warnings(n: &Node, w: &mut Vec<String>) {
         collect_warnings(r, w);
     }
 }
-/// GUIDE converts flags to indicator variables for linear models; that
-/// conversion is not implemented, and code subsets are enumerated exhaustively.
+/// Code subsets are enumerated exhaustively.
 const MAX_MISSING_CODES: usize = 10;
+/// GUIDE turns missing-value flags into categorical B variables, split on
+/// and fitted as dummies, for multiple-linear and stepwise node models
+/// ("M variables changed to B"). Other node models keep them as flags.
+pub(crate) fn flags_as_categories(data: &Dataset, options: &FitOptions) -> Option<Dataset> {
+    if !matches!(
+        options.node_model,
+        NodeModel::Linear | NodeModel::Stepwise { .. }
+    ) || !data.schema.iter().any(|s| s.role == Role::Flag)
+    {
+        return None;
+    }
+    let mut converted = data.clone();
+    for s in &mut converted.schema {
+        if s.role == Role::Flag {
+            s.role = Role::Both;
+            s.flags = None;
+            s.feature_type = FeatureType::Categorical;
+        }
+    }
+    Some(converted)
+}
 pub(crate) fn validate_supported(data: &Dataset, options: &FitOptions) -> Result<()> {
     for (j, flag) in flag_columns(&data.schema).into_iter().enumerate() {
         let Some(flag) = flag else { continue };
-        if options.node_model != NodeModel::Constant {
+        if !matches!(
+            options.node_model,
+            NodeModel::Constant | NodeModel::Polynomial { .. }
+        ) {
             return Err(invalid(
-                "missing-value flags require constant node models; GUIDE's flag-to-indicator conversion for linear models is not implemented",
+                "missing-value flags require constant, polynomial, linear or stepwise node models",
             ));
         }
         let codes: std::collections::BTreeSet<_> = data
@@ -1065,7 +1092,10 @@ pub(crate) fn grow(
         && (impurity - score > ctx.options.min_gain * ctx.root_weight
             || ((ctx.options.min_gain == 0.0 || mode == SelectionMode::Importance)
                 && (ctx.classifying()
-                    || ctx.options.node_model == NodeModel::Linear
+                    || matches!(
+                        ctx.options.node_model,
+                        NodeModel::Linear | NodeModel::Polynomial { .. }
+                    )
                     || stats::less_or_close(score, impurity))))
     {
         // Numeric cuts default to the right when missingness was not observed,
@@ -1347,6 +1377,7 @@ const NATIVE_CUT_GRID: usize = 102;
 /// Whether numerical cuts follow GUIDE's fixed Poisson/quantile grid.
 fn native_cut_grid(ctx: &Context<'_>) -> bool {
     matches!(ctx.loss, Loss::Poisson | Loss::Quantile { .. })
+        || matches!(ctx.options.node_model, NodeModel::Polynomial { .. })
 }
 /// Splits `ids` into `left` and `right`, keeping their order.
 pub(crate) fn partition(
@@ -1851,7 +1882,11 @@ fn candidates_sorted(
             // Keep missingness-only splits as a separate candidate above.
             let minimum = ctx.options.min_samples_leaf;
             let root = ids.len() == ctx.root_samples;
-            let exclusive = usize::from(root || grid || native_cut_grid(ctx));
+            let exclusive = usize::from(
+                root || grid
+                    || native_cut_grid(ctx)
+                    || ctx.options.node_model != NodeModel::Constant,
+            );
             if values.len() <= minimum + minimum || minimum == 0 {
                 return result;
             }

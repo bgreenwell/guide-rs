@@ -474,13 +474,18 @@ impl<'a> Context<'a> {
     }
     /// The node or leaf model of rows `ids`.
     pub fn fit_leaf(&self, ids: &[usize]) -> LeafModel {
-        self.fit_model(ids, self.linear_min_samples)
+        self.fit_model(ids, self.linear_min_samples, false)
     }
     /// The model of a candidate child when scoring a split.
     pub fn fit_child(&self, ids: &[usize]) -> LeafModel {
-        self.fit_model(ids, self.linear_split_min_samples)
+        self.fit_model(ids, self.linear_split_min_samples, true)
     }
-    fn fit_model(&self, ids: &[usize], linear_min_samples: Option<usize>) -> LeafModel {
+    fn fit_model(
+        &self,
+        ids: &[usize],
+        linear_min_samples: Option<usize>,
+        child: bool,
+    ) -> LeafModel {
         if self.classifying() {
             let mut counts = vec![0.0; self.classes.len()];
             for &i in ids {
@@ -536,7 +541,14 @@ impl<'a> Context<'a> {
                 max_variables,
                 backward,
             } => self.stepwise(ids, alpha, max_variables, backward, constant),
-            NodeModel::Polynomial { degree } => {
+            // GUIDE scores candidate children with full-degree fits and drops
+            // insignificant powers only in the leaves it keeps.
+            NodeModel::Polynomial { degree, alpha }
+                if matches!(self.loss, Loss::SquaredError) && alpha < 1.0 =>
+            {
+                self.significant_polynomial(ids, degree, if child { 1.0 } else { alpha }, constant)
+            }
+            NodeModel::Polynomial { degree, .. } => {
                 let mut best = constant;
                 let mut score = self.risk(&best, ids);
                 for j in 0..self.data.schema.len() {
@@ -851,6 +863,112 @@ impl<'a> Context<'a> {
             }
         }
         terms
+    }
+    /// GUIDE's best simple polynomial with insignificant powers dropped: the
+    /// numeric fit feature whose degree-`degree` fit has the least error, then
+    /// lower degrees while the highest power's two-sided t-test has p >
+    /// `alpha`, down to a constant.
+    fn significant_polynomial(
+        &self,
+        ids: &[usize],
+        degree: usize,
+        alpha: f64,
+        constant: LeafModel,
+    ) -> LeafModel {
+        if ids.len() < degree + 3 {
+            return constant;
+        }
+        let mut best: Option<(usize, LeafModel, f64)> = None;
+        for j in 0..self.data.schema.len() {
+            if !self.data.schema[j].role.fits()
+                || !matches!(self.data.schema[j].feature_type, FeatureType::Numeric)
+            {
+                continue;
+            }
+            if let Some(model) = self.linear(ids, self.terms(ids, Some(j), degree), &constant) {
+                let risk = self.risk(&model, ids);
+                if best
+                    .as_ref()
+                    .is_none_or(|b| stats::strictly_less(risk, b.2))
+                {
+                    best = Some((j, model, risk));
+                }
+            }
+        }
+        let Some((j, mut model, _)) = best else {
+            return constant;
+        };
+        for d in (1..=degree).rev() {
+            let terms = self.terms(ids, Some(j), d);
+            if self.highest_power_log_p(ids, &terms, d) <= alpha.ln() {
+                return model;
+            }
+            if d > 1 {
+                model = match self.linear(ids, self.terms(ids, Some(j), d - 1), &constant) {
+                    Some(m) => m,
+                    None => return constant,
+                };
+            }
+        }
+        constant
+    }
+    /// The log two-sided t-test p-value of the power-`d` term in the weighted
+    /// least-squares fit of an intercept and `terms`; 0 (p = 1) when the fit
+    /// leaves no residual degrees of freedom or is singular.
+    fn highest_power_log_p(&self, ids: &[usize], terms: &[Term], d: usize) -> f64 {
+        let p = terms.len() + 1;
+        let Some(k) = terms
+            .iter()
+            .position(|t| t.power == d && !t.missing_indicator)
+        else {
+            return 0.0;
+        };
+        if ids.len() <= p {
+            return 0.0;
+        }
+        let rows: Vec<Vec<f64>> = ids
+            .iter()
+            .map(|&i| {
+                std::iter::once(1.0)
+                    .chain(terms.iter().map(|t| t.value(&self.data.rows[i])))
+                    .collect()
+            })
+            .collect();
+        let mut xtx = vec![vec![0.0; p]; p];
+        let mut xty = vec![0.0; p];
+        for (r, &i) in rows.iter().zip(ids) {
+            let w = self.weights[i];
+            for a in 0..p {
+                xty[a] += w * r[a] * self.y[i];
+                for b in 0..p {
+                    xtx[a][b] += w * r[a] * r[b];
+                }
+            }
+        }
+        let Some(inverse) = stats::invert(&xtx) else {
+            return 0.0;
+        };
+        let beta: Vec<f64> = (0..p)
+            .map(|a| (0..p).map(|b| inverse[a][b] * xty[b]).sum())
+            .collect();
+        let sse: f64 = rows
+            .iter()
+            .zip(ids)
+            .map(|(r, &i)| {
+                let fit: f64 = r.iter().zip(&beta).map(|(x, b)| x * b).sum();
+                self.weights[i] * (self.y[i] - fit).powi(2)
+            })
+            .sum();
+        let df = ids.len() - p;
+        let variance = sse / df as f64 * inverse[k + 1][k + 1];
+        if variance.is_nan() || variance <= 0.0 {
+            return if beta[k + 1] == 0.0 {
+                0.0
+            } else {
+                f64::NEG_INFINITY
+            };
+        }
+        stats::f_log_survival(beta[k + 1] * beta[k + 1] / variance, 1, df)
     }
     fn linear(&self, ids: &[usize], terms: Vec<Term>, constant: &LeafModel) -> Option<LeafModel> {
         if terms.is_empty() || terms.len() + 1 > ids.len() {

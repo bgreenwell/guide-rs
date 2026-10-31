@@ -113,18 +113,43 @@ fn guide_46x_missing_value_flags() {
 }
 
 #[test]
-fn flags_require_constant_node_models() {
+fn flags_become_categorical_features_for_linear_node_models() {
+    // GUIDE reports "M variables changed to B" for multiple-linear and
+    // stepwise node models: flags are split on and fitted as dummies.
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures/missing-flag/guide-46.3/missing-flag-numeric-left-A");
     let data: Dataset =
         serde_json::from_str(&fs::read_to_string(path.join("dataset.json")).unwrap()).unwrap();
     let mut data = data;
     data.schema[0].role = Role::Both;
+    let flag = data
+        .schema
+        .iter()
+        .position(|s| s.role == Role::Flag)
+        .unwrap();
     let options = FitOptions {
         node_model: NodeModel::Linear,
         pruning: Pruning::None,
         ..Default::default()
     };
-    let err = FittedModel::fit(&data, &options).unwrap_err();
-    assert!(err.0.contains("constant node models"), "{err}");
+    let model = FittedModel::fit(&data, &options).unwrap();
+    assert_eq!(model.schema[flag].role, Role::Both);
+    assert_eq!(model.schema[flag].feature_type, FeatureType::Categorical);
+    assert!(model.schema[flag].flags.is_none());
+    assert!(model.predict(&data.rows).is_ok());
+    let polynomial = FitOptions {
+        node_model: NodeModel::Polynomial {
+            degree: 1,
+            alpha: 0.05,
+        },
+        ..options.clone()
+    };
+    let model = FittedModel::fit(&data, &polynomial).unwrap();
+    assert_eq!(model.schema[flag].role, Role::Flag);
+    let lda = FitOptions {
+        task: Task::Classification,
+        node_model: NodeModel::Lda,
+        ..options
+    };
+    assert!(FittedModel::fit(&data, &lda).is_err());
 }

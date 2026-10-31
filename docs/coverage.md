@@ -1,6 +1,6 @@
 # GUIDE 46.3 coverage and remaining work
 
-Updated **2026-10-30**, through algorithm revision **`guide-rs-0.1-experimental-reference23`**.
+Updated **2026-10-30**, through algorithm revision **`guide-rs-0.1-experimental-reference24`**.
 
 **guide-rs is a working subset of GUIDE, not a full replacement.** Its strongest native validation is for constant classification/regression, multiple-linear squared-error trees, and pruning. Other implemented losses and ensembles have narrower independent checks. No complete subsystem is certified equivalent to every GUIDE option.
 
@@ -59,7 +59,8 @@ These are the next priorities before expanding into the missing specialized fami
 - [ ] Validate high-cardinality categorical linear searches, near-tied partitions, broader missing patterns and projected/periodic split defaults. Multiclass categorical search above 11 levels is implemented and validated; when both sides have the same number of levels its orientation follows native eigenvector signs, which are not reproduced.
 - [ ] Match native selection tests for sparse numeric variables (mostly missing, few distinct observed values). Native groups their observed values differently and sometimes skips them; this is now the main source of unpruned-tree differences on the GUIDE manual's CE examples.
 - [ ] Finish importance calibration/normalization, zero-null fallback conventions, 50% thresholds and missing-flag aggregation.
-- [ ] Missing-value flags (M variables) with linear/polynomial/stepwise node models via the documented M-to-B conversion, and on periodic parents. Constant-node flags for numeric and categorical parents are implemented and validated ([flag validation](missing-flag-validation.md)).
+- [x] Missing-value flags with polynomial node models (split-only) and linear/stepwise node models (converted to categorical `both` features, GUIDE's M-to-B conversion).
+- [ ] Missing-value flags on periodic parents, and native parity of polynomial and linear trees whose regressors have missing values (native sends missing regressor rows with a few observed rows to one side by a rule not yet identified) or that use interaction pairs.
 - [ ] Validate GUIDE's polynomial degree selection, missing handling and model-specific fallback rules.
 - [ ] Validate native quantile/Poisson/logistic split selection, residual grouping, model selection and fitting-policy combinations. Poisson and quantile cut grids, Poisson positive-count children and the quantile definition now match native (reference15); Poisson Anscombe residual groups, quantile zero-residual groups and constant-response leaves now match GUIDE's history and probes (reference18); on 120 fresh random designs per model, with no gain threshold as in native, 360 of 427 Poisson and 378 of 456 quantile nodes agree, and 257 of 337 with integer quantile responses. Remaining Poisson differences are mostly cut choices in near-binary count data, which no tested criterion (total or mean deviance, minimum child size) explains.
 - [ ] Validate periodic association rotation invariance and missing/unknown routing.

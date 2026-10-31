@@ -792,7 +792,10 @@ fn quantile_nodes_agree_with_r_quantreg() {
                     loss: Loss::Quantile { probability },
                 },
                 node_model: if polynomial {
-                    NodeModel::Polynomial { degree: 2 }
+                    NodeModel::Polynomial {
+                        degree: 2,
+                        alpha: 0.05,
+                    }
                 } else {
                     NodeModel::Linear
                 },
