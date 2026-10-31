@@ -886,6 +886,25 @@ pub(crate) fn grow(
         features.sort_unstable();
     }
     let selection = selection::select(ctx, ids, &node.model, &features, mode);
+    // Without interaction tests GUIDE stops nodes at depth 4 and below whose
+    // selected variable is not significant at the level for the largest of K
+    // independent 1-df chi-squares: p > 1 - (1 - alpha)^(1/K).
+    if mode == SelectionMode::Fit
+        && depth >= 4
+        && !(ctx.options.interactions && ctx.pair_tests())
+        && let Some(log_p) = selection
+            .features
+            .first()
+            .and_then(|&j| selection.diagnostics.iter().find(|d| d.feature == j))
+            .and_then(|d| d.log_p_value)
+    {
+        let k = ctx.split_variable_count() as f64;
+        let level = -((1.0 - ctx.options.significance_level).ln() / k).exp_m1();
+        if log_p > level.ln() {
+            node.diagnostics = selection.diagnostics;
+            return node;
+        }
+    }
     node.diagnostics = selection.diagnostics;
     // With constant leaves, GUIDE runs the two-level search for a selected
     // pair at every depth, including the last level, where the children will
@@ -1826,15 +1845,18 @@ fn candidates_sorted(
             };
             let mut values = values;
             // Native numerical rank bounds apply before routing missing rows:
-            // left >= minimum observed values, right > minimum. The exclusive
-            // upper endpoint is confirmed by forward/reversed boundary probes.
+            // left >= minimum observed values, right > minimum at the root and
+            // on GUIDE's fixed cut grid, right >= minimum in other nodes. Both
+            // endpoints are confirmed by forward/reversed boundary probes.
             // Keep missingness-only splits as a separate candidate above.
             let minimum = ctx.options.min_samples_leaf;
-            if values.len() <= minimum || values.len() - minimum <= minimum {
+            let root = ids.len() == ctx.root_samples;
+            let exclusive = usize::from(root || grid || native_cut_grid(ctx));
+            if values.len() <= minimum + minimum || minimum == 0 {
                 return result;
             }
             let lower = values[minimum - 1];
-            let upper = values[values.len() - minimum - 1];
+            let upper = values[values.len() - minimum - exclusive];
             let midpoint = |a: f64, b: f64| {
                 let mid = a / 2.0 + b / 2.0;
                 if mid >= b { a } else { mid }

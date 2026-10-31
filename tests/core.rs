@@ -202,6 +202,56 @@ fn tied_leaf_counts_predict_the_class_with_the_larger_corrected_posterior() {
     assert_eq!(labels, ["c2", "c2", "c2", "c2"]);
 }
 #[test]
+fn deep_nodes_without_interaction_tests_stop_when_insignificant() {
+    // Native GUIDE 46.3 on this deterministic design (constant least
+    // squares, no interaction tests, depth 10, minimum node size 2, no
+    // pruning) stops nodes at depth 4 and below unless the selected
+    // variable beats the level for the largest of K 1-df chi-squares, and
+    // grows 14 leaves.
+    let x: Vec<Vec<f64>> = (0..400u64)
+        .map(|i| {
+            (0..3u64)
+                .map(|j| ((i * 7919 + j * 104729) % 1000) as f64 / 1000.0)
+                .collect()
+        })
+        .collect();
+    let y: Vec<f64> = (0..400u64)
+        .map(|i| ((i * 31337) % 997) as f64 / 997.0)
+        .collect();
+    let o = FitOptions {
+        max_depth: 10,
+        min_samples_leaf: 2,
+        interactions: false,
+        max_split_candidates: 0,
+        ..options()
+    };
+    let m = FittedModel::fit(&data(x, y), &o).unwrap();
+    assert_eq!(m.trees[0].root.leaves(), 14);
+}
+#[test]
+fn cuts_below_the_root_may_leave_the_minimum_on_the_right() {
+    // A native GUIDE 46.3 probe: below the root, a five-row node with
+    // minimum node size 2 is cut 3/2, which the root's rule (right child
+    // strictly above the minimum) would forbid.
+    let x: Vec<Vec<f64>> = (1..=5).chain(11..=30).map(|v| vec![v as f64]).collect();
+    let y: Vec<f64> = [0.0, 0.0, 0.0, 10.0, 10.0]
+        .into_iter()
+        .chain(std::iter::repeat_n(100.0, 20))
+        .collect();
+    let o = FitOptions {
+        max_depth: 3,
+        min_samples_leaf: 2,
+        max_split_candidates: 0,
+        ..options()
+    };
+    let m = FittedModel::fit(&data(x, y), &o).unwrap();
+    let left = m.trees[0].root.left.as_ref().unwrap();
+    match &left.split {
+        Some(Split::Numeric { threshold, .. }) => assert_close(*threshold, 3.5),
+        other => panic!("{other:?}"),
+    }
+}
+#[test]
 fn zero_gain_splits_follow_min_gain() {
     // Every cut leaves both child means at 5, but the residual signs still
     // associate with x. GUIDE splits anyway; a positive min_gain does not.

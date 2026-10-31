@@ -16,6 +16,9 @@ adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 - Classification leaves with tied class counts predict the class GUIDE predicts
+- Trees without interaction tests stop insignificant nodes at depth 4 and below, as GUIDE does
+- Cuts below the root may leave exactly the minimum node size in the right child, as in GUIDE
+- Interaction and linear-split tests are skipped on data with about 317 or more split variables, as in GUIDE
 
 ## [0.1.0] - 2026-10-27
 

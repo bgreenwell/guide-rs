@@ -560,6 +560,18 @@ impl<'a> Context<'a> {
         }
     }
     /// The classification leaf for the given (unweighted) class counts.
+    /// GUIDE's count K of split variables, constant ones included, which
+    /// sets its interaction and stopping thresholds.
+    pub(crate) fn split_variable_count(&self) -> usize {
+        self.data.schema.iter().filter(|s| s.role.splits()).count()
+    }
+    /// Whether interaction and linear-split tests run. GUIDE skips them when
+    /// their Bonferroni level `alpha / (K (K - 1) / 2)` is at most 2e-6, the
+    /// smallest probability its chi-square quantile routine accepts.
+    pub(crate) fn pair_tests(&self) -> bool {
+        let k = self.split_variable_count() as f64;
+        k < 1.5 || self.options.significance_level / (k * (k - 1.0) / 2.0) > 2e-6
+    }
     pub fn classification_leaf(&self, mut p: Vec<f64>) -> LeafModel {
         self.class_probabilities(&mut p);
         let predicted_class = self.least_cost_class(&p);
