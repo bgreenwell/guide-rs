@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-31
+
 ### Added
 
 - `lda` node model for classification: GUIDE's linear discriminant splits and leaves on numeric and categorical features
