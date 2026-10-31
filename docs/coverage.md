@@ -1,6 +1,6 @@
 # GUIDE 46.3 coverage and remaining work
 
-Updated **2026-10-30**, through algorithm revision **`guide-rs-0.1-experimental-reference22`**.
+Updated **2026-10-30**, through algorithm revision **`guide-rs-0.1-experimental-reference23`**.
 
 **guide-rs is a working subset of GUIDE, not a full replacement.** Its strongest native validation is for constant classification/regression, multiple-linear squared-error trees, and pruning. Other implemented losses and ensembles have narrower independent checks. No complete subsystem is certified equivalent to every GUIDE option.
 
@@ -57,6 +57,7 @@ These are the next priorities before expanding into the missing specialized fami
 - [ ] Establish native tie-breaking among exactly tied multi-predictor scores. Zero-gain splitting (`min_gain = 0`) and same-class leaf merging are resolved; the singleton zero-score rule is resolved. Native tie order is not column order and is recorded as a known difference.
 - [ ] Identify how native GUIDE scores the parent cuts of an interaction pair. With constant leaves it runs the two-level search at every depth, with parent cuts on its fixed grid (both now matched, reference17), but its chosen cut still differs from the best two-level loss in about one case in five; most remaining variable differences are exact ties between two equivalent trees. Pairs with linear leaves are unverified ([selection validation](selection-validation.md#interaction-pairs-2026-10-26)).
 - [ ] Validate high-cardinality categorical linear searches, near-tied partitions, broader missing patterns and projected/periodic split defaults. Multiclass categorical search above 11 levels is implemented and validated; when both sides have the same number of levels its orientation follows native eigenvector signs, which are not reproduced.
+- [ ] Match native selection tests for sparse numeric variables (mostly missing, few distinct observed values). Native groups their observed values differently and sometimes skips them; this is now the main source of unpruned-tree differences on the GUIDE manual's CE examples.
 - [ ] Finish importance calibration/normalization, zero-null fallback conventions, 50% thresholds and missing-flag aggregation.
 - [ ] Missing-value flags (M variables) with linear/polynomial/stepwise node models via the documented M-to-B conversion, and on periodic parents. Constant-node flags for numeric and categorical parents are implemented and validated ([flag validation](missing-flag-validation.md)).
 - [ ] Validate GUIDE's polynomial degree selection, missing handling and model-specific fallback rules.

@@ -328,7 +328,11 @@ pub(crate) fn select_with_test(
     }
     let log_alpha = ctx.options.significance_level.ln();
     let main_log_threshold = log_alpha - (eligible.len() as f64).ln();
-    if ctx.options.interactions && eligible.len() > 1 && best_main_log_p >= main_log_threshold {
+    if ctx.options.interactions
+        && ctx.pair_tests()
+        && eligible.len() > 1
+        && best_main_log_p >= main_log_threshold
+    {
         let bins: Vec<Vec<usize>> = ordered_map(
             &eligible,
             parallel,
@@ -394,6 +398,7 @@ pub(crate) fn select_with_test(
     if let Some(labels) = labels
         && mode == SelectionMode::Fit
         && ctx.options.linear_splits
+        && ctx.pair_tests()
         && !selection.pair
         && best_main_log_p >= main_log_threshold
     {
