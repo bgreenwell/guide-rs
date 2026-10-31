@@ -19,6 +19,7 @@
 - `cargo test --locked`: run ordinary Rust tests.
 - `python3 -m unittest discover -s tools -p 'test_reference_*.py'`: verify capture tooling and fixture integrity.
 - `cargo test --locked --test interoperability -- --ignored`: run independent R checks; requires Rscript, quantreg, and rpart.
+- `python3 tools/compare_manual_examples.py --binary .reference/upstream/macos-arm64/guide --mode both`: compare the release build with native GUIDE on the GUIDE manual's examples (downloads the manual's data once into `.reference/manual-data/`); record changes in `docs/manual-examples.md`.
 - `cargo test --locked --release --test statistical -- --ignored`: run statistical smoke checks.
 - In `python/`: `uv sync` builds the extension in editable mode (rebuilt automatically when Rust sources change); `cargo clippy --locked --all-targets -- -D warnings` lints the binding crate. `tests/test_estimators.py` requires the estimators to reproduce the core model on every reference case they can express; extend `estimator_for` when exposing new options. The Sphinx site in `python/docs/` builds from the docstrings (numpydoc format) and the committed notebooks; CI builds it with warnings as errors.
 
