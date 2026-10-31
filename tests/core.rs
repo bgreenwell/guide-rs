@@ -415,7 +415,7 @@ fn flag_schemas_are_validated() {
 #[test]
 fn missingness_can_be_the_predictor() {
     let mut d = data(
-        vec![vec![1.0]; 20],
+        (0..20).map(|i| vec![1.0 + (i % 2) as f64]).collect(),
         (0..20).map(|i| if i < 10 { 0.0 } else { 5.0 }).collect(),
     );
     for row in &mut d.rows[10..] {
@@ -430,6 +430,126 @@ fn missingness_can_be_the_predictor() {
         ),
         vec![5.0, 0.0]
     );
+}
+#[test]
+fn few_valued_selection_tests_pool_values_seen_once() {
+    // GUIDE 46.3 groups a categorical variable, or a numeric one with at
+    // most four distinct values, by value and pools the values seen once; a
+    // pool of one row joins the largest group, and x3 (one observed value) is
+    // not tested. These are its 1-df root chi-squares on this design.
+    let native = [
+        ("x0", 0.03802),
+        ("x1", 0.4174),
+        ("x2", 2.944),
+        ("x4", 0.4231),
+        ("x5", 0.01011),
+    ];
+    let number = |v: Option<f64>| v.map_or(Value::Missing, Value::Number);
+    let mut d = data(vec![vec![0.0; 6]; 48], vec![0.0; 48]);
+    for (i, row) in d.rows.iter_mut().enumerate() {
+        let k = i as f64;
+        *row = vec![
+            number((i >= 30).then_some(if i == 47 { 9.0 } else { (i % 3) as f64 })),
+            Value::Number(match i {
+                _ if i % 6 == 0 => 5.0,
+                1 => 7.0,
+                _ => 0.0,
+            }),
+            number([3, 10, 20].contains(&i).then_some(k)),
+            number((i % 4 == 0).then_some(1.0)),
+            match i {
+                0..20 => Value::Missing,
+                20 => Value::Text("z".into()),
+                _ => Value::Text(if i % 2 == 0 { "p" } else { "q" }.into()),
+            },
+            Value::Number(((i * 37) % 48) as f64),
+        ];
+        d.targets[i] = Value::Number(((i * 7919) % 101) as f64);
+    }
+    d.schema[4].feature_type = FeatureType::Categorical;
+    let o = FitOptions {
+        max_depth: 1,
+        interactions: false,
+        ..options()
+    };
+    let m = FittedModel::fit(&d, &o).unwrap();
+    assert_native_root_chi_squares(&d, &m, &native);
+}
+/// Compares root selection p-values with native 1-df chi-squares, which
+/// GUIDE prints to four significant digits.
+fn assert_native_root_chi_squares(d: &Dataset, m: &FittedModel, native: &[(&str, f64)]) {
+    let diagnostics = &m.trees[0].root.diagnostics;
+    assert_eq!(diagnostics.len(), native.len());
+    for &(name, chi) in native {
+        let found = diagnostics
+            .iter()
+            .find(|g| d.schema[g.feature].name == name)
+            .unwrap();
+        let expected = stats::chi_square_log_survival(chi, 1);
+        let log_p = found.log_p_value.unwrap();
+        assert!(
+            (log_p - expected).abs() < 1e-3 * expected.abs().max(1e-2),
+            "{name}: {log_p} != {expected}"
+        );
+    }
+}
+#[test]
+fn categorical_selection_tests_pool_levels_seen_once() {
+    // GUIDE 46.3's 1-df root chi-squares: a lone singleton level joins the
+    // largest level (x0, x2), and several singletons form one group (x1, x3).
+    let native = [("x0", 1.31), ("x1", 0.09952), ("x2", 0.2786), ("x3", 0.951)];
+    let text = |s: &str| Value::Text(s.into());
+    let mut d = data(vec![vec![0.0; 4]; 48], vec![0.0; 48]);
+    for (i, row) in d.rows.iter_mut().enumerate() {
+        let even = if i % 2 == 0 { "p" } else { "q" };
+        *row = vec![
+            text(if i == 20 { "z" } else { even }),
+            text(match i {
+                20 => "z",
+                21 => "w",
+                33 => "v",
+                _ if i % 3 == 0 => "q",
+                _ => "p",
+            }),
+            text(match i {
+                5 => "z",
+                _ if i % 4 != 0 => "p",
+                _ if i % 8 != 0 => "q",
+                _ => "r",
+            }),
+            match i {
+                5 => text("z"),
+                6 => text("w"),
+                0..12 => Value::Missing,
+                _ => text(if i % 2 == 0 { "q" } else { "p" }),
+            },
+        ];
+        d.targets[i] = Value::Number(((i * 7919) % 101) as f64);
+    }
+    for f in &mut d.schema {
+        f.feature_type = FeatureType::Categorical;
+    }
+    let o = FitOptions {
+        max_depth: 1,
+        interactions: false,
+        ..options()
+    };
+    let m = FittedModel::fit(&d, &o).unwrap();
+    assert_native_root_chi_squares(&d, &m, &native);
+}
+#[test]
+fn numeric_variables_with_one_observed_value_are_not_tested() {
+    // GUIDE 46.3 leaves this a single node although missingness separates y;
+    // with two observed values it splits on x = NA.
+    let mut d = data(
+        vec![vec![1.0]; 20],
+        (0..20).map(|i| if i < 10 { 0.0 } else { 5.0 }).collect(),
+    );
+    for row in &mut d.rows[10..] {
+        row[0] = Value::Missing;
+    }
+    let m = FittedModel::fit(&d, &options()).unwrap();
+    assert!(m.trees[0].root.split.is_none());
 }
 #[test]
 fn priors_costs_and_classification_weights() {

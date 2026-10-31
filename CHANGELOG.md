@@ -22,6 +22,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 - Cuts below the root may leave exactly the minimum node size in the right child, as in GUIDE
 - Interaction and linear-split tests are skipped on data with about 317 or more split variables, as in GUIDE
 - Simple polynomial trees choose cuts and leaves as GUIDE does
+- Regression selection tests group categorical and few-valued numeric variables as GUIDE does, pooling values seen once
+- Numeric variables with a single observed value are not tested for selection, as in GUIDE
 
 ## [0.1.0] - 2026-10-27
 
