@@ -41,7 +41,7 @@ fn success(out: std::process::Output) -> String {
 #[test]
 fn cli_fit_predict_export_and_refuse_overwrite() {
     let t = Temp::new();
-    fs::write(t.0.join("train.csv"), "x,y\n1,2\n2,2\n3,8\n4,8\n").unwrap();
+    fs::write(t.0.join("train.csv"), "x,y\n1,2\n1,2\n2,8\n2,8\n").unwrap();
     fs::write(
         t.0.join("config.json"),
         // Permit this four-row smoke case under the native numerical rank
@@ -173,7 +173,7 @@ fn cli_roundtrip_preserves_prediction_truncation() {
 #[test]
 fn prediction_reorders_headers_and_preserves_missing_tokens() {
     let t = Temp::new();
-    fs::write(t.0.join("train.csv"), "x,z,y\n1,0,2\n1,0,2\n?,0,8\n?,0,8\n").unwrap();
+    fs::write(t.0.join("train.csv"), "x,z,y\n1,0,2\n2,0,2\n?,0,8\n?,0,8\n").unwrap();
     fs::write(
         t.0.join("config.json"),
         r#"{"data":{"target":"y","missing_values":["?"]},"fit":{"pruning":{"kind":"none"}}}"#,

@@ -47,24 +47,65 @@ fn discretize(
         distinct.dedup();
         distinct.len() <= 4
     };
+    let key = |i: usize| match &ctx.data.rows[i][j] {
+        Value::Missing => (0, code(i).to_owned()),
+        // label() is None only for Missing, handled above.
+        v => (1, v.label().unwrap()),
+    };
+    // Regression main-effect tests group categorical variables, and numeric
+    // ones with at most four distinct values, by value. GUIDE pools the
+    // values seen once, and a pool of one row joins the largest group. A
+    // numeric variable with a single observed value is not tested.
+    let by_value = mode == SelectionMode::Fit && quantile_cuts && !interaction;
+    if by_value && !categorical && sorted.first() == sorted.last() {
+        return vec![0; ids.len()];
+    }
+    if by_value && (categorical || few_values()) {
+        let mut counts: BTreeMap<(u8, String), usize> = BTreeMap::new();
+        for &i in ids {
+            *counts.entry(key(i)).or_default() += 1;
+        }
+        let single = |k: &(u8, String)| k.0 == 1 && counts[k] == 1;
+        let pooled = counts.keys().filter(|k| single(k)).count();
+        let mut group = BTreeMap::new();
+        for k in counts.keys().filter(|k| !single(k)) {
+            let next = group.len();
+            group.insert(k, next);
+        }
+        // The largest group, the first among equals, absorbs a lone value.
+        let largest = counts
+            .iter()
+            .filter(|(k, _)| !single(k))
+            .max_by(|a, b| a.1.cmp(b.1).then(b.0.cmp(a.0)))
+            .map(|(k, _)| group[k]);
+        let pool = match largest {
+            Some(g) if pooled == 1 => g,
+            _ => group.len(),
+        };
+        return ids
+            .iter()
+            .map(|&i| group.get(&key(i)).copied().unwrap_or(pool))
+            .collect();
+    }
     if categorical || (mode == SelectionMode::Importance && few_values()) {
         let mut levels = BTreeMap::new();
         return ids
             .iter()
             .map(|&i| {
-                let key = match &ctx.data.rows[i][j] {
-                    Value::Missing => (0, code(i).to_owned()),
-                    // label() is None only for Missing, handled above.
-                    v => (1, v.label().unwrap()),
-                };
                 let next = levels.len();
-                *levels.entry(key).or_insert(next)
+                *levels.entry(key(i)).or_insert(next)
             })
             .collect();
     }
     if x.is_empty() {
         return vec![0; ids.len()];
     }
+    let codes: std::collections::BTreeSet<&str> = ids
+        .iter()
+        .filter(|&&i| ctx.data.rows[i][j].is_missing())
+        .map(|&i| code(i))
+        .collect();
+    let codes: Vec<&str> = codes.into_iter().collect();
     let cuts: Vec<f64> = if quantile_cuts {
         let groups = if interaction || ids.len() < 60 { 3 } else { 4 };
         let groups = if missing { groups - 1 } else { groups };
@@ -90,12 +131,6 @@ fn discretize(
             vec![m - s / 3.0_f64.sqrt(), m + s / 3.0_f64.sqrt()]
         }
     };
-    let codes: std::collections::BTreeSet<&str> = ids
-        .iter()
-        .filter(|&&i| ctx.data.rows[i][j].is_missing())
-        .map(|&i| code(i))
-        .collect();
-    let codes: Vec<&str> = codes.into_iter().collect();
     ids.iter()
         .map(|&i| {
             ctx.data.rows[i][j]
