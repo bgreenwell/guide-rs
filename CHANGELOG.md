@@ -13,6 +13,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 - `guide.__version__` reports the installed package version
 - PyPI page links the documentation, changelog and issue tracker
 - Python 3.14 is tested and listed as supported
+- Rust crate on crates.io: `cargo install guide-rs` and `cargo add guide-rs`
 
 ### Changed
 
