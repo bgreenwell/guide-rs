@@ -7,7 +7,7 @@ A pure Rust implementation of GUIDE-style classification and regression trees, t
 ## Features
 
 - Separates association-based split-variable selection from split-point search, with interaction tests
-- Constant, multiple-linear, polynomial, quantile, Poisson and logistic node models
+- Constant, multiple-linear, polynomial, quantile, Poisson, logistic and linear discriminant (LDA) node models
 - Numeric, categorical and periodic predictors; weights, exposures, missing values and missing-value flag variables
 - Cost-complexity, fixed-size, validation-sample and cross-validation pruning
 - Bagged ensembles, forests, experimental gradient boosting with GUIDE's variable selection, and GUIDE-style importance scores
