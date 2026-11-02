@@ -2,24 +2,30 @@
 
 ## Installation
 
-From a clone of the repository (requires a Rust toolchain and [uv](https://docs.astral.sh/uv/)):
-
 ```sh
-cd python
-uv sync
+pip install guide-rs
 ```
 
-The distribution is named `guide-rs`; the package imports as `guide`. `plot_tree` needs matplotlib, available as the `plot` extra.
+The distribution is named `guide-rs`; the package imports as `guide`. Wheels cover Python 3.10 and later on Linux (x86_64, aarch64), macOS (x86_64, arm64) and Windows (x64); elsewhere pip builds from the source distribution, which needs a Rust toolchain.
+
+To work on the package itself, run `uv sync` in `python/` of a clone of the repository (requires a Rust toolchain and [uv](https://docs.astral.sh/uv/)).
 
 ## Fitting a tree
 
 ```python
 from sklearn.datasets import load_iris
-from guide import GuideClassifier, plot_tree
+from guide import GuideClassifier
 
-X, y = load_iris(return_X_y=True, as_frame=True)
+X, y = load_iris(return_X_y=True)
 model = GuideClassifier().fit(X, y)
-model.predict_proba(X.head())
+model.predict_proba(X[:5])
+```
+
+`plot_tree` needs matplotlib, available as the `plot` extra (`pip install "guide-rs[plot]"`):
+
+```python
+from guide import plot_tree
+
 plot_tree(model)
 ```
 
