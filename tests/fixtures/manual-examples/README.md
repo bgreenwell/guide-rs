@@ -17,5 +17,6 @@ Batch inputs for the examples in the GUIDE manual (version 46.1) that guide-rs c
 | `solder-poisson` | 9.1 | `solder.dsc` |
 | `solder-poisson-linear` | 9.2 | `solder.dsc` |
 | `lungcancer-poisson-offset` | 9.3 | `lungcancer.dsc` |
+| `rhc-importance` | 16.1 | `rhcdsc1.txt` |
 
-The data are not stored here. `tools/compare_manual_examples.py` downloads the manual's `datafiles.zip` into the ignored `.reference/manual-data/`, checks its pinned SHA-256 and strips the carriage returns that several of its files contain. Examples for censored, multiresponse, longitudinal, treatment, propensity, DIF and logistic models with an E variable are omitted because guide-rs does not implement them. See [the comparison record](../../../docs/manual-examples.md).
+The data are not stored here. `tools/compare_manual_examples.py` downloads the manual's `datafiles.zip` into the ignored `.reference/manual-data/`, checks its pinned SHA-256 and strips the carriage returns that several of its files contain. Importance scoring with a censored response (section 16.2) and examples for censored, multiresponse, longitudinal, treatment, propensity, DIF and logistic models with an E variable are omitted because guide-rs does not implement them. See [the comparison record](../../../docs/manual-examples.md).
