@@ -6,7 +6,8 @@ replaying the manual's (46.1) dialogs in the pinned 46.3 binary. The data
 come from the manual's datafiles.zip, downloaded once into an ignored cache
 and checked against a pinned hash. For each example the batch file is run
 natively, translated into a guide-rs configuration, fitted with guide-rs and
-compared row by row.
+compared row by row. Importance examples compare the variables each program
+places in GUIDE's groups and the order of their scores.
 
 The unpruned mode rewrites each batch file to grow a tree without pruning, so
 the comparison is exact. The pruned mode keeps the manual's cross-validation;
@@ -38,7 +39,7 @@ DATA_URL = "https://pages.stat.wisc.edu/~loh/treeprogs/guide/datafiles.zip"
 DATA_SHA256 = "8e734235b9d25b4b19c50dab06b363153d5a94c7ef6de4d7e4bdb305e85b4e72"
 CV_LINES = ("number of cross-validations", "mean-based CV tree", "SE number for pruning",
             "weighted error estimates during pruning")
-FILE_SUFFIXES = (".txt", ".dsc", ".out", ".fit", ".tex", ".r", ".var", ".reg", ".coefs")
+FILE_SUFFIXES = (".txt", ".dsc", ".out", ".fit", ".tex", ".r", ".var", ".reg", ".coefs", ".scr")
 
 
 class Unsupported(Exception):
@@ -114,10 +115,12 @@ def translate(spec, columns, report, prune):
     Raises Unsupported for options guide-rs lacks.
     """
     classification = get(spec, "1=classification") == "1"
+    scoring = get(spec, "1=model fitting") == "2"
     node_kind = None
     if classification:
+        # Importance scoring always uses constant nodes.
         node_kind = {"1": "constant", "4": "lda", "7": "lda_splits"}.get(
-            get(spec, "1=simple, 2=nearest-neighbor"))
+            get(spec, "1=simple, 2=nearest-neighbor", "1"))
         if node_kind is None:
             raise Unsupported("classification node model")
     found = periods(report)
@@ -163,8 +166,9 @@ def translate(spec, columns, report, prune):
         fit["min_samples_leaf"] = int(m.group(1))
     if get(spec, "1=split point from quantiles") == "2":
         fit["max_split_candidates"] = 0
-    if get(spec, "1=interaction tests") is not None:
-        fit["interactions"] = get(spec, "1=interaction tests") == "1"
+    for key in ("1=interaction tests", "1=univariate and interaction splits"):
+        if get(spec, key) is not None:
+            fit["interactions"] = get(spec, key) == "1"
     order = get(spec, "0=linear 1st")
     if order is not None:
         fit["linear_splits"] = order in ("0", "1")
@@ -198,7 +202,7 @@ def translate(spec, columns, report, prune):
                  if get(spec, "0=stepwise, 1=multiple linear") is not None
                  else {"1": "linear", "2": "polynomial", "3": "constant"})
         code = get(spec, "0=stepwise, 1=multiple linear") or get(
-            spec, "1=multiple linear, 2=best simple polynomial")
+            spec, "1=multiple linear, 2=best simple polynomial") or ("3" if scoring else None)
         kind = codes.get(code)
         if kind is None:
             raise Unsupported(f"node model {code}")
@@ -259,8 +263,99 @@ def ensure_data(cache):
     return folder
 
 
+def native_importance(text):
+    """Rank, group and score of each variable in a native importance file."""
+    out = {}
+    for line in text.splitlines()[1:]:
+        t = line.split()
+        if len(t) == 5:
+            out[t[4]] = (int(t[0]), t[1], float(t[2]))
+    return out
+
+
+def spearman(a, b):
+    """Rank correlation of two equal-length score lists (no tie correction)."""
+    def ranks(v):
+        order = sorted(range(len(v)), key=lambda i: v[i])
+        r = [0] * len(v)
+        for k, i in enumerate(order):
+            r[i] = k
+        return r
+    ra, rb, n = ranks(a), ranks(b), len(a)
+    return 1 - 6 * sum((x - y) ** 2 for x, y in zip(ra, rb)) / (n * (n * n - 1))
+
+
+def run_importance(name, header, spec, native_binary, guide_rs, data_dir, timeout):
+    """Native and guide-rs importance scores for one example, with GUIDE's
+    defaults for depth, minimum node size and permutations from the report."""
+    with tempfile.TemporaryDirectory(prefix="guide-manual-") as temporary:
+        work = Path(temporary)
+        for f in data_dir.iterdir():
+            shutil.copy(f, work / f.name)
+        for entry in spec:
+            if entry[1] == "name of output file":
+                entry[0] = "native.out"
+            elif entry[1].startswith("file name for importance scores"):
+                entry[0] = "native.scr"
+        (work / "batch.in").write_text(write_batch(header, spec))
+        with open(work / "batch.in") as stdin:
+            try:
+                subprocess.run([str(native_binary)], stdin=stdin, cwd=work, capture_output=True,
+                               timeout=timeout)
+            except subprocess.TimeoutExpired:
+                return {"example": name, "error": f"native run exceeded {timeout} s"}
+        if not (work / "native.scr").exists():
+            return {"example": name, "error": "native run produced no importance scores"}
+        report = (work / "native.out").read_text()
+        data_file, missing, start, columns = parse_dsc(
+            (work / get(spec, "name of DSC file")).read_text())
+        try:
+            data, fit = translate(spec, columns, report, prune=False)
+        except Unsupported as e:
+            return {"example": name, "unsupported": str(e)}
+        rows = data_rows((work / data_file).read_text(), data_file, missing, start)
+        buffer = io.StringIO()
+        csv.writer(buffer).writerows([[c for c, _ in columns]] + rows)
+        (work / "data.csv").write_text(buffer.getvalue())
+        config = json.loads(subprocess.run([str(guide_rs), "config"], capture_output=True,
+                                           text=True, check=True).stdout)
+        config["data"].update(data)
+        config["fit"].update(fit)
+        config["importance"] = {
+            "permutations": int(re.search(r"Using (\d+) permutations", report).group(1)),
+            "max_depth": fit["max_depth"], "seed": 0}
+        (work / "config.json").write_text(json.dumps(config))
+        try:
+            p = subprocess.run([str(guide_rs), "importance", "--data", "data.csv", "--config",
+                                "config.json", "--output", "importance.json", "--force"],
+                               cwd=work, capture_output=True, text=True, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            return {"example": name, "error": f"guide-rs importance exceeded {timeout} s"}
+        if p.returncode:
+            return {"example": name, "error": p.stderr.strip()[-300:]}
+        native = native_importance((work / "native.scr").read_text())
+        ours = json.loads((work / "importance.json").read_text())["scores"]
+    # GUIDE's group A is above its 99% threshold and A and B above 95%.
+    above = {"A": 99, "B": 95}
+    names = [s["feature"] for s in ours if s["feature"] in native]
+    score = {s["feature"]: s["adjusted_score"] for s in ours}
+    result = {"example": name, "variables": len(names),
+              "rank_correlation": round(spearman([native[n][2] for n in names],
+                                                 [score[n] for n in names]), 4)}
+    for level, ours_groups in ((99, ("highly_important",)),
+                               (95, ("highly_important", "likely_important"))):
+        theirs = {n for n in names if above.get(native[n][1], 0) >= level}
+        mine = {s["feature"] for s in ours if s["group"] in ours_groups}
+        result[f"native_{level}"] = len(theirs)
+        result[f"guide_rs_{level}"] = len(mine)
+        result[f"agree_{level}"] = sum((n in theirs) == (n in mine) for n in names)
+    return result
+
+
 def run_example(name, native_binary, guide_rs, data_dir, prune, timeout):
     header, spec = parse_batch((FIXTURES / name / "input.txt").read_text())
+    if get(spec, "1=model fitting") == "2":
+        return run_importance(name, header, spec, native_binary, guide_rs, data_dir, timeout)
     spec = comparable(spec if prune else unpruned(spec))
     with tempfile.TemporaryDirectory(prefix="guide-manual-") as temporary:
         work = Path(temporary)
@@ -358,13 +453,24 @@ def main():
     names = args.examples or sorted(p.name for p in FIXTURES.iterdir() if p.is_dir())
     modes = ["unpruned", "pruned"] if args.mode == "both" else [args.mode]
     results = []
+    scoring = {n for n in names
+               if get(parse_batch((FIXTURES / n / "input.txt").read_text())[1],
+                      "1=model fitting") == "2"}
     for mode in modes:
         for name in names:
+            # Importance scoring has no pruning, so it runs once.
+            if name in scoring and mode != modes[0]:
+                continue
             r = run_example(name, args.binary.resolve(), args.guide_rs.resolve(), data_dir,
                             mode == "pruned", args.timeout)
-            r["mode"] = mode
+            r["mode"] = "importance" if name in scoring else mode
             results.append(r)
-            if "agree" in r:
+            if "agree_95" in r:
+                print(f"{'importance':10} {name:28} 95%: native {r['native_95']}, guide-rs "
+                      f"{r['guide_rs_95']}, {r['agree_95']}/{r['variables']} agree; 99%: native "
+                      f"{r['native_99']}, guide-rs {r['guide_rs_99']}, {r['agree_99']} agree; "
+                      f"rank correlation {r['rank_correlation']}")
+            elif "agree" in r:
                 print(f"{mode:9} {name:28} {r['agree']:5}/{r['rows']:<5} rows agree; "
                       f"leaves native {r['native_leaves']}, guide-rs {r['guide_rs_leaves']}")
             else:
