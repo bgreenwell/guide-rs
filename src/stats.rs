@@ -202,6 +202,76 @@ pub fn chi_square_log_upper_quantile(log_p: f64, df: usize) -> f64 {
     }
     lo / 2.0 + hi / 2.0
 }
+/// GUIDE's one-degree-of-freedom equivalent of a chi-square statistic `x`
+/// with `df` degrees of freedom and log upper tail `log_p`, on which GUIDE
+/// ranks variables when fitting a tree. Inside the band
+/// 9.27e-8 < p < 1 - 2e-6 it is the exact 1-df quantile at the same tail
+/// probability; outside it GUIDE 46.3 (`convertchisq1`) switches to the
+/// Wilson-Hilferty approximation, blended with Fisher's for large `x`. The
+/// switch changes rankings among strong signals with different `df`.
+pub fn guide_chi_square_1df(x: f64, df: usize, log_p: f64) -> f64 {
+    guide_chi_square_1df_outside_band(x, df, log_p)
+        .unwrap_or_else(|| chi_square_log_upper_quantile(log_p, 1))
+}
+/// `guide_chi_square_1df` when it needs no quantile, `None` inside GUIDE's
+/// exact band, where the scale orders tests as their tail probabilities do.
+pub fn guide_chi_square_1df_outside_band(x: f64, df: usize, log_p: f64) -> Option<f64> {
+    if !(x > 0.0 && x < f64::MAX) || df <= 1 {
+        return Some(x);
+    }
+    // GUIDE tests the lower tail 1 - p against 2e-6 and 0.9999999073486329.
+    let lower = -log_p.exp_m1();
+    if lower > 2e-6 && lower < 0.999_999_907_348_632_9 {
+        return None;
+    }
+    let df = df as f64;
+    let t = 7.0 / 9.0 + df.sqrt() * ((x / df).powf(1.0 / 3.0) - 1.0 + 2.0 / (9.0 * df));
+    let cube = if t > 5.511_841_191_981_63e102 {
+        f64::MAX
+    } else if t > 0.0 {
+        t * t * t
+    } else {
+        0.001
+    };
+    if x < df + 10.0 * (2.0 * df).sqrt() {
+        return Some(cube);
+    }
+    let fisher = 0.5 * ((2.0 * x).sqrt() - (2.0 * df - 1.0).sqrt() + 1.0).powi(2);
+    Some(if cube >= x {
+        fisher
+    } else {
+        (fisher + cube) / 2.0
+    })
+}
+/// Index of the strongest of `tests` (statistic, df, log tail) on GUIDE's
+/// 1-df scale; ties go to the earlier test. Only the best test inside the
+/// exact band needs a quantile.
+pub fn guide_strongest(tests: impl IntoIterator<Item = (f64, usize, f64)>) -> Option<usize> {
+    let mut exact: Option<(usize, f64)> = None;
+    let mut outside: Option<(usize, f64)> = None;
+    for (k, (x, df, log_p)) in tests.into_iter().enumerate() {
+        match guide_chi_square_1df_outside_band(x, df, log_p) {
+            Some(v) => {
+                if outside.is_none_or(|(_, best)| v > best) {
+                    outside = Some((k, v));
+                }
+            }
+            None => {
+                if exact.is_none_or(|(_, best)| log_p < best) {
+                    exact = Some((k, log_p));
+                }
+            }
+        }
+    }
+    match (exact, outside) {
+        (None, None) => None,
+        (Some((k, _)), None) | (None, Some((k, _))) => Some(k),
+        (Some((e, log_p)), Some((o, v))) => {
+            let u = chi_square_log_upper_quantile(log_p, 1);
+            Some(if u > v || (u == v && e < o) { e } else { o })
+        }
+    }
+}
 pub fn pearson(table: &[Vec<f64>]) -> (f64, usize) {
     if table.is_empty() || table[0].is_empty() {
         return (0.0, 0);
@@ -559,6 +629,35 @@ pub fn symmetric_eigen(matrix: &[Vec<f64>]) -> (Vec<f64>, Vec<Vec<f64>>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn guide_one_df_scale_matches_native_root_values() {
+        // GUIDE 46.3's root ranking of the manual's CE least-squares example
+        // (4 significant digits): the tails lie outside the exact band, where
+        // REFGEN (3 df) falls below INCNONW1's exact-quantile order.
+        for (x, df, native) in [
+            (99.65149782026072, 3, 82.97),
+            (85.82057290314742, 6, 70.66),
+            (72.31569536630433, 2, 63.78),
+            (82.41679773669179, 7, 64.16),
+        ] {
+            let value = guide_chi_square_1df(x, df, chi_square_log_survival(x, df));
+            assert!(
+                (value - native).abs() < 0.006,
+                "{x} on {df}: {value} != {native}"
+            );
+        }
+        // Inside the band the scale is the exact 1-df quantile.
+        let log_p = chi_square_log_survival(6.0, 3);
+        assert_eq!(
+            guide_chi_square_1df(6.0, 3, log_p),
+            chi_square_log_upper_quantile(log_p, 1)
+        );
+        assert_eq!(
+            guide_chi_square_1df(4.0, 1, chi_square_log_survival(4.0, 1)),
+            4.0
+        );
+    }
 
     /// The column-at-a-time pivoted Gram-Schmidt that `least_squares_ranked`
     /// must reproduce bit for bit.

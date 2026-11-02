@@ -54,3 +54,15 @@ Captures refuse overwrites; failed/version-mismatched/incomplete runs are diagno
 - A positive raw score with zero estimated null mean also has an indeterminate group and no normalized score. The existing scalar adjusted score remains a zero compatibility placeholder with an explicit warning; its value must not be interpreted as a calibrated zero.
 
 Rust still uses the documented rank/midpoint approximation at 80/90/95/99%, with a missing numerical cutoff at tied/all/none boundaries. Native 50% reporting, fallback normalization, all boundary conventions, broader calibration, missing flags, periodic predictors and specialized responses remain incomplete or unverified. The strong-signal fixtures do not establish selection unbiasedness, power, exact familywise calibration, or full GUIDE importance equivalence.
+
+## Manual example: RHC, 2026-11-01
+
+The GUIDE manual's importance example (section 16.1: 5735 rows, 53 split variables, 30 categorical, missing values) is compared by `tools/compare_manual_examples.py` as `rhc-importance`, with native's defaults: depth 8, minimum node size 5 and 100 permutations. Native's thresholds are the paper's midpoints: each reported threshold is the mean of the normalized scores on either side of it, so the threshold rule is the one guide-rs implements. lldb traces of native's importance trees then fixed their binning and stopping rules (see the [validation record](validation.md#selection-scale-tied-quantiles-and-importance-trees-2026-11-01)); they also showed that importance tests invert tail probabilities exactly, without the Wilson-Hilferty conversion used when fitting.
+
+| Revision | Rank correlation | 95% set, native / guide-rs | Same side of 95% | 99% set, native / guide-rs |
+|---|---|---|---|---|
+| reference25 | 0.974 | 37 / 44 | 46 of 53 | 32 / 42 |
+| reference26 | 0.986 | 37 / 43 | 47 of 53 | 32 / 41 |
+
+With depth 1, where the trees agree, guide-rs scores match native's within its Monte Carlo noise, and with 1000 permutations guide-rs places 37 variables above the 95% threshold against native's 34, a gap the 95% quantile of 100 null maxima can produce. At depth 8 guide-rs scores are compressed relative to native's (log-log slope 0.81): native's classification importance trees make linear splits after interaction tests, by a test guide-rs does not yet reproduce, and 78 of the 201 nodes of native's tree lie below such splits. Importance trees therefore still make no linear splits, and the 95% and 99% sets at native's default depth remain larger than native's.
+

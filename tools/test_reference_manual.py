@@ -1,9 +1,13 @@
 """Manual-example batch inputs and their translation, without native GUIDE."""
 import unittest
-from compare_manual_examples import (FIXTURES, Unsupported, comparable, get, parse_batch,
-                                     parse_dsc, translate, unpruned, write_batch)
+from compare_manual_examples import (FIXTURES, Unsupported, comparable, get,
+                                     native_importance, parse_batch, parse_dsc, spearman,
+                                     translate, unpruned, write_batch)
 
-EXAMPLES = sorted(p.name for p in FIXTURES.iterdir() if p.is_dir())
+ALL = sorted(p.name for p in FIXTURES.iterdir() if p.is_dir())
+SCORING = [n for n in ALL
+           if get(parse_batch((FIXTURES / n / "input.txt").read_text())[1], "1=model fitting") == "2"]
+EXAMPLES = [n for n in ALL if n not in SCORING]
 REPORT = " Maximum number of split levels: 12\n Minimum node sample size: 5\n"
 
 
@@ -63,6 +67,29 @@ class ManualExampleTests(unittest.TestCase):
         _, spec = parse_batch((FIXTURES / "fish-constant" / "input.txt").read_text())
         data, _ = translate(spec, [("y", "d"), ("x", "n"), ("g", "c")], REPORT, prune=False)
         self.assertEqual([f["role"] for f in data["features"]], ["split", "split"])
+
+    @unittest.skipUnless((FIXTURES / "rhc-importance").is_dir(), "no importance fixture")
+    def test_importance_batches_translate_to_constant_trees(self):
+        self.assertEqual(SCORING, ["rhc-importance"])
+        header, spec = parse_batch((FIXTURES / "rhc-importance" / "input.txt").read_text())
+        self.assertIn("46.3", header)
+        self.assertEqual(get(spec, "1=model fitting"), "2")
+        self.assertEqual(get(spec, "file name for importance scores"), "imp.scr")
+        self.assertEqual(parse_batch(write_batch(header, spec))[1], spec)
+        data, fit = translate(spec, [("y", "d"), ("x", "n"), ("g", "c")], REPORT, prune=False)
+        self.assertEqual(fit["node_model"], {"kind": "constant"})
+        self.assertEqual(fit["task"], {"kind": "classification"})
+        self.assertTrue(fit["interactions"])
+        self.assertEqual([f["role"] for f in data["features"]], ["split", "split"])
+
+    def test_native_importance_files_and_rank_correlation(self):
+        text = ("    Rank Group    Score       Missing     Variable\n"
+                "       1  A     2.016E+01           0     cat1\n"
+                "       2  B     9.500E-01          80     meanbp1\n")
+        self.assertEqual(native_importance(text),
+                         {"cat1": (1, "A", 20.16), "meanbp1": (2, "B", 0.95)})
+        self.assertEqual(spearman([1, 2, 3], [10, 20, 30]), 1.0)
+        self.assertEqual(spearman([1, 2, 3], [30, 20, 10]), -1.0)
 
     def test_dsc_parsing(self):
         data, missing, start, cols = parse_dsc('data.txt\n"?"\n2\n1 a n\n2, b, d\n')

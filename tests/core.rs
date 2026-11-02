@@ -494,6 +494,78 @@ fn assert_native_root_chi_squares(d: &Dataset, m: &FittedModel, native: &[(&str,
     }
 }
 #[test]
+fn quantile_cuts_stop_at_the_first_repeated_cut() {
+    // Quartiles (0, 0, 44) for x0 and (20, 20, 74.25) for x2 leave GUIDE
+    // 46.3 one cut; (24.75, 50, 50) for x1 leave two. These are its 1-df
+    // root chi-squares on this design.
+    let native = [("x0", 0.1716), ("x1", 0.157), ("x2", 0.1633)];
+    let mut d = data(vec![vec![0.0; 3]; 200], vec![0.0; 200]);
+    for (i, row) in d.rows.iter_mut().enumerate() {
+        let p = (i * 37) % 100;
+        let tail = [9, 26, 37, 41, 44, 55, 61, 89, 94, 100][i % 10];
+        *row = [
+            if p < 54 { 0 } else { tail },
+            if (30..80).contains(&p) { 50 } else { p },
+            if (10..60).contains(&p) { 20 } else { p },
+        ]
+        .map(|v| Value::Number(v as f64))
+        .to_vec();
+        d.targets[i] = Value::Number(((i * 7919) % 101) as f64);
+    }
+    let o = FitOptions {
+        max_depth: 1,
+        interactions: false,
+        ..options()
+    };
+    let m = FittedModel::fit(&d, &o).unwrap();
+    assert_native_root_chi_squares(&d, &m, &native);
+}
+#[test]
+fn selection_ranks_tests_on_guide_one_df_scale() {
+    // x1 (2 levels) has Pearson statistic 59.54 and x2 (4 levels) 70.27 on 3
+    // df. x2 has the smaller tail probability, but GUIDE 46.3 converts its
+    // statistic by Wilson-Hilferty outside the exact band, ranks x1 first
+    // (1-df values 59.54 and 56.38) and splits on it.
+    let text = |s: &str| Value::Text(s.into());
+    let mut d = data(vec![vec![0.0; 2]; 1000], vec![0.0; 1000]);
+    for (i, row) in d.rows.iter_mut().enumerate() {
+        let (a, j) = if i < 500 { (true, i) } else { (false, i - 500) };
+        let counts = if a {
+            [161, 155, 95, 89]
+        } else {
+            [89, 95, 155, 161]
+        };
+        let level = (0..4)
+            .find(|&k| j < counts[..=k].iter().sum::<usize>())
+            .unwrap();
+        *row = vec![
+            text(if j < if a { 311 } else { 189 } {
+                "u"
+            } else {
+                "v"
+            }),
+            text(["P", "Q", "R", "S"][level]),
+        ];
+        d.targets[i] = text(if a { "a" } else { "b" });
+    }
+    for f in &mut d.schema {
+        f.feature_type = FeatureType::Categorical;
+    }
+    let mut o = options();
+    o.task = Task::Classification;
+    o.max_depth = 1;
+    o.interactions = false;
+    let m = FittedModel::fit(&d, &o).unwrap();
+    let root = &m.trees[0].root;
+    assert_eq!(root.split.as_ref().unwrap().feature(), 0);
+    for (j, native) in [(0, 59.54), (1, 56.38)] {
+        let g = root.diagnostics.iter().find(|g| g.feature == j).unwrap();
+        let value =
+            stats::guide_chi_square_1df(g.chi_square, g.degrees_of_freedom, g.log_p_value.unwrap());
+        assert!((value - native).abs() < 0.01, "x{j}: {value} != {native}");
+    }
+}
+#[test]
 fn categorical_selection_tests_pool_levels_seen_once() {
     // GUIDE 46.3's 1-df root chi-squares: a lone singleton level joins the
     // largest level (x0, x2), and several singletons form one group (x1, x3).

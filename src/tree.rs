@@ -896,6 +896,7 @@ pub(crate) fn grow(
         || ids.len() < 2 * ctx.options.min_samples_leaf
         || impurity / ctx.root_weight <= ctx.options.min_gain
         || constant_response
+        || (mode == SelectionMode::Importance && importance_stops(ctx, ids))
     {
         return node;
     }
@@ -1130,6 +1131,22 @@ pub(crate) fn grow(
         }
     }
     node
+}
+/// GUIDE's importance trees leave a node unsplit when it has at most twice
+/// the minimum node size, or, in classification, fewer than two cases
+/// outside its most frequent class.
+fn importance_stops(ctx: &Context<'_>, ids: &[usize]) -> bool {
+    if ids.len() <= 2 * ctx.options.min_samples_leaf {
+        return true;
+    }
+    if !ctx.classifying() {
+        return false;
+    }
+    let mut counts = vec![0; ctx.classes.len()];
+    for &i in ids {
+        counts[ctx.y[i] as usize] += 1;
+    }
+    ids.len() - counts.iter().max().unwrap_or(&0) < 2
 }
 /// Nodes with at least this many rows search in parallel; smaller ones are
 /// not worth the scheduling cost.

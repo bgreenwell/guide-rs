@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Tree fitting ranks selection tests on GUIDE's 1-df chi-square scale, whose Wilson-Hilferty tails can rank a test with a larger p-value first
+- Regression selection quartile cuts stop at the first repeated cut, as in GUIDE
+- A one-row group in regression selection tests joins the largest group, as in GUIDE
+- Importance trees group categorical and few-valued variables, cut interaction pairs and stop small or nearly pure nodes as GUIDE does
+
 ## [0.2.0] - 2026-10-31
 
 ### Added
