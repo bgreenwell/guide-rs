@@ -21,7 +21,7 @@ A pure Rust implementation of GUIDE-style classification and regression trees, t
 cargo install --git https://github.com/bgreenwell/guide-rs
 ```
 
-Or build from a clone with `cargo build --release`. For the Python package, run `uv sync` in `python/` (see [its README](python/README.md)).
+Or build from a clone with `cargo build --release`. For the Python package, run `pip install guide-rs` (see [its README](python/README.md)).
 
 ## Quick start
 

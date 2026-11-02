@@ -11,7 +11,7 @@ from sklearn.model_selection import GridSearchCV, KFold, cross_val_score
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import FunctionTransformer
 
-from guide import ALGORITHM_VERSION, GuideClassifier, GuideRegressor
+from guide import ALGORITHM_VERSION, GuideClassifier, GuideRegressor, __version__
 from guide._core import Model
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -143,6 +143,11 @@ def test_estimator_fits_the_core_model(options, dataset):
 def iris():
     data = pd.read_csv(IRIS)
     return data.drop(columns="Species"), data["Species"]
+
+
+def test_version_matches_the_project_metadata():
+    pyproject = (ROOT / "python/pyproject.toml").read_text()
+    assert __version__ == re.search(r'^version = "(.+)"$', pyproject, re.MULTILINE).group(1)
 
 
 def test_classifier_matches_cli_configuration(iris):

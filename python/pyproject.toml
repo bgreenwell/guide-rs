@@ -12,7 +12,13 @@ authors = [{ name = "Brandon Greenwell", email = "greenwell.brandon@gmail.com" }
 requires-python = ">=3.10"
 dependencies = ["numpy>=1.24", "scikit-learn>=1.6"]
 classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Rust",
     "Topic :: Scientific/Engineering",
 ]
@@ -21,7 +27,10 @@ classifiers = [
 plot = ["matplotlib>=3.7"]
 
 [project.urls]
+Documentation = "https://bgreenwell.github.io/guide-rs/"
 Repository = "https://github.com/bgreenwell/guide-rs"
+Changelog = "https://github.com/bgreenwell/guide-rs/blob/main/CHANGELOG.md"
+Issues = "https://github.com/bgreenwell/guide-rs/issues"
 
 [dependency-groups]
 dev = ["matplotlib>=3.7", "pandas>=2", "pytest>=8", "ruff>=0.6"]

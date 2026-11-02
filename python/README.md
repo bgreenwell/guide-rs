@@ -18,14 +18,11 @@ The bindings are experimental; see the core's [coverage and remaining work](http
 
 ## Installation
 
-From a clone (requires a Rust toolchain):
-
 ```sh
-cd python
-uv sync
+pip install guide-rs
 ```
 
-The distribution is named `guide-rs`; the package imports as `guide`. `plot_tree` needs matplotlib (the `plot` extra).
+The distribution is named `guide-rs`; the package imports as `guide`. Wheels cover Python 3.10 and later on Linux (x86_64, aarch64), macOS (x86_64, arm64) and Windows (x64); elsewhere pip builds from the source distribution, which needs a Rust toolchain.
 
 ## Quick start
 
@@ -33,11 +30,16 @@ The distribution is named `guide-rs`; the package imports as `guide`. `plot_tree
 from sklearn.datasets import load_iris
 from guide import GuideClassifier
 
-X, y = load_iris(return_X_y=True, as_frame=True)
+X, y = load_iris(return_X_y=True)
 model = GuideClassifier().fit(X, y)
-print(model.predict_proba(X.head()))
+print(model.predict_proba(X[:5]))
+```
 
+`plot_tree` needs matplotlib, available as the `plot` extra (`pip install "guide-rs[plot]"`):
+
+```python
 from guide import plot_tree
+
 plot_tree(model)
 ```
 
@@ -57,11 +59,13 @@ Cross-validation pruning, forests and importance permutations run in parallel, w
 
 ## Documentation
 
-- Example notebooks comparing GUIDE with scikit-learn on its bundled datasets: [classification trees](examples/classification.ipynb), [regression trees](examples/regression.ipynb), [ensembles](examples/ensembles.ipynb) (bagging, forests and boosting), and [selection bias and importance](examples/selection_bias.ipynb)
+- Example notebooks comparing GUIDE with scikit-learn on its bundled datasets: [classification trees](https://github.com/bgreenwell/guide-rs/blob/main/python/examples/classification.ipynb), [regression trees](https://github.com/bgreenwell/guide-rs/blob/main/python/examples/regression.ipynb), [ensembles](https://github.com/bgreenwell/guide-rs/blob/main/python/examples/ensembles.ipynb) (bagging, forests and boosting), and [selection bias and importance](https://github.com/bgreenwell/guide-rs/blob/main/python/examples/selection_bias.ipynb)
 - [User guide and API reference](https://bgreenwell.github.io/guide-rs/), built from `docs/` and published on each push to `main`
 - [Usage and configuration of the core](https://github.com/bgreenwell/guide-rs/blob/main/docs/usage.md)
 
 ## Development
+
+From `python/` in a clone of the repository (requires a Rust toolchain and [uv](https://docs.astral.sh/uv/)):
 
 ```sh
 uv sync                                  # build the extension in editable mode

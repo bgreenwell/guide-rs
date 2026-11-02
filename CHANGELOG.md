@@ -6,6 +6,17 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `guide.__version__` reports the installed package version
+- PyPI page links the documentation, changelog and issue tracker
+
+### Fixed
+
+- Python install instructions use `pip install guide-rs` instead of a clone with a Rust toolchain
+- Python quick start runs on a bare install, without pandas or matplotlib
+- Example notebook links on the PyPI page no longer break
+
 ## [0.2.0] - 2026-11-02
 
 ### Added

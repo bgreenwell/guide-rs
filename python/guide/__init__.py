@@ -1,5 +1,7 @@
 """GUIDE classification and regression trees with scikit-learn estimators."""
 
+from importlib.metadata import version
+
 from ._core import ALGORITHM_VERSION
 from ._estimators import (
     GuideBoostingClassifier,
@@ -12,6 +14,8 @@ from ._estimators import (
 )
 from ._plot import plot_tree
 
+__version__ = version("guide-rs")
+
 __all__ = [
     "ALGORITHM_VERSION",
     "GuideBoostingClassifier",
@@ -20,6 +24,7 @@ __all__ = [
     "GuideForestClassifier",
     "GuideForestRegressor",
     "GuideRegressor",
+    "__version__",
     "importance",
     "plot_tree",
 ]

@@ -48,7 +48,7 @@ A checked box below means the stated capability exists with tests. It does **not
 | Ensembles (20) | Basic bagging/forest/OOB implementation | Native defaults, random missing routing, broader validation and bootstrap/CV handling |
 | Pruning and other features (21) | Four pruning interfaces and modern model/tree output | Random multifold/native test-sample acceptance, broader combinations and general feature generation |
 | Least median of squares | Missing | Robust LMS fitting; ordinary median/quantile loss is a different method |
-| Portability | Pure Rust; CI passes on macOS, Linux and Windows for the Rust crate and the Python package | Release packaging (crates, wheels) and complete release acceptance |
+| Portability | Pure Rust; CI passes on macOS, Linux and Windows for the Rust crate and the Python package; Python wheels and sdist on PyPI | crates.io release and complete release acceptance |
 
 ## Remaining checklist: core compatibility and correctness
 
