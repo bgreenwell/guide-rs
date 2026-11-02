@@ -212,6 +212,9 @@ pub(crate) struct Context<'a> {
     pub root_samples: usize,
     /// Missing-value flag column of each feature, if any.
     pub flags: Vec<Option<usize>>,
+    /// Whether a numeric split variable has a missing value on any row of the
+    /// data file, used or not. Only computed for trees using GUIDE's cut scan.
+    pub missing_numeric: bool,
     /// Candidate columns of LDA node models, fixed by the training rows.
     pub discriminant_columns: Vec<crate::discriminant::Column>,
     split_cost_weights: Vec<f64>,
@@ -223,6 +226,15 @@ pub(crate) struct Context<'a> {
     linear_category_levels: Vec<Vec<Option<String>>>,
     global_prediction_bounds: Option<PredictionBounds>,
 }
+/// Whether numerical cuts follow GUIDE's scan of at most 100 positions, not an
+/// exhaustive or `max_split_candidates` search.
+pub(crate) fn uses_cut_scan(loss: &Loss, node_model: &NodeModel) -> bool {
+    matches!(
+        loss,
+        Loss::Poisson | Loss::Quantile { .. } | Loss::DualQuantile { .. }
+    ) || matches!(node_model, NodeModel::Polynomial { .. })
+}
+
 impl<'a> Context<'a> {
     pub fn new(
         data: &'a Dataset,
@@ -444,6 +456,12 @@ impl<'a> Context<'a> {
                 *w /= max_cost_sum;
             }
         }
+        let missing_numeric = uses_cut_scan(&loss, &options.node_model)
+            && data.schema.iter().enumerate().any(|(j, f)| {
+                f.feature_type == FeatureType::Numeric
+                    && matches!(f.role, crate::Role::Split | crate::Role::Both)
+                    && data.rows.iter().any(|row| row[j].is_missing())
+            });
         Ok(Self {
             data,
             options,
@@ -456,6 +474,7 @@ impl<'a> Context<'a> {
             class_priors,
             root_samples: ids.len(),
             flags: crate::flag_columns(&data.schema),
+            missing_numeric,
             discriminant_columns: if options.node_model.discriminant_splits() {
                 crate::discriminant::candidate_columns(data, ids)
             } else {
@@ -1145,6 +1164,10 @@ impl<'a> Context<'a> {
     pub fn impurity(&self, model: &LeafModel, ids: &[usize]) -> f64 {
         if let LeafModel::Classification { probabilities, .. } = model {
             self.gini(probabilities, ids.len())
+        } else if matches!(self.loss, Loss::Quantile { .. } | Loss::DualQuantile { .. }) {
+            // GUIDE's "all positive weights treated as 1": weights set the
+            // node's quantile, but every row counts equally in the split loss.
+            ids.iter().map(|&i| self.row_loss(model, i)).sum()
         } else {
             // Including LDA leaves, whose impurity is their misclassification cost.
             self.risk(model, ids)

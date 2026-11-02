@@ -1,10 +1,10 @@
 # GUIDE 46.3 coverage and remaining work
 
-Updated **2026-11-01**, through algorithm revision **`guide-rs-0.1-experimental-reference27`**.
+Updated **2026-11-02**, through algorithm revision **`guide-rs-0.1-experimental-reference28`**.
 
 **guide-rs is a working subset of GUIDE, not a full replacement.** Its strongest native validation is for constant classification/regression, multiple-linear squared-error trees, and pruning. Other implemented losses and ensembles have narrower independent checks. No complete subsystem is certified equivalent to every GUIDE option.
 
-The primary oracle is the pinned GUIDE **46.3** build of July 11, 2026; **46.2** is a secondary regression reference. Documentation comes from the **46.1** manual and history through 46.2. The fixed acceptance corpus contains **640 native captures across 320 distinct cases**, plus separately recorded diagnostics. See [reference provenance](reference-upstream.md) and [validation results](validation.md).
+The primary oracle is the pinned GUIDE **46.3** build of July 11, 2026; **46.2** is a secondary regression reference. Documentation comes from the **46.1** manual and history through 46.2. The fixed acceptance corpus contains **652 native captures across 326 distinct cases**, plus separately recorded diagnostics. See [reference provenance](reference-upstream.md) and [validation results](validation.md).
 
 A checked box below means the stated capability exists with tests. It does **not** certify full native parity. Unchecked boxes identify remaining work, including validation of existing implementations.
 
@@ -64,7 +64,10 @@ These are the next priorities before expanding into the missing specialized fami
 - [x] Match native importance-tree binning and stopping: grouping by value, median-cut interaction pairs, exact 1-df inversion and small-node stops; 123 of 201 nodes of native's RHC importance tree match ([importance validation](importance-validation.md#manual-example-rhc-2026-11-01)).
 - [ ] Reproduce the linear-split test of native classification importance trees, which accounts for the remaining RHC differences; then finish 50% thresholds, zero-null fallback conventions and missing-flag aggregation.
 - [x] Missing-value flags with polynomial node models (split-only) and linear/stepwise node models (converted to categorical `both` features, GUIDE's M-to-B conversion).
-- [ ] Missing-value flags on periodic parents, and native parity of polynomial and linear trees whose regressors have missing values (native sends missing regressor rows with a few observed rows to one side by a rule not yet identified) or that use interaction pairs.
+- [x] Match native numerical cuts in quantile, two-quantile and Poisson trees: the cut scan on tied values and missing blocks, its longer span once any numeric split variable has a missing value in the file, missing rows sent left, and split losses counting each row once at the weighted node quantile ([validation](validation.md#quantile-and-poisson-cut-scan-2026-11-02)).
+- [ ] Match native categorical subset search in quantile, two-quantile, Poisson and polynomial trees, now the first difference on most of those manual examples ([manual examples](manual-examples.md)).
+- [ ] Confirm the cut scan's trigger for fit-only and periodic columns (no probe yet), and whether linear quantile leaves use weights as guide-rs does.
+- [ ] Missing-value flags on periodic parents, and native parity of polynomial and linear trees whose regressors have missing values or that use interaction pairs.
 - [ ] Validate GUIDE's polynomial degree selection, missing handling and model-specific fallback rules.
 - [ ] Validate native quantile/Poisson/logistic split selection, residual grouping, model selection and fitting-policy combinations. Poisson and quantile cut grids, Poisson positive-count children and the quantile definition now match native (reference15); Poisson Anscombe residual groups, quantile zero-residual groups and constant-response leaves now match GUIDE's history and probes (reference18); on 120 fresh random designs per model, with no gain threshold as in native, 360 of 427 Poisson and 378 of 456 quantile nodes agree, and 257 of 337 with integer quantile responses. Remaining Poisson differences are mostly cut choices in near-binary count data, which no tested criterion (total or mean deviance, minimum child size) explains.
 - [ ] Validate periodic association rotation invariance and missing/unknown routing.
@@ -116,7 +119,7 @@ Carried over from the 2026-10-23 repository review; fixed items (log-scale selec
 
 - **Deferred:** further exact stepwise selection/fallback parity, all-subsets and stepwise ANCOVA work. Stepwise remains experimental and opt-in by user decision; its existing regression evidence remains supported.
 - **Excluded:** R prediction-function export (removed from the CLI and API), legacy interactive menus/DSC/batch compatibility and byte-for-byte native output. Frozen upstream R output can remain evidence; independent R numerical validation remains in scope.
-- **Outside the current phase:** R bindings and extra enhancement-roadmap features. Python forests do not support validation pruning, as in the core. Because `fit` rejects missing responses, prediction-only rows cannot contribute to the dummy coding of categorical fit variables as they do in GUIDE and the CLI.
+- **Outside the current phase:** R bindings and extra enhancement-roadmap features. Python forests do not support validation pruning, as in the core. Because `fit` rejects missing responses, prediction-only rows cannot contribute to the dummy coding of categorical fit variables, or to the cut scan's check for missing numeric values, as they do in GUIDE and the CLI.
 - **Intentional numerical differences:** keep correct weakest-link CV and QR optimality in independently established native counterexamples. These are documented differences, not unchecked tasks to reproduce native defects.
 
 ## Evidence and implementation choices
