@@ -10,7 +10,7 @@ homepage = "https://github.com/bgreenwell/guide-rs"
 readme = "README.md"
 keywords = ["decision-tree", "statistics", "regression", "classification", "guide"]
 categories = ["science", "algorithms", "command-line-utilities"]
-exclude = ["tests/", "tools/", "docs/", "python/", ".github/", "AGENTS.md", "CLAUDE.md"]
+exclude = ["tests/", "tools/", "docs/", "python/", "manuscript/", ".github/", "AGENTS.md", "CLAUDE.md"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
