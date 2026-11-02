@@ -44,11 +44,15 @@ Use descriptive `#[test]` names stating the behavior, such as `saved_models_pres
 - Add a `CHANGELOG.md` entry under `Unreleased` for any user-visible change.
 - Before pushing, check `git status` for stray files; `assets/`, `.reference/`, `target/`, and local scratch output must never be committed.
 
-## Python releases
+## Releases
+
+Bump the version in `Cargo.toml`, `python/Cargo.toml`, `python/pyproject.toml` and their lockfiles together, so the crate and the Python package ship from one commit.
 
 `.github/workflows/wheels.yml` builds abi3 wheels (Linux x86_64/aarch64, macOS x86_64/arm64, Windows x64) and an sdist on PRs that touch the Rust or Python sources. It tests each wheel on its platform, the sdist built from source, and the README's examples on a bare install without pandas or matplotlib. Pushing a tag `python-vX.Y.Z` that matches `version` in `python/pyproject.toml` also publishes to PyPI as `guide-rs` through trusted publishing; the PyPI project must list this repository, workflow `wheels.yml` and environment `pypi` as a trusted publisher. Only tag after updating the version and CHANGELOG on `main`.
 
-After a release reaches PyPI, run `tools/freeze_saved_models.py` under the released wheel and commit its output, so later versions must keep loading and predicting with that release's models.
+Once the wheels are on PyPI, publish the crate from the same commit: `cargo publish --dry-run --locked`, then `cargo publish --locked`. A published version can only be yanked, not replaced.
+
+After a release that changes `ALGORITHM_VERSION` or the saved-model format reaches PyPI, run `tools/freeze_saved_models.py` under the released wheel and commit its output, so later versions must keep loading and predicting with that release's models.
 
 PRs should explain the problem, resulting behavior, validation commands/results, and remaining limitations; link relevant issues.
 

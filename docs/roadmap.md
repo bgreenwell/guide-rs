@@ -309,7 +309,7 @@ Phase 3 has started: `python/` holds PyO3 bindings with scikit-learn estimators 
 - [ ] Exact bin-merging and tie-breaking rules in the official binary: establish by experiment and log provenance.
 - [ ] Default number of interaction-test candidates (k) in boosting: tune on the benchmark suite.
 - [ ] Is subsampled testing at large nodes accurate enough? Measure selection agreement versus full-data tests.
-- [ ] Crate name and license (MIT/Apache-2.0 assumed).
+- [x] Crate name and license: `guide-rs`, MIT.
 
 ## References
 

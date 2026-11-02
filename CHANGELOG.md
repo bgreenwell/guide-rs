@@ -6,10 +6,18 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-02
+
 ### Added
 
 - `guide.__version__` reports the installed package version
 - PyPI page links the documentation, changelog and issue tracker
+- Python 3.14 is tested and listed as supported
+- Rust crate on crates.io: `cargo install guide-rs` and `cargo add guide-rs`
+
+### Changed
+
+- The Python source distribution leaves out the example notebooks and `uv.lock`
 
 ### Fixed
 

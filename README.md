@@ -1,5 +1,11 @@
 # guide-rs
 
+[![CI](https://github.com/bgreenwell/guide-rs/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/bgreenwell/guide-rs/actions/workflows/ci.yml)
+[![crates.io](https://img.shields.io/crates/v/guide-rs.svg)](https://crates.io/crates/guide-rs)
+[![docs.rs](https://img.shields.io/docsrs/guide-rs)](https://docs.rs/guide-rs)
+[![PyPI](https://img.shields.io/pypi/v/guide-rs.svg)](https://pypi.org/project/guide-rs/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A pure Rust implementation of GUIDE-style classification and regression trees, targeting the behavior of GUIDE 46.3.
 
 **Status: experimental and incomplete.** The core works, but this is not yet a full or numerically validated replacement for GUIDE. Survival, longitudinal, treatment-effect and several advanced node models are not implemented. Do not use it to reproduce published GUIDE analyses without independent validation; see [coverage and remaining work](docs/coverage.md).
@@ -18,14 +24,16 @@ A pure Rust implementation of GUIDE-style classification and regression trees, t
 ## Installation
 
 ```sh
-cargo install --git https://github.com/bgreenwell/guide-rs
+cargo install guide-rs   # command-line tool
+cargo add guide-rs       # Rust library
+pip install guide-rs     # Python package; see its README
 ```
 
-Or build from a clone with `cargo build --release`. For the Python package, run `pip install guide-rs` (see [its README](python/README.md)).
+Or build from a clone with `cargo build --release`. The [Python README](python/README.md) covers the Python package.
 
 ## Quick start
 
-Using the bundled Iris data:
+Using the Iris data and configuration in a clone of this repository:
 
 ```sh
 guide-rs fit --data tests/fixtures/datasets/iris.csv --config examples/iris.json --model iris.json
@@ -57,7 +65,7 @@ let predictions = model.predict(&data.rows)?;
 - [Validation record](docs/validation.md) and [upstream reference provenance](docs/reference-upstream.md)
 - [Roadmap](docs/roadmap.md)
 - Python: [documentation site](https://bgreenwell.github.io/guide-rs/), [package README](python/README.md) and [example notebooks](python/examples/)
-- API reference: `cargo doc --open`
+- [Rust API reference](https://docs.rs/guide-rs)
 
 ## Development
 
