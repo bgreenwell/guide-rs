@@ -46,6 +46,10 @@ examples = ["ipykernel>=6", "matplotlib>=3.7", "nbclient>=0.10", "nbformat>=5", 
 [tool.maturin]
 module-name = "guide._core"
 features = ["pyo3/extension-module"]
+exclude = [
+    { path = "uv.lock", format = "sdist" },
+    { path = "examples/*.ipynb", format = "sdist" },
+]
 
 [tool.uv]
 # Rebuild the extension when Rust sources change.

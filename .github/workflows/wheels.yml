@@ -55,11 +55,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.10", "3.13"]
+        python: ["3.10", "3.13", "3.14"]
         platform:
           - { os: ubuntu-latest, wheel: wheel-ubuntu-latest-x86_64 }
           - { os: ubuntu-24.04-arm, wheel: wheel-ubuntu-latest-aarch64 }
           - { os: macos-latest, wheel: wheel-macos-latest-aarch64 }
+          - { os: macos-26-intel, wheel: wheel-macos-latest-x86_64 }
           - { os: windows-latest, wheel: wheel-windows-latest-x64 }
     name: test (${{ matrix.platform.os }}, ${{ matrix.python }})
     runs-on: ${{ matrix.platform.os }}
@@ -79,9 +80,55 @@ jobs:
       # The pytest executable puts only python/tests on sys.path, so `import
       # guide` loads the installed wheel rather than the source tree.
       - run: pytest -q -p no:cacheprovider python/tests
+  test-bare:
+    # The test job adds pandas and matplotlib; users of a plain `pip install`
+    # have neither, so the README's examples must run without them.
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheel-ubuntu-latest-x86_64
+          path: dist
+      - run: python -m pip install --no-index --no-deps --find-links dist guide-rs
+      - run: python -m pip install guide-rs
+      - name: Run the README's examples
+        shell: python
+        run: |
+          import importlib.util
+          import re
+          from pathlib import Path
+
+          assert importlib.util.find_spec("pandas") is None
+          assert importlib.util.find_spec("matplotlib") is None
+          readme = Path("python/README.md").read_text()
+          for block in re.findall(r"```python\n(.*?)```", readme, re.DOTALL):
+              # plot_tree is documented as needing the plot extra.
+              if "plot_tree" not in block:
+                  exec(block)
+  test-sdist:
+    # Platforms without a wheel build from the sdist, so it has to compile.
+    needs: sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/download-artifact@v4
+        with:
+          name: sdist
+          path: dist
+      - run: python -m pip install dist/*.tar.gz pytest pandas matplotlib
+      - run: pytest -q -p no:cacheprovider python/tests
   publish:
     if: startsWith(github.ref, 'refs/tags/python-v')
-    needs: [build, sdist, test]
+    needs: [build, sdist, test, test-bare, test-sdist]
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
