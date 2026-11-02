@@ -1,6 +1,6 @@
 # GUIDE 46.3 coverage and remaining work
 
-Updated **2026-11-01**, through algorithm revision **`guide-rs-0.1-experimental-reference26`**.
+Updated **2026-11-01**, through algorithm revision **`guide-rs-0.1-experimental-reference27`**.
 
 **guide-rs is a working subset of GUIDE, not a full replacement.** Its strongest native validation is for constant classification/regression, multiple-linear squared-error trees, and pruning. Other implemented losses and ensembles have narrower independent checks. No complete subsystem is certified equivalent to every GUIDE option.
 
@@ -59,7 +59,8 @@ These are the next priorities before expanding into the missing specialized fami
 - [ ] Validate high-cardinality categorical linear searches, near-tied partitions, broader missing patterns and projected/periodic split defaults. Multiclass categorical search above 11 levels is implemented and validated; when both sides have the same number of levels its orientation follows native eigenvector signs, which are not reproduced.
 - [x] Match native regression selection tests for few-valued variables: grouping by value with values seen once pooled, and no test for a single observed value ([validation](validation.md#few-valued-selection-tests-2026-10-31)).
 - [x] Rank fitting selection tests on GUIDE's 1-df scale (Wilson-Hilferty outside the exact band), stop quartile cuts at the first repeated cut and join one-row groups to the largest ([validation](validation.md#selection-scale-tied-quantiles-and-importance-trees-2026-11-01)).
-- [ ] Match native classification selection binning: 46.3 probes fit quantile cuts (four groups from 30 rows per class, three below), where guide-rs uses mean-based cuts that the binary-variable classification captures could not distinguish; with interaction tests of few-valued variables, this remains a main source of unpruned-tree differences on the GUIDE manual's examples (see [manual examples](manual-examples.md)).
+- [x] Match native classification selection binning (quantile cuts, four groups from 30 rows per class) and interaction-test cuts (one median cut with missing values sorted first) ([validation](validation.md#classification-bins-and-interaction-cuts-2026-11-01)).
+- [ ] Match native linear splits (option `0=linear 1st` or `1=univariate 1st`) in classification fits and importance trees; they account for most remaining differences on the manual's fish and CE classification examples (see [manual examples](manual-examples.md)).
 - [x] Match native importance-tree binning and stopping: grouping by value, median-cut interaction pairs, exact 1-df inversion and small-node stops; 123 of 201 nodes of native's RHC importance tree match ([importance validation](importance-validation.md#manual-example-rhc-2026-11-01)).
 - [ ] Reproduce the linear-split test of native classification importance trees, which accounts for the remaining RHC differences; then finish 50% thresholds, zero-null fallback conventions and missing-flag aggregation.
 - [x] Missing-value flags with polynomial node models (split-only) and linear/stepwise node models (converted to categorical `both` features, GUIDE's M-to-B conversion).

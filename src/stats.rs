@@ -205,7 +205,7 @@ pub fn chi_square_log_upper_quantile(log_p: f64, df: usize) -> f64 {
 /// GUIDE's one-degree-of-freedom equivalent of a chi-square statistic `x`
 /// with `df` degrees of freedom and log upper tail `log_p`, on which GUIDE
 /// ranks variables when fitting a tree. Inside the band
-/// 9.27e-8 < p < 1 - 2e-6 it is the exact 1-df quantile at the same tail
+/// 2e-6 < p < 1 - 9.27e-8 it is the exact 1-df quantile at the same tail
 /// probability; outside it GUIDE 46.3 (`convertchisq1`) switches to the
 /// Wilson-Hilferty approximation, blended with Fisher's for large `x`. The
 /// switch changes rankings among strong signals with different `df`.
@@ -219,9 +219,9 @@ pub fn guide_chi_square_1df_outside_band(x: f64, df: usize, log_p: f64) -> Optio
     if !(x > 0.0 && x < f64::MAX) || df <= 1 {
         return Some(x);
     }
-    // GUIDE tests the lower tail 1 - p against 2e-6 and 0.9999999073486329.
-    let lower = -log_p.exp_m1();
-    if lower > 2e-6 && lower < 0.999_999_907_348_632_9 {
+    // GUIDE tests the upper tail p against 2e-6 and 0.9999999073486329.
+    let p = log_p.exp();
+    if p > 2e-6 && p < 0.999_999_907_348_632_9 {
         return None;
     }
     let df = df as f64;
@@ -634,12 +634,14 @@ mod tests {
     fn guide_one_df_scale_matches_native_root_values() {
         // GUIDE 46.3's root ranking of the manual's CE least-squares example
         // (4 significant digits): the tails lie outside the exact band, where
-        // REFGEN (3 df) falls below INCNONW1's exact-quantile order.
+        // REFGEN (3 df) falls below its exact quantile.
         for (x, df, native) in [
             (99.65149782026072, 3, 82.97),
             (85.82057290314742, 6, 70.66),
             (72.31569536630433, 2, 63.78),
             (82.41679773669179, 7, 64.16),
+            // p = 1.2e-6, below the 2e-6 edge of the exact band.
+            (27.232869037569344, 2, 23.22),
         ] {
             let value = guide_chi_square_1df(x, df, chi_square_log_survival(x, df));
             assert!(
