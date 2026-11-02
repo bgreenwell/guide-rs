@@ -1,0 +1,540 @@
+{
+  "format_version": 1,
+  "algorithm_version": "guide-rs-0.1-experimental-reference27",
+  "schema": [
+    {
+      "name": "x0",
+      "feature_type": {
+        "kind": "numeric"
+      },
+      "role": "both"
+    },
+    {
+      "name": "x1",
+      "feature_type": {
+        "kind": "numeric"
+      },
+      "role": "both"
+    }
+  ],
+  "classes": [
+    "high",
+    "low",
+    "mid"
+  ],
+  "options": {
+    "task": {
+      "kind": "classification"
+    },
+    "node_model": {
+      "kind": "lda_splits"
+    },
+    "max_depth": 3,
+    "min_samples_leaf": 5,
+    "min_gain": 1e-12,
+    "interactions": true,
+    "linear_splits": false,
+    "significance_level": 0.1,
+    "max_split_candidates": 100,
+    "pruning": {
+      "kind": "none"
+    },
+    "seed": 0,
+    "class_priors": null,
+    "class_costs": null,
+    "mtry": null
+  },
+  "input": null,
+  "requires_exposure": false,
+  "ensemble": null,
+  "trees": [
+    {
+      "root": {
+        "id": 0,
+        "sample_count": 160,
+        "weight_sum": 160.0,
+        "risk": 0.6625,
+        "impurity": 106.6625,
+        "model": {
+          "kind": "classification",
+          "probabilities": [
+            0.3375,
+            0.33125,
+            0.33125
+          ],
+          "predicted_class": 0
+        },
+        "diagnostics": [],
+        "split": {
+          "kind": "discriminant",
+          "terms": [
+            {
+              "feature": 0,
+              "power": 1,
+              "category": null,
+              "center": 0.0,
+              "scale": 1.0,
+              "impute": 0.051500672974787595,
+              "missing_indicator": false
+            },
+            {
+              "feature": 1,
+              "power": 1,
+              "category": null,
+              "center": 0.0,
+              "scale": 1.0,
+              "impute": 4.832389341879147,
+              "missing_indicator": false
+            }
+          ],
+          "coefficients": [
+            0.042185810660008836,
+            0.02631871884296352
+          ],
+          "threshold": 0.1271312802501735
+        },
+        "left": {
+          "id": 1,
+          "sample_count": 82,
+          "weight_sum": 82.0,
+          "risk": 0.20625,
+          "impurity": 46.073170731707314,
+          "model": {
+            "kind": "classification",
+            "probabilities": [
+              0.20731707317073175,
+              0.5975609756097561,
+              0.1951219512195122
+            ],
+            "predicted_class": 1
+          },
+          "diagnostics": [],
+          "split": {
+            "kind": "discriminant",
+            "terms": [
+              {
+                "feature": 0,
+                "power": 1,
+                "category": null,
+                "center": 0.0,
+                "scale": 1.0,
+                "impute": -0.24566305092050533,
+                "missing_indicator": false
+              },
+              {
+                "feature": 1,
+                "power": 1,
+                "category": null,
+                "center": 0.0,
+                "scale": 1.0,
+                "impute": 2.7285579474261583,
+                "missing_indicator": false
+              }
+            ],
+            "coefficients": [
+              0.1223928945875421,
+              0.05299807911777948
+            ],
+            "threshold": 0.056687449373916066
+          },
+          "left": {
+            "id": 2,
+            "sample_count": 26,
+            "weight_sum": 26.0,
+            "risk": 0.05,
+            "impurity": 11.076923076923078,
+            "model": {
+              "kind": "classification",
+              "probabilities": [
+                0.002096273291925466,
+                0.6900650979455327,
+                0.3078386287625418
+              ],
+              "predicted_class": 1
+            },
+            "diagnostics": [],
+            "split": {
+              "kind": "discriminant",
+              "terms": [
+                {
+                  "feature": 1,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": 2.0449674168471126,
+                  "missing_indicator": false
+                },
+                {
+                  "feature": 1,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": 2.0449674168471126,
+                  "missing_indicator": true
+                }
+              ],
+              "coefficients": [
+                0.04060358311510061,
+                0.5112898410188388
+              ],
+              "threshold": 0.04571953839783314
+            },
+            "left": {
+              "id": 3,
+              "sample_count": 8,
+              "weight_sum": 8.0,
+              "risk": 0.0,
+              "impurity": 0.0,
+              "model": {
+                "kind": "classification",
+                "probabilities": [
+                  0.002096273291925466,
+                  0.9958462732919255,
+                  0.002057453416149068
+                ],
+                "predicted_class": 1
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            },
+            "right": {
+              "id": 4,
+              "sample_count": 18,
+              "weight_sum": 18.0,
+              "risk": 0.05,
+              "impurity": 8.88888888888889,
+              "model": {
+                "kind": "classification",
+                "probabilities": [
+                  0.002096273291925466,
+                  0.5541623533471359,
+                  0.4437413733609386
+                ],
+                "predicted_class": 1
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            }
+          },
+          "right": {
+            "id": 5,
+            "sample_count": 56,
+            "weight_sum": 56.0,
+            "risk": 0.15625,
+            "impurity": 32.535714285714285,
+            "model": {
+              "kind": "classification",
+              "probabilities": [
+                0.3035714285714286,
+                0.5535714285714285,
+                0.14285714285714285
+              ],
+              "predicted_class": 1
+            },
+            "diagnostics": [],
+            "split": {
+              "kind": "discriminant",
+              "terms": [
+                {
+                  "feature": 0,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": 0.13762869827233792,
+                  "missing_indicator": false
+                },
+                {
+                  "feature": 1,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": 3.0123125072891583,
+                  "missing_indicator": true
+                }
+              ],
+              "coefficients": [
+                -0.003199174670029642,
+                0.5914223221156488
+              ],
+              "threshold": 0.0011165664647023764
+            },
+            "left": {
+              "id": 6,
+              "sample_count": 37,
+              "weight_sum": 37.0,
+              "risk": 0.125,
+              "impurity": 23.56756756756757,
+              "model": {
+                "kind": "classification",
+                "probabilities": [
+                  0.32432432432432434,
+                  0.45945945945945943,
+                  0.2162162162162162
+                ],
+                "predicted_class": 1
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            },
+            "right": {
+              "id": 7,
+              "sample_count": 19,
+              "weight_sum": 19.0,
+              "risk": 0.03125,
+              "impurity": 7.368421052631576,
+              "model": {
+                "kind": "classification",
+                "probabilities": [
+                  0.26361964694344553,
+                  0.7343228996404054,
+                  0.002057453416149068
+                ],
+                "predicted_class": 1
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            }
+          }
+        },
+        "right": {
+          "id": 8,
+          "sample_count": 78,
+          "weight_sum": 78.0,
+          "risk": 0.25625,
+          "impurity": 42.69230769230769,
+          "model": {
+            "kind": "classification",
+            "probabilities": [
+              0.47435897435897434,
+              0.05128205128205127,
+              0.4743589743589743
+            ],
+            "predicted_class": 0
+          },
+          "diagnostics": [],
+          "split": {
+            "kind": "discriminant",
+            "terms": [
+              {
+                "feature": 0,
+                "power": 1,
+                "category": null,
+                "center": 0.0,
+                "scale": 1.0,
+                "impute": 0.36390356219804415,
+                "missing_indicator": false
+              },
+              {
+                "feature": 1,
+                "power": 1,
+                "category": null,
+                "center": 0.0,
+                "scale": 1.0,
+                "impute": 7.086494407364491,
+                "missing_indicator": false
+              }
+            ],
+            "coefficients": [
+              0.0995032042368398,
+              0.06752282773225
+            ],
+            "threshold": 0.46751004222322934
+          },
+          "left": {
+            "id": 9,
+            "sample_count": 26,
+            "weight_sum": 26.0,
+            "risk": 0.03125,
+            "impurity": 8.384615384615383,
+            "model": {
+              "kind": "classification",
+              "probabilities": [
+                0.038461538461538464,
+                0.15384615384615383,
+                0.8076923076923077
+              ],
+              "predicted_class": 2
+            },
+            "diagnostics": [],
+            "split": {
+              "kind": "discriminant",
+              "terms": [
+                {
+                  "feature": 0,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": 0.14186248744370764,
+                  "missing_indicator": false
+                },
+                {
+                  "feature": 1,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": 5.499154810665339,
+                  "missing_indicator": false
+                }
+              ],
+              "coefficients": [
+                0.4965544924037876,
+                0.22501237513310615
+              ],
+              "threshold": 1.2931052812188373
+            },
+            "left": {
+              "id": 10,
+              "sample_count": 11,
+              "weight_sum": 11.0,
+              "risk": 0.0,
+              "impurity": 0.0,
+              "model": {
+                "kind": "classification",
+                "probabilities": [
+                  0.002096273291925466,
+                  0.002057453416149068,
+                  0.9958462732919255
+                ],
+                "predicted_class": 2
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            },
+            "right": {
+              "id": 11,
+              "sample_count": 15,
+              "weight_sum": 15.0,
+              "risk": 0.03125,
+              "impurity": 7.199999999999999,
+              "model": {
+                "kind": "classification",
+                "probabilities": [
+                  0.06666666666666667,
+                  0.26666666666666666,
+                  0.6666666666666666
+                ],
+                "predicted_class": 2
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            }
+          },
+          "right": {
+            "id": 12,
+            "sample_count": 52,
+            "weight_sum": 52.0,
+            "risk": 0.1,
+            "impurity": 22.153846153846157,
+            "model": {
+              "kind": "classification",
+              "probabilities": [
+                0.6901039178213092,
+                0.002057453416149068,
+                0.30783862876254176
+              ],
+              "predicted_class": 0
+            },
+            "diagnostics": [],
+            "split": {
+              "kind": "discriminant",
+              "terms": [
+                {
+                  "feature": 0,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": 0.47492409957521253,
+                  "missing_indicator": false
+                },
+                {
+                  "feature": 1,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": 8.024467805413991,
+                  "missing_indicator": true
+                }
+              ],
+              "coefficients": [
+                -0.12127394510158773,
+                0.18529939976078352
+              ],
+              "threshold": 0.0009827743475655086
+            },
+            "left": {
+              "id": 13,
+              "sample_count": 28,
+              "weight_sum": 28.0,
+              "risk": 0.01875,
+              "impurity": 5.357142857142854,
+              "model": {
+                "kind": "classification",
+                "probabilities": [
+                  0.889407719609583,
+                  0.002057453416149068,
+                  0.10853482697426799
+                ],
+                "predicted_class": 0
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            },
+            "right": {
+              "id": 14,
+              "sample_count": 24,
+              "weight_sum": 24.0,
+              "risk": 0.06875,
+              "impurity": 11.916666666666668,
+              "model": {
+                "kind": "classification",
+                "probabilities": [
+                  0.45758281573498977,
+                  0.002057453416149068,
+                  0.5403597308488612
+                ],
+                "predicted_class": 2
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            }
+          }
+        }
+      }
+    }
+  ],
+  "report": {
+    "training_rows": 160,
+    "excluded_rows": 0,
+    "unpruned_leaves": 8,
+    "fitted_leaves": 8,
+    "selected_alpha": 0.0,
+    "pruning_scores": [],
+    "out_of_bag_loss": null,
+    "out_of_bag_rows": 0,
+    "warnings": []
+  }
+}
