@@ -52,11 +52,12 @@ fn discretize(
         // label() is None only for Missing, handled above.
         v => (1, v.label().unwrap()),
     };
-    // Regression main-effect tests group categorical variables, and numeric
-    // ones with at most four distinct values, by value. GUIDE pools the
-    // values seen once, and a pool of one row joins the largest group. A
-    // numeric variable with a single observed value is not tested.
-    let by_value = mode == SelectionMode::Fit && quantile_cuts && !interaction;
+    // Regression and importance main-effect tests group categorical
+    // variables, and numeric ones with at most four distinct values, by
+    // value. GUIDE pools the values seen once, and a pool of one row joins
+    // the largest group. A numeric variable with a single observed value is
+    // not tested.
+    let by_value = quantile_cuts && !interaction;
     if by_value && !categorical && sorted.first() == sorted.last() {
         return vec![0; ids.len()];
     }
@@ -106,12 +107,10 @@ fn discretize(
         .map(|&i| code(i))
         .collect();
     let codes: Vec<&str> = codes.into_iter().collect();
-    let cuts: Vec<f64> = if quantile_cuts {
-        let groups = if interaction || ids.len() < 60 { 3 } else { 4 };
-        let groups = if missing { groups - 1 } else { groups };
-        (1..groups)
-            .map(|k| stats::sorted_quantile(&sorted, k as f64 / groups as f64))
-            .collect()
+    let cuts: Vec<f64> = if interaction && mode == SelectionMode::Importance {
+        importance_pair_cut(&sorted, ids.len())
+    } else if quantile_cuts {
+        quartile_cuts(&sorted, ids.len(), interaction, missing)
     } else {
         let m = stats::mean(&x);
         let s = stats::variance(&x).sqrt();
@@ -131,14 +130,78 @@ fn discretize(
             vec![m - s / 3.0_f64.sqrt(), m + s / 3.0_f64.sqrt()]
         }
     };
-    ids.iter()
+    let mut bins: Vec<usize> = ids
+        .iter()
         .map(|&i| {
             ctx.data.rows[i][j]
                 .number()
                 .map(|x| cuts.partition_point(|c| x > *c))
                 .unwrap_or_else(|| cuts.len() + 1 + codes.binary_search(&code(i)).unwrap_or(0))
         })
-        .collect()
+        .collect();
+    if quantile_cuts && !interaction {
+        pool_single_rows(&mut bins, cuts.len() + 2 + codes.len());
+    }
+    bins
+}
+/// Index of the strongest of `tests` (statistic, df, log tail), the first
+/// among equals. Fitting ranks them on GUIDE's 1-df scale, whose
+/// Wilson-Hilferty tails can reorder strong tests with different df;
+/// importance scoring inverts tail probabilities exactly, as GUIDE does there.
+fn strongest(mode: SelectionMode, tests: impl Iterator<Item = (f64, usize, f64)>) -> Option<usize> {
+    if mode == SelectionMode::Fit {
+        return stats::guide_strongest(tests);
+    }
+    tests
+        .enumerate()
+        .min_by(|a, b| a.1.2.total_cmp(&b.1.2).then(a.0.cmp(&b.0)))
+        .map(|(k, _)| k)
+}
+/// Quartile cuts of sorted values, three groups below 60 rows, one group
+/// fewer with missing values, kept up to the first repeated cut: quartiles
+/// 0, 0 and 41 give the single cut 0, not the two cuts 0 and 41.
+fn quartile_cuts(sorted: &[f64], rows: usize, interaction: bool, missing: bool) -> Vec<f64> {
+    let groups = if interaction || rows < 60 { 3 } else { 4 };
+    let groups = if missing { groups - 1 } else { groups };
+    let mut cuts: Vec<f64> = (1..groups)
+        .map(|k| stats::sorted_quantile(sorted, k as f64 / groups as f64))
+        .collect();
+    if let Some(k) = (1..cuts.len()).find(|&k| cuts[k] == cuts[k - 1]) {
+        cuts.truncate(k);
+    }
+    cuts
+}
+/// GUIDE's importance interaction tests cut a numeric variable once, at the
+/// median of all `rows` with its missing values sorted first, so missing
+/// values pull the cut below the median of the observed values `sorted`.
+fn importance_pair_cut(sorted: &[f64], rows: usize) -> Vec<f64> {
+    let at = (rows - 1) as f64 / 2.0 - (rows - sorted.len()) as f64;
+    if at < 0.0 {
+        return vec![];
+    }
+    let (k, f) = (at.floor() as usize, at.fract());
+    let next = sorted[(k + 1).min(sorted.len() - 1)];
+    vec![sorted[k] + f * (next - sorted[k])]
+}
+/// GUIDE 46.3 treats a quantile group holding one row, observed or missing,
+/// as it treats a value seen once: such groups are pooled, and a pool of one
+/// row joins the largest group, the first among equals.
+fn pool_single_rows(bins: &mut [usize], groups: usize) {
+    let mut counts = vec![0; groups];
+    for &b in bins.iter() {
+        counts[b] += 1;
+    }
+    let single: Vec<usize> = (0..groups).filter(|&b| counts[b] == 1).collect();
+    if let [lone] = single[..] {
+        let largest = (0..groups).rev().max_by_key(|&b| counts[b]).unwrap_or(0);
+        bins.iter_mut()
+            .filter(|b| **b == lone)
+            .for_each(|b| *b = largest);
+    } else if let [first, ..] = single[..] {
+        bins.iter_mut()
+            .filter(|b| single.contains(b))
+            .for_each(|b| *b = first);
+    }
 }
 /// Numbers the joint cells of two binnings in order of first appearance,
 /// which fixes the column order of the contingency table. Up to `dense_limit`
@@ -346,18 +409,17 @@ pub(crate) fn select_with_test(
     if eligible.is_empty() {
         return selection;
     }
-    // Every diagnostic constructed above contains a log tail; eligibility also
-    // guarantees this minimum is nonempty.
-    let best = selection
-        .diagnostics
-        .iter()
-        .min_by(|a, b| {
-            a.log_p_value
-                .unwrap()
-                .total_cmp(&b.log_p_value.unwrap())
-                .then(a.feature.cmp(&b.feature))
-        })
-        .unwrap();
+    // Every diagnostic constructed above contains a log tail, and eligibility
+    // guarantees one exists; features are in index order, so ties go to the
+    // lower index.
+    let best = &selection.diagnostics[strongest(
+        mode,
+        selection
+            .diagnostics
+            .iter()
+            .map(|d| (d.chi_square, d.degrees_of_freedom, d.log_p_value.unwrap())),
+    )
+    .unwrap()];
     selection.features = vec![best.feature];
     let best_main_log_p = best.log_p_value.unwrap();
     // Pinned multiple-linear SSE controls stop when the sole nonconstant
@@ -396,17 +458,12 @@ pub(crate) fn select_with_test(
             || (vec![], vec![]),
             |(index, joint), &(a, b)| {
                 joint_cells(&bins[a], &bins[b], 16 * ids.len() + 1024, index, joint);
-                test(joint).2
+                test(joint)
             },
         );
-        let mut best_pair = None;
-        let mut best_pair_log_p = 0.0;
-        for (&(a, b), log_p) in pairs.iter().zip(pair_tests) {
-            if log_p < best_pair_log_p {
-                best_pair_log_p = log_p;
-                best_pair = Some((eligible[a], eligible[b]));
-            }
-        }
+        let best = strongest(mode, pair_tests.iter().copied());
+        let best_pair = best.map(|k| (eligible[pairs[k].0], eligible[pairs[k].1]));
+        let best_pair_log_p = best.map_or(0.0, |k| pair_tests[k].2);
         let pair_log_threshold = log_alpha + std::f64::consts::LN_2
             - (eligible.len() as f64).ln()
             - ((eligible.len() - 1) as f64).ln();
@@ -643,6 +700,47 @@ fn discriminant(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn quartile_cuts_stop_at_the_first_repeated_cut() {
+        let mut x: Vec<f64> = vec![0.0; 108];
+        x.extend((0..92).map(|i| [9.0, 26.0, 37.0, 41.0, 44.0, 55.0][i % 6]));
+        x.sort_by(f64::total_cmp);
+        assert_eq!(quartile_cuts(&x, 200, false, false), vec![0.0]);
+        let y: Vec<f64> = (0..200)
+            .map(|i| {
+                if (50..170).contains(&i) {
+                    50.0
+                } else {
+                    i as f64
+                }
+            })
+            .collect();
+        assert_eq!(quartile_cuts(&y, 200, false, false), vec![49.75, 50.0]);
+    }
+
+    #[test]
+    fn a_one_row_quantile_group_joins_the_largest_group() {
+        // GUIDE 46.3 at an RHC importance node: edu's third group holds one row.
+        let mut bins: Vec<usize> = [vec![0; 19], vec![1; 32], vec![2], vec![3; 17]].concat();
+        pool_single_rows(&mut bins, 5);
+        assert_eq!(bins.iter().filter(|&&b| b == 1).count(), 33);
+        // Two one-row groups form one group.
+        let mut bins = vec![0, 0, 0, 1, 2, 2, 2, 3];
+        pool_single_rows(&mut bins, 4);
+        assert_eq!(bins, vec![0, 0, 0, 1, 2, 2, 2, 1]);
+    }
+
+    #[test]
+    fn importance_pair_cuts_sort_missing_values_first() {
+        // A GUIDE 46.3 probe: 300 rows, 91 missing; native cuts at 14, the
+        // 60th observed value, not at the observed median.
+        let sorted: Vec<f64> = (0..209).map(|i| (i / 4) as f64).collect();
+        assert_eq!(importance_pair_cut(&sorted, 300), vec![sorted[59]]);
+        let full: Vec<f64> = (0..10).map(f64::from).collect();
+        assert_eq!(importance_pair_cut(&full, 10), vec![4.5]);
+        assert!(importance_pair_cut(&full[..2], 10).is_empty());
+    }
 
     #[test]
     fn joint_cells_number_by_first_appearance() {
