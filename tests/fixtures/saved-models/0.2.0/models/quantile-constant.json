@@ -1,0 +1,458 @@
+{
+  "format_version": 1,
+  "algorithm_version": "guide-rs-0.1-experimental-reference27",
+  "schema": [
+    {
+      "name": "x0",
+      "feature_type": {
+        "kind": "numeric"
+      },
+      "role": "split"
+    },
+    {
+      "name": "x1",
+      "feature_type": {
+        "kind": "numeric"
+      },
+      "role": "split"
+    }
+  ],
+  "classes": [],
+  "options": {
+    "task": {
+      "kind": "regression",
+      "loss": {
+        "kind": "quantile",
+        "probability": 0.9
+      }
+    },
+    "node_model": {
+      "kind": "constant"
+    },
+    "max_depth": 3,
+    "min_samples_leaf": 5,
+    "min_gain": 1e-12,
+    "interactions": true,
+    "linear_splits": false,
+    "significance_level": 0.1,
+    "max_split_candidates": 100,
+    "pruning": {
+      "kind": "none"
+    },
+    "seed": 0,
+    "class_priors": null,
+    "class_costs": null,
+    "mtry": null
+  },
+  "input": null,
+  "requires_exposure": false,
+  "ensemble": null,
+  "trees": [
+    {
+      "root": {
+        "id": 0,
+        "sample_count": 160,
+        "weight_sum": 160.0,
+        "risk": 0.3698753141130013,
+        "impurity": 59.18005025808021,
+        "model": {
+          "kind": "constant",
+          "value": 7.099966390861153
+        },
+        "diagnostics": [
+          {
+            "feature": 0,
+            "chi_square": 1.6666666666666667,
+            "degrees_of_freedom": 3,
+            "p_value": 0.6443698056370253,
+            "importance_p_value": 0.6443698056370253,
+            "log_p_value": -0.439482485330464,
+            "importance_log_p_value": -0.439482485330464,
+            "interaction_with": null
+          },
+          {
+            "feature": 1,
+            "chi_square": 14.12037037037037,
+            "degrees_of_freedom": 3,
+            "p_value": 0.002745803293456215,
+            "importance_p_value": 0.002745803293456215,
+            "log_p_value": -5.897681608049156,
+            "importance_log_p_value": -5.897681608049156,
+            "interaction_with": null
+          }
+        ],
+        "split": {
+          "kind": "numeric",
+          "feature": 1,
+          "threshold": 7.851093951508396,
+          "missing_left": false
+        },
+        "left": {
+          "id": 1,
+          "sample_count": 114,
+          "weight_sum": 114.0,
+          "risk": 0.21588603273172477,
+          "impurity": 34.541765237075964,
+          "model": {
+            "kind": "constant",
+            "value": 5.861147067882568
+          },
+          "diagnostics": [
+            {
+              "feature": 0,
+              "chi_square": 2.135504201680672,
+              "degrees_of_freedom": 3,
+              "p_value": 0.544763481831264,
+              "importance_p_value": 0.544763481831264,
+              "log_p_value": -0.6074035568059839,
+              "importance_log_p_value": -0.6074035568059839,
+              "interaction_with": null
+            },
+            {
+              "feature": 1,
+              "chi_square": 9.209576934221964,
+              "degrees_of_freedom": 3,
+              "p_value": 0.02663039778793836,
+              "importance_p_value": 0.02663039778793836,
+              "log_p_value": -3.6257019416809904,
+              "importance_log_p_value": -3.6257019416809904,
+              "interaction_with": null
+            }
+          ],
+          "split": {
+            "kind": "numeric",
+            "feature": 1,
+            "threshold": 3.8220940659584546,
+            "missing_left": false
+          },
+          "left": {
+            "id": 2,
+            "sample_count": 57,
+            "weight_sum": 57.0,
+            "risk": 0.09624867604530352,
+            "impurity": 15.399788167248563,
+            "model": {
+              "kind": "constant",
+              "value": 5.457686324655146
+            },
+            "diagnostics": [
+              {
+                "feature": 0,
+                "chi_square": 4.470588235294118,
+                "degrees_of_freedom": 2,
+                "p_value": 0.10696066620686197,
+                "importance_p_value": 0.10696066620686197,
+                "log_p_value": -2.235294117647058,
+                "importance_log_p_value": -2.235294117647058,
+                "interaction_with": null
+              },
+              {
+                "feature": 1,
+                "chi_square": 3.3529411764705883,
+                "degrees_of_freedom": 2,
+                "p_value": 0.1870329287167099,
+                "importance_p_value": 0.1870329287167099,
+                "log_p_value": -1.6764705882352975,
+                "importance_log_p_value": -1.6764705882352975,
+                "interaction_with": null
+              }
+            ],
+            "split": {
+              "kind": "numeric",
+              "feature": 0,
+              "threshold": -0.3318937799901889,
+              "missing_left": false
+            },
+            "left": {
+              "id": 3,
+              "sample_count": 18,
+              "weight_sum": 18.0,
+              "risk": 0.026307402737264583,
+              "impurity": 4.2091844379623335,
+              "model": {
+                "kind": "constant",
+                "value": 4.782481446285852
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            },
+            "right": {
+              "id": 4,
+              "sample_count": 39,
+              "weight_sum": 39.0,
+              "risk": 0.061837355094662726,
+              "impurity": 9.893976815146036,
+              "model": {
+                "kind": "constant",
+                "value": 5.681329520778453
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            }
+          },
+          "right": {
+            "id": 5,
+            "sample_count": 57,
+            "weight_sum": 57.0,
+            "risk": 0.10834726444030049,
+            "impurity": 17.33556231044808,
+            "model": {
+              "kind": "constant",
+              "value": 6.469910251145071
+            },
+            "diagnostics": [
+              {
+                "feature": 0,
+                "chi_square": 4.470588235294118,
+                "degrees_of_freedom": 2,
+                "p_value": 0.10696066620686197,
+                "importance_p_value": 0.10696066620686197,
+                "log_p_value": -2.235294117647058,
+                "importance_log_p_value": -2.235294117647058,
+                "interaction_with": null
+              },
+              {
+                "feature": 1,
+                "chi_square": 3.3529411764705883,
+                "degrees_of_freedom": 2,
+                "p_value": 0.1870329287167099,
+                "importance_p_value": 0.1870329287167099,
+                "log_p_value": -1.6764705882352975,
+                "importance_log_p_value": -1.6764705882352975,
+                "interaction_with": null
+              }
+            ],
+            "split": {
+              "kind": "numeric",
+              "feature": 0,
+              "threshold": 1.2328708559213493,
+              "missing_left": false
+            },
+            "left": {
+              "id": 6,
+              "sample_count": 47,
+              "weight_sum": 47.0,
+              "risk": 0.07116751525029472,
+              "impurity": 11.386802440047154,
+              "model": {
+                "kind": "constant",
+                "value": 5.964981101966049
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            },
+            "right": {
+              "id": 7,
+              "sample_count": 10,
+              "weight_sum": 10.0,
+              "risk": 0.01558276522987791,
+              "impurity": 2.4932424367804655,
+              "model": {
+                "kind": "constant",
+                "value": 8.30207972862582
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            }
+          }
+        },
+        "right": {
+          "id": 8,
+          "sample_count": 46,
+          "weight_sum": 46.0,
+          "risk": 0.10050541900848617,
+          "impurity": 16.080867041357788,
+          "model": {
+            "kind": "constant",
+            "value": 7.892813787317537
+          },
+          "diagnostics": [
+            {
+              "feature": 0,
+              "chi_square": 1.5726016260162599,
+              "degrees_of_freedom": 2,
+              "p_value": 0.4555267610803931,
+              "importance_p_value": 0.4555267610803931,
+              "log_p_value": -0.7863008130081311,
+              "importance_log_p_value": -0.7863008130081311,
+              "interaction_with": null
+            },
+            {
+              "feature": 1,
+              "chi_square": 11.59349593495935,
+              "degrees_of_freedom": 2,
+              "p_value": 0.003037416478512041,
+              "importance_p_value": 0.003037416478512041,
+              "log_p_value": -5.796747967479673,
+              "importance_log_p_value": -5.796747967479673,
+              "interaction_with": null
+            }
+          ],
+          "split": {
+            "kind": "numeric",
+            "feature": 1,
+            "threshold": 9.288910049923356,
+            "missing_left": true
+          },
+          "left": {
+            "id": 9,
+            "sample_count": 34,
+            "weight_sum": 34.0,
+            "risk": 0.05931552759568746,
+            "impurity": 9.490484415309993,
+            "model": {
+              "kind": "constant",
+              "value": 7.367737622191682
+            },
+            "diagnostics": [
+              {
+                "feature": 0,
+                "chi_square": 4.224242424242424,
+                "degrees_of_freedom": 2,
+                "p_value": 0.1209810675542676,
+                "importance_p_value": 0.1209810675542676,
+                "log_p_value": -2.112121212121211,
+                "importance_log_p_value": -2.112121212121211,
+                "interaction_with": null
+              },
+              {
+                "feature": 1,
+                "chi_square": 1.888888888888889,
+                "degrees_of_freedom": 2,
+                "p_value": 0.3888955639892224,
+                "importance_p_value": 0.3888955639892224,
+                "log_p_value": -0.9444444444444456,
+                "importance_log_p_value": -0.9444444444444456,
+                "interaction_with": null
+              }
+            ],
+            "split": {
+              "kind": "numeric",
+              "feature": 0,
+              "threshold": -0.718097198113985,
+              "missing_left": false
+            },
+            "left": {
+              "id": 10,
+              "sample_count": 11,
+              "weight_sum": 11.0,
+              "risk": 0.011031922387609326,
+              "impurity": 1.7651075820174922,
+              "model": {
+                "kind": "constant",
+                "value": 4.956095224270353
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            },
+            "right": {
+              "id": 11,
+              "sample_count": 23,
+              "weight_sum": 23.0,
+              "risk": 0.03218787882207296,
+              "impurity": 5.150060611531674,
+              "model": {
+                "kind": "constant",
+                "value": 7.572915512733244
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            }
+          },
+          "right": {
+            "id": 12,
+            "sample_count": 12,
+            "weight_sum": 12.0,
+            "risk": 0.022932035715325826,
+            "impurity": 3.6691257144521323,
+            "model": {
+              "kind": "constant",
+              "value": 9.916738116199966
+            },
+            "diagnostics": [
+              {
+                "feature": 0,
+                "chi_square": 4.800000000000002,
+                "degrees_of_freedom": 2,
+                "p_value": 0.09071795328941251,
+                "importance_p_value": 0.09071795328941251,
+                "log_p_value": -2.4,
+                "importance_log_p_value": -2.4,
+                "interaction_with": null
+              },
+              {
+                "feature": 1,
+                "chi_square": 4.800000000000002,
+                "degrees_of_freedom": 2,
+                "p_value": 0.09071795328941251,
+                "importance_p_value": 0.09071795328941251,
+                "log_p_value": -2.4,
+                "importance_log_p_value": -2.4,
+                "interaction_with": null
+              }
+            ],
+            "split": {
+              "kind": "numeric",
+              "feature": 0,
+              "threshold": 0.0728977736436584,
+              "missing_left": false
+            },
+            "left": {
+              "id": 13,
+              "sample_count": 6,
+              "weight_sum": 6.0,
+              "risk": 0.00752392213458741,
+              "impurity": 1.2038275415339856,
+              "model": {
+                "kind": "constant",
+                "value": 8.329898218136252
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            },
+            "right": {
+              "id": 14,
+              "sample_count": 6,
+              "weight_sum": 6.0,
+              "risk": 0.008687954423374855,
+              "impurity": 1.3900727077399768,
+              "model": {
+                "kind": "constant",
+                "value": 10.22454193204982
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            }
+          }
+        }
+      }
+    }
+  ],
+  "report": {
+    "training_rows": 160,
+    "excluded_rows": 0,
+    "unpruned_leaves": 8,
+    "fitted_leaves": 8,
+    "selected_alpha": 0.0,
+    "pruning_scores": [],
+    "out_of_bag_loss": null,
+    "out_of_bag_rows": 0,
+    "warnings": []
+  }
+}

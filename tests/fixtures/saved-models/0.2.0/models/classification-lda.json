@@ -1,0 +1,1161 @@
+{
+  "format_version": 1,
+  "algorithm_version": "guide-rs-0.1-experimental-reference27",
+  "schema": [
+    {
+      "name": "x0",
+      "feature_type": {
+        "kind": "numeric"
+      },
+      "role": "both"
+    },
+    {
+      "name": "x1",
+      "feature_type": {
+        "kind": "numeric"
+      },
+      "role": "both"
+    }
+  ],
+  "classes": [
+    "high",
+    "low",
+    "mid"
+  ],
+  "options": {
+    "task": {
+      "kind": "classification"
+    },
+    "node_model": {
+      "kind": "lda"
+    },
+    "max_depth": 3,
+    "min_samples_leaf": 5,
+    "min_gain": 1e-12,
+    "interactions": true,
+    "linear_splits": false,
+    "significance_level": 0.1,
+    "max_split_candidates": 100,
+    "pruning": {
+      "kind": "none"
+    },
+    "seed": 0,
+    "class_priors": null,
+    "class_costs": null,
+    "mtry": null
+  },
+  "input": null,
+  "requires_exposure": false,
+  "ensemble": null,
+  "trees": [
+    {
+      "root": {
+        "id": 0,
+        "sample_count": 160,
+        "weight_sum": 160.0,
+        "risk": 0.44375,
+        "impurity": 71.0,
+        "model": {
+          "kind": "discriminant",
+          "terms": [
+            {
+              "feature": 0,
+              "power": 1,
+              "category": null,
+              "center": 0.0,
+              "scale": 1.0,
+              "impute": 0.051500672974787595,
+              "missing_indicator": false
+            },
+            {
+              "feature": 1,
+              "power": 1,
+              "category": null,
+              "center": 0.0,
+              "scale": 1.0,
+              "impute": 4.832389341879147,
+              "missing_indicator": false
+            }
+          ],
+          "coefficients": [
+            [
+              0.042185810660008836,
+              0.02631871884296352
+            ],
+            [
+              0.059667424751294454,
+              -0.011718252055496852
+            ]
+          ],
+          "class_means": [
+            [
+              0.17943350534986677,
+              -0.044406454039853625
+            ],
+            [
+              0.07064610336706388,
+              -0.047603078983798924
+            ],
+            [
+              0.13704019402779855,
+              -0.0688257982105305
+            ]
+          ],
+          "variances": [
+            0.004323366308899793,
+            0.006249958100928058
+          ],
+          "priors": [
+            0.3375,
+            0.33125,
+            0.33125
+          ],
+          "root_rows": 160,
+          "root_priors": [
+            0.3375,
+            0.33125,
+            0.33125
+          ]
+        },
+        "diagnostics": [],
+        "split": {
+          "kind": "discriminant",
+          "terms": [
+            {
+              "feature": 0,
+              "power": 1,
+              "category": null,
+              "center": 0.0,
+              "scale": 1.0,
+              "impute": 0.051500672974787595,
+              "missing_indicator": false
+            },
+            {
+              "feature": 1,
+              "power": 1,
+              "category": null,
+              "center": 0.0,
+              "scale": 1.0,
+              "impute": 4.832389341879147,
+              "missing_indicator": false
+            }
+          ],
+          "coefficients": [
+            0.042185810660008836,
+            0.02631871884296352
+          ],
+          "threshold": 0.11662623577577305
+        },
+        "left": {
+          "id": 1,
+          "sample_count": 74,
+          "weight_sum": 74.0,
+          "risk": 0.175,
+          "impurity": 28.0,
+          "model": {
+            "kind": "discriminant",
+            "terms": [
+              {
+                "feature": 0,
+                "power": 1,
+                "category": null,
+                "center": 0.0,
+                "scale": 1.0,
+                "impute": -0.30091836198665856,
+                "missing_indicator": false
+              },
+              {
+                "feature": 1,
+                "power": 1,
+                "category": null,
+                "center": 0.0,
+                "scale": 1.0,
+                "impute": 2.55337285337859,
+                "missing_indicator": false
+              }
+            ],
+            "coefficients": [
+              [
+                0.1312819355395454,
+                0.06271017705728867
+              ],
+              [
+                -0.04093348971498724,
+                0.051774746299407405
+              ]
+            ],
+            "class_means": [
+              [
+                0.19697031171632687,
+                0.14447352033160005
+              ],
+              [
+                0.10883111520600108,
+                0.14457098364775123
+              ],
+              [
+                0.07039910923718927,
+                0.14440162866743628
+              ]
+            ],
+            "variances": [
+              0.01218739613201104,
+              0.014084502186400363
+            ],
+            "priors": [
+              0.21621621621621623,
+              0.5945945945945945,
+              0.1891891891891892
+            ],
+            "root_rows": 160,
+            "root_priors": [
+              0.3375,
+              0.33125,
+              0.33125
+            ]
+          },
+          "diagnostics": [],
+          "split": {
+            "kind": "discriminant",
+            "terms": [
+              {
+                "feature": 0,
+                "power": 1,
+                "category": null,
+                "center": 0.0,
+                "scale": 1.0,
+                "impute": -0.30091836198665856,
+                "missing_indicator": false
+              },
+              {
+                "feature": 1,
+                "power": 1,
+                "category": null,
+                "center": 0.0,
+                "scale": 1.0,
+                "impute": 2.55337285337859,
+                "missing_indicator": false
+              }
+            ],
+            "coefficients": [
+              0.1312819355395454,
+              0.06271017705728867
+            ],
+            "threshold": 0.2498615684922508
+          },
+          "left": {
+            "id": 2,
+            "sample_count": 66,
+            "weight_sum": 66.0,
+            "risk": 0.1625,
+            "impurity": 26.0,
+            "model": {
+              "kind": "discriminant",
+              "terms": [
+                {
+                  "feature": 0,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": -0.4639813534997767,
+                  "missing_indicator": false
+                },
+                {
+                  "feature": 1,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": 2.584929951435432,
+                  "missing_indicator": false
+                }
+              ],
+              "coefficients": [
+                [
+                  0.15583378184229046,
+                  0.06712720682579447
+                ],
+                [
+                  -0.04822688355258044,
+                  0.05306050479055678
+                ]
+              ],
+              "class_means": [
+                [
+                  0.18638067428052824,
+                  0.15465515947248804
+                ],
+                [
+                  0.09034629272287037,
+                  0.16484703662865277
+                ],
+                [
+                  0.049492306446137384,
+                  0.14806535423126702
+                ]
+              ],
+              "variances": [
+                0.013749289995762063,
+                0.015823040280999418
+              ],
+              "priors": [
+                0.196969696969697,
+                0.6060606060606061,
+                0.19696969696969696
+              ],
+              "root_rows": 160,
+              "root_priors": [
+                0.3375,
+                0.33125,
+                0.33125
+              ]
+            },
+            "diagnostics": [],
+            "split": {
+              "kind": "discriminant",
+              "terms": [
+                {
+                  "feature": 0,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": -0.4639813534997767,
+                  "missing_indicator": false
+                },
+                {
+                  "feature": 1,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": 2.584929951435432,
+                  "missing_indicator": false
+                }
+              ],
+              "coefficients": [
+                0.15583378184229046,
+                0.06712720682579447
+              ],
+              "threshold": 0.202245450094233
+            },
+            "left": {
+              "id": 3,
+              "sample_count": 49,
+              "weight_sum": 49.0,
+              "risk": 0.1125,
+              "impurity": 18.0,
+              "model": {
+                "kind": "discriminant",
+                "terms": [
+                  {
+                    "feature": 0,
+                    "power": 1,
+                    "category": null,
+                    "center": 0.0,
+                    "scale": 1.0,
+                    "impute": -0.6767133008317127,
+                    "missing_indicator": false
+                  },
+                  {
+                    "feature": 1,
+                    "power": 1,
+                    "category": null,
+                    "center": 0.0,
+                    "scale": 1.0,
+                    "impute": 2.3331097978643953,
+                    "missing_indicator": true
+                  }
+                ],
+                "coefficients": [
+                  [
+                    -0.17184429076574395,
+                    -0.03642719824224212
+                  ],
+                  [
+                    0.0014213004060216854,
+                    0.40856353810553464
+                  ]
+                ],
+                "class_means": [
+                  [
+                    0.007679566688732784,
+                    0.050969265086273224
+                  ],
+                  [
+                    0.12314951304243399,
+                    0.06483019798756226
+                  ],
+                  [
+                    0.15641147189043775,
+                    0.039532567686174004
+                  ]
+                ],
+                "variances": [
+                  0.019334815513890838,
+                  0.021625331992571533
+                ],
+                "priors": [
+                  0.163265306122449,
+                  0.6326530612244898,
+                  0.20408163265306126
+                ],
+                "root_rows": 160,
+                "root_priors": [
+                  0.3375,
+                  0.33125,
+                  0.33125
+                ]
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            },
+            "right": {
+              "id": 4,
+              "sample_count": 17,
+              "weight_sum": 17.0,
+              "risk": 0.0375,
+              "impurity": 6.0,
+              "model": {
+                "kind": "discriminant",
+                "terms": [
+                  {
+                    "feature": 0,
+                    "power": 1,
+                    "category": null,
+                    "center": 0.0,
+                    "scale": 1.0,
+                    "impute": 0.14918720057462692,
+                    "missing_indicator": false
+                  },
+                  {
+                    "feature": 1,
+                    "power": 1,
+                    "category": null,
+                    "center": 0.0,
+                    "scale": 1.0,
+                    "impute": 3.2070738602579922,
+                    "missing_indicator": false
+                  }
+                ],
+                "coefficients": [
+                  [
+                    1.764641416808678,
+                    0.8334344827093196
+                  ],
+                  [
+                    -0.5532664571003122,
+                    -0.1262587557090582
+                  ]
+                ],
+                "class_means": [
+                  [
+                    3.0398407344357063,
+                    -0.461282421618299
+                  ],
+                  [
+                    3.0109944506566815,
+                    -0.5028937808580373
+                  ],
+                  [
+                    2.5387866120868834,
+                    -0.48479605222458283
+                  ]
+                ],
+                "variances": [
+                  0.03015235326648144,
+                  0.07102918341483191
+                ],
+                "priors": [
+                  0.29411764705882354,
+                  0.5294117647058824,
+                  0.17647058823529413
+                ],
+                "root_rows": 160,
+                "root_priors": [
+                  0.3375,
+                  0.33125,
+                  0.33125
+                ]
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            }
+          },
+          "right": {
+            "id": 5,
+            "sample_count": 8,
+            "weight_sum": 8.0,
+            "risk": 0.0,
+            "impurity": 0.0,
+            "model": {
+              "kind": "discriminant",
+              "terms": [
+                {
+                  "feature": 0,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": 1.0443513179965653,
+                  "missing_indicator": false
+                },
+                {
+                  "feature": 1,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": 2.3206392552093877,
+                  "missing_indicator": false
+                }
+              ],
+              "coefficients": [
+                [
+                  2.3114853636068298,
+                  1.367991739138389
+                ],
+                [
+                  -2.0161514710734405,
+                  -0.8406974990383568
+                ]
+              ],
+              "class_means": [
+                [
+                  5.953305442093409,
+                  -4.1550936004959
+                ],
+                [
+                  5.272662955571018,
+                  -4.08619420877921
+                ],
+                [
+                  5.758376784709844,
+                  -3.6421508763636923
+                ]
+              ],
+              "variances": [
+                0.03457616067031289,
+                0.15912514617203985
+              ],
+              "priors": [
+                0.3750000000000001,
+                0.5,
+                0.125
+              ],
+              "root_rows": 160,
+              "root_priors": [
+                0.3375,
+                0.33125,
+                0.33125
+              ]
+            },
+            "diagnostics": [],
+            "split": null,
+            "left": null,
+            "right": null
+          }
+        },
+        "right": {
+          "id": 6,
+          "sample_count": 86,
+          "weight_sum": 86.0,
+          "risk": 0.175,
+          "impurity": 28.0,
+          "model": {
+            "kind": "discriminant",
+            "terms": [
+              {
+                "feature": 0,
+                "power": 1,
+                "category": null,
+                "center": 0.0,
+                "scale": 1.0,
+                "impute": 0.3547449588718459,
+                "missing_indicator": false
+              },
+              {
+                "feature": 1,
+                "power": 1,
+                "category": null,
+                "center": 0.0,
+                "scale": 1.0,
+                "impute": 6.790006069180906,
+                "missing_indicator": false
+              }
+            ],
+            "coefficients": [
+              [
+                0.08440015642938385,
+                0.05992764438154688
+              ],
+              [
+                -0.08431078802476845,
+                0.011707848882943146
+              ]
+            ],
+            "class_means": [
+              [
+                0.5077943633052674,
+                0.03957235286990435
+              ],
+              [
+                0.30353941303845505,
+                0.000906644510912861
+              ],
+              [
+                0.39848782046808123,
+                0.07057997572697536
+              ]
+            ],
+            "variances": [
+              0.0071253261290168575,
+              0.011538233383055393
+            ],
+            "priors": [
+              0.44186046511627913,
+              0.10465116279069767,
+              0.4534883720930233
+            ],
+            "root_rows": 160,
+            "root_priors": [
+              0.3375,
+              0.33125,
+              0.33125
+            ]
+          },
+          "diagnostics": [],
+          "split": {
+            "kind": "discriminant",
+            "terms": [
+              {
+                "feature": 0,
+                "power": 1,
+                "category": null,
+                "center": 0.0,
+                "scale": 1.0,
+                "impute": 0.3547449588718459,
+                "missing_indicator": false
+              },
+              {
+                "feature": 1,
+                "power": 1,
+                "category": null,
+                "center": 0.0,
+                "scale": 1.0,
+                "impute": 6.790006069180906,
+                "missing_indicator": false
+              }
+            ],
+            "coefficients": [
+              0.08440015642938385,
+              0.05992764438154688
+            ],
+            "threshold": 0.379705491228976
+          },
+          "left": {
+            "id": 7,
+            "sample_count": 30,
+            "weight_sum": 30.0,
+            "risk": 0.04375,
+            "impurity": 7.0,
+            "model": {
+              "kind": "discriminant",
+              "terms": [
+                {
+                  "feature": 0,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": 0.308095912341986,
+                  "missing_indicator": false
+                },
+                {
+                  "feature": 1,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": 4.833599135606841,
+                  "missing_indicator": false
+                }
+              ],
+              "coefficients": [
+                [
+                  0.28554997754872563,
+                  0.2510476874377299
+                ],
+                [
+                  0.43493171819656734,
+                  0.19541807443325898
+                ]
+              ],
+              "class_means": [
+                [
+                  1.2832225663515793,
+                  1.1833077419616709
+                ],
+                [
+                  1.1819367181211342,
+                  1.0680703772415696
+                ],
+                [
+                  1.3510640548872124,
+                  1.0723010551873942
+                ]
+              ],
+              "variances": [
+                0.030956927360307133,
+                0.03616266967194173
+              ],
+              "priors": [
+                0.06666666666666667,
+                0.26666666666666666,
+                0.6666666666666666
+              ],
+              "root_rows": 160,
+              "root_priors": [
+                0.3375,
+                0.33125,
+                0.33125
+              ]
+            },
+            "diagnostics": [],
+            "split": {
+              "kind": "discriminant",
+              "terms": [
+                {
+                  "feature": 0,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": 0.308095912341986,
+                  "missing_indicator": false
+                },
+                {
+                  "feature": 1,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": 4.833599135606841,
+                  "missing_indicator": false
+                }
+              ],
+              "coefficients": [
+                0.28554997754872563,
+                0.2510476874377299
+              ],
+              "threshold": 1.1870685337345706
+            },
+            "left": {
+              "id": 8,
+              "sample_count": 10,
+              "weight_sum": 10.0,
+              "risk": 0.0,
+              "impurity": 0.0,
+              "model": {
+                "kind": "discriminant",
+                "terms": [
+                  {
+                    "feature": 0,
+                    "power": 1,
+                    "category": null,
+                    "center": 0.0,
+                    "scale": 1.0,
+                    "impute": 1.072437581753272,
+                    "missing_indicator": false
+                  },
+                  {
+                    "feature": 1,
+                    "power": 1,
+                    "category": null,
+                    "center": 0.0,
+                    "scale": 1.0,
+                    "impute": 3.211307877917114,
+                    "missing_indicator": false
+                  }
+                ],
+                "coefficients": [
+                  [
+                    0.5141615497943021,
+                    0.7124443421498015
+                  ],
+                  [
+                    1.2561143056599364,
+                    0.8713646641096476
+                  ]
+                ],
+                "class_means": [
+                  [
+                    3.2308446052810433,
+                    4.063954877142114
+                  ],
+                  [
+                    2.459200653455203,
+                    4.1397571104046005
+                  ],
+                  [
+                    3.0650391514097275,
+                    4.166052133770985
+                  ]
+                ],
+                "variances": [
+                  0.001999992738559127,
+                  0.14158668959424542
+                ],
+                "priors": [
+                  0.1,
+                  0.39999999999999997,
+                  0.5
+                ],
+                "root_rows": 160,
+                "root_priors": [
+                  0.3375,
+                  0.33125,
+                  0.33125
+                ]
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            },
+            "right": {
+              "id": 9,
+              "sample_count": 20,
+              "weight_sum": 20.0,
+              "risk": 0.01875,
+              "impurity": 3.0,
+              "model": {
+                "kind": "discriminant",
+                "terms": [
+                  {
+                    "feature": 0,
+                    "power": 1,
+                    "category": null,
+                    "center": 0.0,
+                    "scale": 1.0,
+                    "impute": -0.07407492236365705,
+                    "missing_indicator": false
+                  },
+                  {
+                    "feature": 1,
+                    "power": 1,
+                    "category": null,
+                    "center": 0.0,
+                    "scale": 1.0,
+                    "impute": 5.644744764451704,
+                    "missing_indicator": false
+                  }
+                ],
+                "coefficients": [
+                  [
+                    0.6481555052695754,
+                    0.36214874385408313
+                  ],
+                  [
+                    0.20758070224867095,
+                    0.27033857371677356
+                  ]
+                ],
+                "class_means": [
+                  [
+                    2.400366116740505,
+                    1.3621630554234212
+                  ],
+                  [
+                    1.790812550115161,
+                    1.4507394124832447
+                  ],
+                  [
+                    2.0240591216408252,
+                    1.5364795852613533
+                  ]
+                ],
+                "variances": [
+                  0.038604222622160136,
+                  0.05609335439287571
+                ],
+                "priors": [
+                  0.05,
+                  0.19999999999999998,
+                  0.75
+                ],
+                "root_rows": 160,
+                "root_priors": [
+                  0.3375,
+                  0.33125,
+                  0.33125
+                ]
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            }
+          },
+          "right": {
+            "id": 10,
+            "sample_count": 56,
+            "weight_sum": 56.0,
+            "risk": 0.10625,
+            "impurity": 17.0,
+            "model": {
+              "kind": "discriminant",
+              "terms": [
+                {
+                  "feature": 0,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": 0.37973551951284223,
+                  "missing_indicator": false
+                },
+                {
+                  "feature": 1,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": 8.012760402664696,
+                  "missing_indicator": false
+                }
+              ],
+              "coefficients": [
+                [
+                  0.16440599356180685,
+                  0.09927083980242685
+                ],
+                [
+                  -0.021615409294366207,
+                  0.08380143702649272
+                ]
+              ],
+              "class_means": [
+                [
+                  0.889446241405865,
+                  0.6584056703563643
+                ],
+                [
+                  0.6278737794057911,
+                  0.5870208479898122
+                ],
+                [
+                  0.8101294480162113,
+                  0.6765076887151334
+                ]
+              ],
+              "variances": [
+                0.01637553905331869,
+                0.01867933498629508
+              ],
+              "priors": [
+                0.6428571428571428,
+                0.017857142857142853,
+                0.3392857142857143
+              ],
+              "root_rows": 160,
+              "root_priors": [
+                0.3375,
+                0.33125,
+                0.33125
+              ]
+            },
+            "diagnostics": [],
+            "split": {
+              "kind": "discriminant",
+              "terms": [
+                {
+                  "feature": 0,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": 0.37973551951284223,
+                  "missing_indicator": false
+                },
+                {
+                  "feature": 1,
+                  "power": 1,
+                  "category": null,
+                  "center": 0.0,
+                  "scale": 1.0,
+                  "impute": 8.012760402664696,
+                  "missing_indicator": false
+                }
+              ],
+              "coefficients": [
+                0.16440599356180685,
+                0.09927083980242685
+              ],
+              "threshold": 0.8249869316289532
+            },
+            "left": {
+              "id": 11,
+              "sample_count": 26,
+              "weight_sum": 26.0,
+              "risk": 0.025,
+              "impurity": 4.0,
+              "model": {
+                "kind": "discriminant",
+                "terms": [
+                  {
+                    "feature": 0,
+                    "power": 1,
+                    "category": null,
+                    "center": 0.0,
+                    "scale": 1.0,
+                    "impute": -0.3240006299808667,
+                    "missing_indicator": false
+                  },
+                  {
+                    "feature": 1,
+                    "power": 1,
+                    "category": null,
+                    "center": 0.0,
+                    "scale": 1.0,
+                    "impute": 8.111980217566058,
+                    "missing_indicator": false
+                  }
+                ],
+                "coefficients": [
+                  [
+                    0.4859382996895676,
+                    0.233596141992079
+                  ],
+                  [
+                    0.19829663926617236,
+                    0.27552823587836284
+                  ]
+                ],
+                "class_means": [
+                  [
+                    1.8246683961926875,
+                    2.147741664075021
+                  ],
+                  [
+                    1.4422631733908078,
+                    1.8343461481123557
+                  ],
+                  [
+                    1.6362268038933272,
+                    2.2391144323063803
+                  ]
+                ],
+                "variances": [
+                  0.03027381225381734,
+                  0.03618064833375319
+                ],
+                "priors": [
+                  0.5769230769230769,
+                  0.03846153846153846,
+                  0.3846153846153846
+                ],
+                "root_rows": 160,
+                "root_priors": [
+                  0.3375,
+                  0.33125,
+                  0.33125
+                ]
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            },
+            "right": {
+              "id": 12,
+              "sample_count": 30,
+              "weight_sum": 30.0,
+              "risk": 0.05,
+              "impurity": 8.0,
+              "model": {
+                "kind": "discriminant",
+                "terms": [
+                  {
+                    "feature": 1,
+                    "power": 1,
+                    "category": null,
+                    "center": 0.0,
+                    "scale": 1.0,
+                    "impute": 7.913540587763337,
+                    "missing_indicator": false
+                  },
+                  {
+                    "feature": 1,
+                    "power": 1,
+                    "category": null,
+                    "center": 0.0,
+                    "scale": 1.0,
+                    "impute": 7.913540587763337,
+                    "missing_indicator": true
+                  }
+                ],
+                "coefficients": [
+                  [
+                    -0.08716851092742683,
+                    0.30704361363673943
+                  ],
+                  [
+                    0.07924970814274064,
+                    0.33772407769986723
+                  ]
+                ],
+                "class_means": [
+                  [
+                    -0.667175044410932,
+                    0.6946905974959501
+                  ],
+                  null,
+                  [
+                    -0.537934317946946,
+                    0.6946905974959502
+                  ]
+                ],
+                "variances": [
+                  0.03195607350447447,
+                  0.03571428571428571
+                ],
+                "priors": [
+                  0.7000000000000001,
+                  0.0,
+                  0.3
+                ],
+                "root_rows": 160,
+                "root_priors": [
+                  0.3375,
+                  0.33125,
+                  0.33125
+                ]
+              },
+              "diagnostics": [],
+              "split": null,
+              "left": null,
+              "right": null
+            }
+          }
+        }
+      }
+    }
+  ],
+  "report": {
+    "training_rows": 160,
+    "excluded_rows": 0,
+    "unpruned_leaves": 7,
+    "fitted_leaves": 7,
+    "selected_alpha": 0.0,
+    "pruning_scores": [],
+    "out_of_bag_loss": null,
+    "out_of_bag_rows": 0,
+    "warnings": []
+  }
+}
