@@ -63,7 +63,7 @@ The resulting plot is the README's headline figure. This design follows the simu
 
 ### 3. Property-based tests (`proptest`)
 
-- Test positive affine changes of numerical predictor units on untied, unpruned constant-leaf cases, with floating-point tolerances. Arbitrary monotone transforms can change GUIDE's mean/SD test bins and are not a general invariant.
+- Test positive affine changes of numerical predictor units on untied, unpruned constant-leaf cases, with floating-point tolerances. Arbitrary monotone transforms change linear and polynomial node models and are not a general invariant.
 - Test row/column permutations on untied deterministic cases without resampling. Feature-index ties and seeded CV/bootstrap assignments can change results under reordering.
 - Test identical results across thread counts once parallel fitting exists.
 - Test category relabeling on cases with unique optimal partitions; tie ordering and binary branch orientation need explicit treatment.

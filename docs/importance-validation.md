@@ -63,6 +63,7 @@ The GUIDE manual's importance example (section 16.1: 5735 rows, 53 split variabl
 |---|---|---|---|---|
 | reference25 | 0.974 | 37 / 44 | 46 of 53 | 32 / 42 |
 | reference26 | 0.986 | 37 / 43 | 47 of 53 | 32 / 41 |
+| reference27 | 0.986 | 37 / 43 | 47 of 53 | 32 / 41 |
 
 With depth 1, where the trees agree, guide-rs scores match native's within its Monte Carlo noise, and with 1000 permutations guide-rs places 37 variables above the 95% threshold against native's 34, a gap the 95% quantile of 100 null maxima can produce. At depth 8 guide-rs scores are compressed relative to native's (log-log slope 0.81): native's classification importance trees make linear splits after interaction tests, by a test guide-rs does not yet reproduce, and 78 of the 201 nodes of native's tree lie below such splits. Importance trees therefore still make no linear splits, and the 95% and 99% sets at native's default depth remain larger than native's.
 
