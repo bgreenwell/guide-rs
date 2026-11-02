@@ -6,17 +6,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Fixed
-
-- Tree fitting ranks selection tests on GUIDE's 1-df chi-square scale, whose Wilson-Hilferty tails can rank a test with a larger p-value first
-- Regression selection quartile cuts stop at the first repeated cut, as in GUIDE
-- A one-row group in regression selection tests joins the largest group, as in GUIDE
-- Importance trees group categorical and few-valued variables, cut interaction pairs and stop small or nearly pure nodes as GUIDE does
-- Classification selection tests bin numeric variables at quantiles and group few-valued ones by value, as GUIDE does
-- Interaction tests cut numeric variables at the node median, as GUIDE does
-- Selection tests use the exact 1-df scale for tail probabilities above 2e-6, as GUIDE does
-
-## [0.2.0] - 2026-10-31
+## [0.2.0] - 2026-11-02
 
 ### Added
 
@@ -36,6 +26,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 - Simple polynomial trees choose cuts and leaves as GUIDE does
 - Regression selection tests group categorical and few-valued numeric variables as GUIDE does, pooling values seen once
 - Numeric variables with a single observed value are not tested for selection, as in GUIDE
+- Tree fitting ranks selection tests on GUIDE's 1-df chi-square scale, whose Wilson-Hilferty tails below 2e-6 can rank a test with a larger p-value first
+- Selection quartile cuts stop at the first repeated cut, and a one-row group joins the largest group, as in GUIDE
+- Importance trees group categorical and few-valued variables, cut interaction pairs and stop small or nearly pure nodes as GUIDE does
+- Classification selection tests bin numeric variables at quantiles and group few-valued ones by value, as GUIDE does
+- Interaction tests cut numeric variables at the node median, as GUIDE does
 
 ## [0.1.0] - 2026-10-27
 
