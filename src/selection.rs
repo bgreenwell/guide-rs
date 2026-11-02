@@ -35,10 +35,8 @@ fn discretize(
     // A flagged feature's missing values form one group per flag code.
     let code = |i: usize| missing_code(&ctx.data.rows[i], ctx.flags[j]).unwrap_or("");
     let categorical = matches!(ctx.data.schema[j].feature_type, FeatureType::Categorical);
-    // Quantile cuts and the importance-mode level count need sorted values.
-    let quantile_cuts = mode == SelectionMode::Importance || !ctx.classifying();
     let mut sorted = vec![];
-    if !categorical && quantile_cuts {
+    if !categorical {
         sorted.clone_from(&x);
         sorted.sort_by(f64::total_cmp);
     }
@@ -52,16 +50,14 @@ fn discretize(
         // label() is None only for Missing, handled above.
         v => (1, v.label().unwrap()),
     };
-    // Regression and importance main-effect tests group categorical
-    // variables, and numeric ones with at most four distinct values, by
-    // value. GUIDE pools the values seen once, and a pool of one row joins
-    // the largest group. A numeric variable with a single observed value is
-    // not tested.
-    let by_value = quantile_cuts && !interaction;
-    if by_value && !categorical && sorted.first() == sorted.last() {
+    // Main-effect tests group categorical variables, and numeric ones with
+    // at most four distinct values, by value. GUIDE pools the values seen
+    // once, and a pool of one row joins the largest group. A numeric
+    // variable with a single observed value is not tested.
+    if !interaction && !categorical && sorted.first() == sorted.last() {
         return vec![0; ids.len()];
     }
-    if by_value && (categorical || few_values()) {
+    if !interaction && (categorical || few_values()) {
         let mut counts: BTreeMap<(u8, String), usize> = BTreeMap::new();
         for &i in ids {
             *counts.entry(key(i)).or_default() += 1;
@@ -107,28 +103,13 @@ fn discretize(
         .map(|&i| code(i))
         .collect();
     let codes: Vec<&str> = codes.into_iter().collect();
-    let cuts: Vec<f64> = if interaction && mode == SelectionMode::Importance {
-        importance_pair_cut(&sorted, ids.len())
-    } else if quantile_cuts {
-        quartile_cuts(&sorted, ids.len(), interaction, missing)
+    // Main effects use four quantile groups from 30 rows per class (60 rows
+    // in regression, whose groups are residual signs) and three below.
+    let four_from = if ctx.classifying() { 30 * classes } else { 60 };
+    let cuts = if interaction {
+        pair_cut(&sorted, ids.len())
     } else {
-        let m = stats::mean(&x);
-        let s = stats::variance(&x).sqrt();
-        if interaction {
-            if ids.len() < 45 * classes {
-                vec![m]
-            } else {
-                vec![m - s / 3.0_f64.sqrt(), m + s / 3.0_f64.sqrt()]
-            }
-        } else if ids.len() >= 20 * classes {
-            vec![
-                m - s * 3.0_f64.sqrt() / 2.0,
-                m,
-                m + s * 3.0_f64.sqrt() / 2.0,
-            ]
-        } else {
-            vec![m - s / 3.0_f64.sqrt(), m + s / 3.0_f64.sqrt()]
-        }
+        quartile_cuts(&sorted, ids.len() >= four_from, missing)
     };
     let mut bins: Vec<usize> = ids
         .iter()
@@ -139,7 +120,7 @@ fn discretize(
                 .unwrap_or_else(|| cuts.len() + 1 + codes.binary_search(&code(i)).unwrap_or(0))
         })
         .collect();
-    if quantile_cuts && !interaction {
+    if !interaction {
         pool_single_rows(&mut bins, cuts.len() + 2 + codes.len());
     }
     bins
@@ -157,12 +138,11 @@ fn strongest(mode: SelectionMode, tests: impl Iterator<Item = (f64, usize, f64)>
         .min_by(|a, b| a.1.2.total_cmp(&b.1.2).then(a.0.cmp(&b.0)))
         .map(|(k, _)| k)
 }
-/// Quartile cuts of sorted values, three groups below 60 rows, one group
-/// fewer with missing values, kept up to the first repeated cut: quartiles
-/// 0, 0 and 41 give the single cut 0, not the two cuts 0 and 41.
-fn quartile_cuts(sorted: &[f64], rows: usize, interaction: bool, missing: bool) -> Vec<f64> {
-    let groups = if interaction || rows < 60 { 3 } else { 4 };
-    let groups = if missing { groups - 1 } else { groups };
+/// Quantile cuts of sorted values into four groups, or three, with one
+/// group fewer when values are missing, kept up to the first repeated cut:
+/// quartiles 0, 0 and 41 give the single cut 0, not the two cuts 0 and 41.
+fn quartile_cuts(sorted: &[f64], four: bool, missing: bool) -> Vec<f64> {
+    let groups = if four { 4 } else { 3 } - usize::from(missing);
     let mut cuts: Vec<f64> = (1..groups)
         .map(|k| stats::sorted_quantile(sorted, k as f64 / groups as f64))
         .collect();
@@ -171,10 +151,10 @@ fn quartile_cuts(sorted: &[f64], rows: usize, interaction: bool, missing: bool) 
     }
     cuts
 }
-/// GUIDE's importance interaction tests cut a numeric variable once, at the
-/// median of all `rows` with its missing values sorted first, so missing
-/// values pull the cut below the median of the observed values `sorted`.
-fn importance_pair_cut(sorted: &[f64], rows: usize) -> Vec<f64> {
+/// GUIDE's interaction tests cut a numeric variable once, at the median of
+/// all `rows` with its missing values sorted first, so missing values pull
+/// the cut below the median of the observed values `sorted`.
+fn pair_cut(sorted: &[f64], rows: usize) -> Vec<f64> {
     let at = (rows - 1) as f64 / 2.0 - (rows - sorted.len()) as f64;
     if at < 0.0 {
         return vec![];
@@ -706,7 +686,7 @@ mod tests {
         let mut x: Vec<f64> = vec![0.0; 108];
         x.extend((0..92).map(|i| [9.0, 26.0, 37.0, 41.0, 44.0, 55.0][i % 6]));
         x.sort_by(f64::total_cmp);
-        assert_eq!(quartile_cuts(&x, 200, false, false), vec![0.0]);
+        assert_eq!(quartile_cuts(&x, true, false), vec![0.0]);
         let y: Vec<f64> = (0..200)
             .map(|i| {
                 if (50..170).contains(&i) {
@@ -716,7 +696,7 @@ mod tests {
                 }
             })
             .collect();
-        assert_eq!(quartile_cuts(&y, 200, false, false), vec![49.75, 50.0]);
+        assert_eq!(quartile_cuts(&y, true, false), vec![49.75, 50.0]);
     }
 
     #[test]
@@ -732,14 +712,14 @@ mod tests {
     }
 
     #[test]
-    fn importance_pair_cuts_sort_missing_values_first() {
+    fn pair_cuts_sort_missing_values_first() {
         // A GUIDE 46.3 probe: 300 rows, 91 missing; native cuts at 14, the
         // 60th observed value, not at the observed median.
         let sorted: Vec<f64> = (0..209).map(|i| (i / 4) as f64).collect();
-        assert_eq!(importance_pair_cut(&sorted, 300), vec![sorted[59]]);
+        assert_eq!(pair_cut(&sorted, 300), vec![sorted[59]]);
         let full: Vec<f64> = (0..10).map(f64::from).collect();
-        assert_eq!(importance_pair_cut(&full, 10), vec![4.5]);
-        assert!(importance_pair_cut(&full[..2], 10).is_empty());
+        assert_eq!(pair_cut(&full, 10), vec![4.5]);
+        assert!(pair_cut(&full[..2], 10).is_empty());
     }
 
     #[test]

@@ -521,6 +521,54 @@ fn quantile_cuts_stop_at_the_first_repeated_cut() {
     assert_native_root_chi_squares(&d, &m, &native);
 }
 #[test]
+fn classification_selection_tests_use_quantile_groups() {
+    // GUIDE 46.3 bins numeric variables at quantiles in classification too:
+    // three groups below 30 rows per class and four from there. These are
+    // its 1-df root chi-squares with three classes at 89 and 90 rows; x2,
+    // with missing values, has a zero statistic at 90 rows.
+    for (n, native) in [
+        (89, vec![("x0", 26.43), ("x1", 0.002924), ("x2", 0.03933)]),
+        (90, vec![("x0", 21.45), ("x1", 0.009184), ("x2", 0.0)]),
+    ] {
+        let mut d = data(vec![vec![0.0; 3]; n], vec![0.0; n]);
+        for (i, row) in d.rows.iter_mut().enumerate() {
+            let c = i % 3;
+            *row = vec![
+                Value::Number(((i * 7919) % 997) as f64 / 10.0 + c as f64 * 30.0),
+                Value::Number(((i * 37) % 101) as f64),
+                if i % 5 == 0 {
+                    Value::Missing
+                } else {
+                    Value::Number(((i * 13) % 53) as f64)
+                },
+            ];
+            d.targets[i] = Value::Text(format!("c{c}"));
+        }
+        let mut o = options();
+        o.task = Task::Classification;
+        o.max_depth = 1;
+        let m = FittedModel::fit(&d, &o).unwrap();
+        for (name, chi) in native {
+            let j = d.schema.iter().position(|f| f.name == name).unwrap();
+            let g = m.trees[0]
+                .root
+                .diagnostics
+                .iter()
+                .find(|g| g.feature == j)
+                .unwrap();
+            let value = stats::guide_chi_square_1df(
+                g.chi_square,
+                g.degrees_of_freedom,
+                g.log_p_value.unwrap(),
+            );
+            assert!(
+                (value - chi).abs() < 1e-3 * chi.max(1.0),
+                "{n} rows, {name}: {value} != {chi}"
+            );
+        }
+    }
+}
+#[test]
 fn selection_ranks_tests_on_guide_one_df_scale() {
     // x1 (2 levels) has Pearson statistic 59.54 and x2 (4 levels) 70.27 on 3
     // df. x2 has the smaller tail probability, but GUIDE 46.3 converts its

@@ -12,6 +12,9 @@ adheres to [Semantic Versioning](https://semver.org/).
 - Regression selection quartile cuts stop at the first repeated cut, as in GUIDE
 - A one-row group in regression selection tests joins the largest group, as in GUIDE
 - Importance trees group categorical and few-valued variables, cut interaction pairs and stop small or nearly pure nodes as GUIDE does
+- Classification selection tests bin numeric variables at quantiles and group few-valued ones by value, as GUIDE does
+- Interaction tests cut numeric variables at the node median, as GUIDE does
+- Selection tests use the exact 1-df scale for tail probabilities above 2e-6, as GUIDE does
 
 ## [0.2.0] - 2026-10-31
 
