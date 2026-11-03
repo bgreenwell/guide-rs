@@ -1389,12 +1389,56 @@ fn admissible(ctx: &Context<'_>, l: &[usize], r: &[usize]) -> bool {
         && usable(l)
         && usable(r)
 }
-/// Number of cut positions GUIDE evaluates for Poisson and quantile trees.
+/// Number of grid positions in GUIDE's fixed grid of parent cuts.
 const NATIVE_CUT_GRID: usize = 102;
-/// Whether numerical cuts follow GUIDE's fixed Poisson/quantile grid.
+/// Most cuts GUIDE evaluates per variable in Poisson, quantile and polynomial trees.
+const NATIVE_SCAN_CUTS: usize = 100;
+/// Whether numerical cuts follow GUIDE's Poisson/quantile/polynomial scan.
 fn native_cut_grid(ctx: &Context<'_>) -> bool {
-    matches!(ctx.loss, Loss::Poisson | Loss::Quantile { .. })
-        || matches!(ctx.options.node_model, NodeModel::Polynomial { .. })
+    crate::node::uses_cut_scan(&ctx.loss, &ctx.options.node_model)
+}
+/// Observed left row counts of the cuts GUIDE evaluates on a variable with these
+/// sorted observed `values`. GUIDE scans the node's rows with the `missing` ones
+/// sorted first, so the missing block ends at a boundary of its own (count 0).
+/// Step j of 100 aims at position `s - 1 + floor(j * span / 101)` and takes the
+/// last boundary up to there, or else the next unused one, which is why a tied
+/// or missing block is followed by consecutive cuts until the scan catches up.
+/// The span is `rows - 2s`, or `rows - s` once any numeric split variable in the
+/// data file has a missing value, whatever the node or the row's response.
+fn native_cut_scan(
+    values: &[f64],
+    missing: usize,
+    minimum: usize,
+    missing_in_file: bool,
+) -> Vec<usize> {
+    let rows = values.len() + missing;
+    let span = rows.saturating_sub(if missing_in_file {
+        minimum
+    } else {
+        2 * minimum
+    });
+    let boundaries: Vec<usize> = (missing > 0)
+        .then_some(missing)
+        .into_iter()
+        .chain(
+            (1..values.len())
+                .filter(|&k| values[k - 1] < values[k])
+                .map(|k| missing + k),
+        )
+        .collect();
+    let mut cuts = Vec::with_capacity(NATIVE_SCAN_CUTS);
+    let mut next = 0;
+    for step in 1..=NATIVE_SCAN_CUTS {
+        let target = minimum.saturating_sub(1) + step * span / (NATIVE_SCAN_CUTS + 1);
+        let reached = boundaries.partition_point(|&b| b <= target);
+        let at = reached.saturating_sub(1).max(next);
+        let Some(&position) = boundaries.get(at) else {
+            break;
+        };
+        next = at + 1;
+        cuts.push(position - missing);
+    }
+    cuts
 }
 /// Splits `ids` into `left` and `right`, keeping their order.
 pub(crate) fn partition(
@@ -1904,20 +1948,43 @@ fn candidates_sorted(
                     || native_cut_grid(ctx)
                     || ctx.options.node_model != NodeModel::Constant,
             );
-            if values.len() <= minimum + minimum || minimum == 0 {
+            let scan = native_cut_grid(ctx);
+            let missing = ids.len() - values.len();
+            // With missing numeric values in the file, GUIDE's scan bounds the
+            // sides as routed: missing rows count on the left, and a right side
+            // of exactly the minimum is allowed.
+            let routed_bounds = scan && ctx.missing_numeric;
+            if minimum == 0
+                || values.is_empty()
+                || (!routed_bounds && values.len() <= minimum + minimum)
+            {
                 return result;
             }
-            let lower = values[minimum - 1];
-            let upper = values[values.len() - minimum - exclusive];
+            let (lower, upper) = if routed_bounds {
+                (f64::NEG_INFINITY, f64::INFINITY)
+            } else {
+                (
+                    values[minimum - 1],
+                    values[values.len() - minimum - exclusive],
+                )
+            };
             let midpoint = |a: f64, b: f64| {
                 let mid = a / 2.0 + b / 2.0;
                 if mid >= b { a } else { mid }
             };
-            let cuts: Vec<f64> = if grid || native_cut_grid(ctx) {
-                // Poisson and quantile trees in GUIDE 46.3 cut after at most
-                // 102 evenly spaced row positions, whatever the cutpoint
-                // option says: s - 1 + floor(j (m - 1) / 101) rows on the
-                // left, with s the minimum node size and m = n - 2s + 1.
+            let cuts: Vec<f64> = if scan {
+                native_cut_scan(&values, missing, minimum, ctx.missing_numeric)
+                    .into_iter()
+                    .filter(|&k| {
+                        k >= 1
+                            && (!routed_bounds
+                                || (missing + k >= minimum && values.len() - k >= minimum))
+                    })
+                    .map(|k| midpoint(values[k - 1], values[k]))
+                    .collect()
+            } else if grid {
+                // Parent cuts of interaction pairs: s - 1 + floor(j (m - 1) / 101)
+                // rows on the left, with s the minimum node size and m = n - 2s + 1.
                 let n = values.len();
                 let m = (n + 1).saturating_sub(2 * minimum);
                 let positions: Vec<usize> = if m <= NATIVE_CUT_GRID {
@@ -1946,6 +2013,18 @@ fn candidates_sorted(
                     continue;
                 }
                 for (missing_left, missing_codes) in &routes {
+                    // Quantile and Poisson trees keep missing rows left, where
+                    // GUIDE's scan sorts them; polynomial least squares chooses.
+                    if !*missing_left
+                        && missing_codes.is_none()
+                        && missing > 0
+                        && matches!(
+                            ctx.loss,
+                            Loss::Poisson | Loss::Quantile { .. } | Loss::DualQuantile { .. }
+                        )
+                    {
+                        continue;
+                    }
                     result.push(Split::Numeric {
                         feature: j,
                         threshold,
@@ -2134,6 +2213,79 @@ fn candidates_sorted(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Positions below come from native GUIDE 46.3 step-response probes: one run
+    /// per possible step, recording the left row count of the root cut.
+    #[test]
+    fn cut_scan_reaches_the_positions_guide_reaches() {
+        let unique = |n: usize| (1..=n).map(|i| i as f64).collect::<Vec<f64>>();
+        let ends = |cuts: Vec<usize>, first: &[usize], last: &[usize]| {
+            assert_eq!(&cuts[..first.len()], first);
+            assert_eq!(&cuts[cuts.len() - last.len()..], last);
+        };
+        // Unique values: the span is n - 2s, or n - s with a missing value in the file.
+        ends(
+            native_cut_scan(&unique(872), 0, 2, false),
+            &[9, 18, 26],
+            &[843, 851, 860],
+        );
+        ends(
+            native_cut_scan(&unique(872), 0, 2, true),
+            &[9, 18, 26],
+            &[845, 853, 862],
+        );
+        ends(
+            native_cut_scan(&unique(872), 0, 10, true),
+            &[17, 26, 34],
+            &[845, 853, 862],
+        );
+        ends(
+            native_cut_scan(&unique(1615), 0, 5, false),
+            &[19, 35, 51],
+            &[1577, 1593],
+        );
+        // A position inside a tie takes the last boundary before it.
+        let runs: Vec<f64> = (0..2000).map(|i| (1 + i * 150 / 2000) as f64).collect();
+        ends(
+            native_cut_scan(&runs, 0, 2, false),
+            &[14, 40, 54, 80, 94, 107, 134, 147, 174],
+            &[1907, 1934, 1947, 1974],
+        );
+        // Top half tied: the last boundary is still reached.
+        let top: Vec<f64> = (1..=1000)
+            .map(f64::from)
+            .chain(std::iter::repeat_n(5000.0, 1000))
+            .collect();
+        ends(
+            native_cut_scan(&top, 0, 2, false),
+            &[20, 40, 60, 80, 99, 119, 139, 159, 178],
+            &[949, 969, 989, 1000],
+        );
+        ends(
+            native_cut_scan(&top, 0, 2, true),
+            &[20, 40, 60, 80],
+            &[950, 970, 990, 1000],
+        );
+        // Bottom half tied: consecutive cuts follow the block until the scan catches up.
+        let bottom: Vec<f64> = std::iter::repeat_n(0.0, 1000)
+            .chain((1..=1000).map(f64::from))
+            .collect();
+        ends(
+            native_cut_scan(&bottom, 0, 2, false),
+            &[1000, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008],
+            &[1917, 1937, 1957, 1977],
+        );
+        // Few distinct values: every boundary is a candidate.
+        let few: Vec<f64> = (0..2000).map(|i| (1 + i * 60 / 2000) as f64).collect();
+        assert_eq!(native_cut_scan(&few, 0, 2, false).len(), 59);
+        // Missing rows sort first, and their block ends at a boundary of its own
+        // (count 0): 50 missing, then 5 consecutive cuts, then the grid.
+        ends(
+            native_cut_scan(&unique(872), 50, 2, true),
+            &[0, 1, 2, 3, 4, 5, 14, 23, 32, 42, 51, 60, 69],
+            &[843, 852, 861],
+        );
+    }
 
     #[test]
     fn class_sweep_matches_partitioned_leaves() {

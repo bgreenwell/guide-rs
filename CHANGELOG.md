@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Quantile, two-quantile, Poisson and polynomial trees choose numeric cuts as GUIDE does on tied values and when a numeric variable has missing values anywhere in the data
+- Quantile, two-quantile and Poisson trees send missing values left at numeric cuts, as GUIDE does
+- Quantile and two-quantile trees score splits counting each row once at the weighted node quantile, as GUIDE does
+
 ## [0.2.1] - 2026-11-02
 
 ### Added

@@ -191,9 +191,9 @@ def glm_cases():
     """Poisson and quantile constant trees: GUIDE's fixed cutpoint grid and
     Poisson's positive-count children."""
     result = {}
-    def add(name, rows, targets, loss, depth=1, offsets=None, features=None):
+    def add(name, rows, targets, loss, depth=1, offsets=None, features=None, weights=None):
         value = case(name, False, features or [("x", "numeric")], rows, targets,
-                     depth=depth, loss=loss, offsets=offsets)
+                     depth=depth, loss=loss, offsets=offsets, weights=weights)
         result[name] = value
     poisson, median = {"kind": "poisson"}, {"kind": "quantile", "probability": 0.5}
     rng = random.Random(46)
@@ -220,6 +220,47 @@ def glm_cases():
     add("quantile-depth-2", pairs,
         [round((2 if a > 0.5 else 0) + (1 if b > 0.3 else 0) + rng.gauss(0, 1), 4)
          for a, b in pairs], median, depth=2, features=[("a", "numeric"), ("b", "numeric")])
+    # GUIDE's cut scan: missing values anywhere in the file change its span, tied
+    # or missing blocks are followed by consecutive cuts, and missing rows go left.
+    scan = random.Random(2811)
+    pair = [("x", "numeric"), ("z", "numeric")]
+    def noisy(value, sd=1.0):
+        return round(value + scan.gauss(0, sd), 4)
+    upper = {"kind": "quantile", "probability": 0.9}
+
+    rows = [[i + 1, round(scan.random(), 4)] for i in range(300)]
+    rows[100][1] = None
+    add("quantile-scan-companion-missing", rows,
+        [noisy(2 if r[0] > 190 else 0) for r in rows], median, features=pair)
+
+    rows = [[i + 1, round(scan.random(), 4)] for i in range(300)]
+    rows += [[None, round(scan.random(), 4)] for _ in range(60)]
+    scan.shuffle(rows)
+    add("quantile-scan-x-missing", rows,
+        [noisy(2 if r[0] is not None and r[0] > 170 else 0) for r in rows], median,
+        depth=2, features=pair)
+
+    rows = [[0.0, round(scan.random(), 4)] for _ in range(250)]
+    rows += [[float(i + 1), round(scan.random(), 4)] for i in range(250)]
+    scan.shuffle(rows)
+    add("quantile-scan-tied-block", rows,
+        [noisy(2 if r[0] > 43 else 0) for r in rows], median, features=pair)
+
+    rows = [[float(i % 30), round(scan.random(), 4)] for i in range(400)]
+    rows[7][1] = None
+    add("quantile-scan-few-values", rows,
+        [noisy(2 if r[0] > 11 else 0) for r in rows], median, features=pair)
+
+    rows = [[i + 1, round(scan.random(), 4)] for i in range(300)]
+    rows[40][1] = None
+    add("quantile-scan-weights", rows, [noisy(3 if r[0] > 180 else 0) for r in rows], upper,
+        features=pair, weights=[round(scan.uniform(1, 500), 2) for _ in rows])
+
+    rows = [[i + 1, round(scan.random(), 4)] for i in range(300)]
+    rows[200][1] = None
+    add("poisson-scan-companion-missing", rows,
+        [sum(1 for _ in range(40) if scan.random() < (2.5 if r[0] > 190 else 1.0) / 40)
+         for r in rows], poisson, features=pair)
     return result
 
 

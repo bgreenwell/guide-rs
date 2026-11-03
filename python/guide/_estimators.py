@@ -603,6 +603,11 @@ default="squared_error"
         depend on it.
     random_state : int, RandomState instance or None, default=0
         Seed for cross-validation folds. Fits are deterministic by default.
+
+    Notes
+    -----
+    With quantile losses, sample weights set each node's quantile, but each row
+    counts once when choosing splits, following GUIDE.
     """
 
     def __init__(
