@@ -1,6 +1,7 @@
 /target/
 /.reference/
 /assets/
+/manuscript/
 __pycache__/
 *.py[cod]
 .pytest_cache/
